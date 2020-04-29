@@ -1,0 +1,270 @@
+{% extends "layout.html" %}
+{% block body %}
+<div class="row">
+    <h1 class="col-12">{% if editmode == 'create' %}Create Dataset{% else %}Edit Dataset{% endif %}</h1>
+   
+    {% if dataset and dataset.check() %}
+    <ul class="dfissues">
+    {% for errmsg in dataset.check() %}
+    <li class="badge badge-warning">{{ errmsg }}</li>
+    {% else %}
+    <li class="badge badge-info">All checks passing.</li>
+    {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+
+<div class="row" id="dataset_name_change">
+    <form method="post" id="form_change_name" enctype="multipart/form-data" class="col-12">
+        <div class="input-group col-12">
+            <input type="hidden" name="action" value="change_name" />
+            <div class="col-2">Dataset name:</div>
+            <div class="custom-file col-10">
+                <input type="text" placeholder="dataset name" class="custom-input" value="{{ dataset.metadata.name }}" id="dataset_name" name="dataset_name" required="required">
+            </div>
+            <div class="input-group-append">
+                <button class="btn btn-outline-primary input-group-text" id="inputGroupFileAddon02" onclick="return $('#form_change_name').submit();">
+                    <i class="fas fa-file"></i>&nbsp;OK
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="row">
+    <h3 class="col-12">Data and Format</h3>
+</div>
+
+<div class="row" id="dataset_content">
+    <form method="post" id="form_upload_file" enctype="multipart/form-data" class="col-12">
+        <div class="input-group col-12">
+            <input type="hidden" name="action" value="upload_file" />
+            <div class="custom-file">
+                <input type="file" class="custom-file-input" id="upload_file" name="upload_file" required="required">
+                <label class="custom-file-label" for="upload_file">Choose file</label>
+            </div>
+            <div class="input-group-append">
+                <button class="btn btn-outline-primary input-group-text" id="inputGroupFileAddon02" onclick="return $('#form_upload_file').submit();">
+                    <i class="fas fa-file-upload"></i>&nbsp;{% if dataset and dataset.get_content() %} Replace {% else %} Upload {% endif %}
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="row" id="upload_meta">
+    <div class="col-12">
+        <span class="dsmeta">Original filename:</span> <span class="dsmetaval">{{ dataset.metadata.upload_filename }}</span></div>
+    <div class="col-12">
+        <span class="dsmeta">MIME type:</span> <span class="dsmetaval">{{ dataset.metadata.upload_mimetype }}</span><br />
+    </div>
+    <div class="col-12">
+        <span class="dsmeta">Delimiter:<span> <span class="dsmetaval">{{ dataset.metadata.sep or ',' }}</span>
+    </div>
+    <div class="col-12">
+        <span class="dsmeta">Quote char:<span> <span class="dsmetaval">{{ dataset.metadata.quotechar or '"' }}</span>
+    </div>
+</div>
+
+<div class="row" id="dataset_preview">
+
+    {% if previewdf is none %}
+    Preview not available.
+    {% else %}
+    {% if previewdf is string %}
+    <div class="alert alert-danger">
+        {{ previewdf }}
+    </div>
+    {% else %}
+    <div class="col-12">
+        {{ previewdf.to_html(max_rows=20, classes='', table_id='previewdftable')|safe }}
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+
+{% if not previewdf is none and not previewdf is string %}
+<h3>Task Definition</h3>
+
+<div class="row seprow">
+
+    <form method="post">
+        <input type="hidden" name="action" value="change_textcol">
+
+        <div class="form-group row">
+            <label for="textcol" class="col-4 col-form-label"><span class="{% if not dataset.metadata.textcol %}alert alert-warning{% endif %}">Select text column:</span></label> 
+            <div class="col-8">
+
+                <select id='textcol' name='textcol' onchange="this.form.submit()">
+                    {% if not dataset.metadata.textcol %}
+                    <option selected="true" disabled="disabled">-</option>
+                    {% endif %}
+                    {% for colname in previewdf.columns %}
+                    {% if dataset.metadata.textcol == colname %}
+                    <option selected='true' value="{{ colname }}">{{ colname }}</option>
+                    {% else %}
+                    <option value="{{ colname }}">{{ colname }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+
+            </div>
+        </div> 
+    </form>
+
+</div>
+
+<div class="row seprow">
+
+    <form method="post">
+        <input type="hidden" name="action" value="change_annoorder">
+
+        <div class="form-group row">
+            <label for="annoorder" class="col-4 col-form-label">Select annotation order:</span></label> 
+            <div class="col-8">
+
+                <select id='annoorder' name='annoorder' onchange="this.form.submit()">
+                    {% if not dataset.metadata.annoorder or dataset.metadata.annoorder == 'sequential' %} 
+                    <option selected="true" value="sequential">sequential</option>
+                    <option value="random">random</option>
+                    {% else %}
+                    <option value="sequential">sequential</option>
+                    <option selected="true" value="random">random</option>
+                    {% endif %}
+                </select>
+
+            </div>
+        </div> 
+    </form>
+
+</div>
+
+<div class="row seprow">
+    <form method="post">
+            <input type="hidden" name="action" value="change_taglist" />
+        <div class="form-group row">
+            <label for="settaglist" class="col-4 col-form-label">
+                <span class="{% if not dataset.metadata.taglist %}alert alert-warning{% endif %}">Define a tag list<span>
+            </label> 
+            <div class="col-8">
+                <textarea id="settaglist" name="settaglist" cols="40" rows="5" class="form-control" aria-describedby="settaglistHelpBlock" required="required">{% if dataset.metadata.taglist %}{{ dataset.metadata.taglist|join('\n') }}{% endif %}</textarea> 
+                <span id="settaglistHelpBlock" class="form-text text-muted">separate single entries by newlines</span>
+            </div>
+        </div> 
+        <div class="form-group row">
+            <div class="offset-4 col-8">
+                <button name="submit" type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </div>
+    </form>
+
+</div>
+
+<h3>Manage Access</h3>
+
+<div class="row">
+    <div class="col-12">These users are allowed to add annotations for this dataset:</div>
+</div>
+<div class="row">
+    <ul class="col-12 dsacl" id="dsacl">
+    {% for userobj in db.userlist() %}
+
+    <li class="row">
+        
+        <i title="{{userobj.uid}}" class="col-1 fas fa-user aclusericon" style="margin-top: 0.5em;"></i>
+            
+        &nbsp; <span class="col-2 aclusermail">{{userobj.email}}</span>
+    {% if userobj.uid == dataset.owner %}
+        <span class="acluserowner">owner</span>
+    {% elif userobj.uid|string in dataset.metadata.acl %}
+    <a href="#" class="toggleacl btn btn-sm btn-outline-success" data-status="annotator" data-userid="{{userobj.uid}}">
+            <span class="">annotator</span>
+            <i class="far fa-check-square"></i>
+        </a>
+
+    {% else %}
+    <a href="#" class="toggleacl btn btn-sm btn-outline-primary" data-status="" data-userid="{{userobj.uid}}">
+            <span class="">add annotator</span>
+            <i class="far fa-square"></i>
+        </a>
+    {% endif %}
+    </li>
+
+        {% if userobj.uid == dataset.owner or userobj.uid|string in dataset.metadata.acl %}
+        {% set aprogress = dataset.annocount(userobj.uid) / dataset.metadata.size * 100.0 %}
+        <li class="progress singleprogress col-4">
+
+            <div class="progress-bar" role="progressbar" style="width: {{aprogress|round}}%">
+        </li>
+        {% endif %}
+    {% endfor %}
+    </ul>
+</div>
+
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info">
+            Please upload and format data first.
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block addscript %}
+<script>
+    $(document).ready(function() {
+        let $tbl = $("#previewdftable");
+        if ($tbl) {
+            $("#previewdftable tbody tr").each(function() {
+                $(this).find("td").wrapInner('<div class="tdwrap">');
+            });
+        }
+
+        $("a.toggleacl").click(function(e) {
+            e.preventDefault();
+            let $tgt = $(this);
+
+            let $icosquare = $tgt.find(".fa-square");
+            let $icocheck = $tgt.find(".fa-check-square");
+            
+            let annoaction = null;
+            let annouser = $tgt.data("userid");
+            let $newi = null;
+            if ($icosquare && $icosquare.length) {
+                annoaction = "addannotator";
+                $icosquare.remove();
+                $newi = $('<i class="far fa-check-square"></i>');
+                $tgt.text("annotator ");
+            }
+
+            if ($icocheck && $icocheck.length) {
+                annoaction = "remannotator";
+                $icocheck.remove();
+                $newi = $('<i class="far fa-square"></i>');
+                $tgt.text("add annotator ");
+            }
+
+            $.ajax({
+                type: "POST",
+                url: $(location).attr("href"),
+                data: {"action": annoaction, "annouser": annouser},
+                success: function() {
+                    $tgt.toggleClass("btn-outline-primary");
+                    $tgt.toggleClass("btn-outline-success");
+                    $tgt.append($newi);
+                },
+                error: function(jqXHR, textstatus, err) {
+                    if (!err) { return; }
+                    alert(textstatus + " " + err);
+                }
+            });
+
+            return false;
+        });
+    });
+
+</script>
+{% endblock %}

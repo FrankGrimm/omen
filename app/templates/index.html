@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h1>Overview</h1>
+  {% if not session['user'] %}
+      <p>Authentication required. <a href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt"></i> login</a></p>
+  {% else %}
+      <p>user: {{ session['user'] }} 
+      <a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> logout</a>
+      </p>
+  {% endif %}
+{% endblock %}

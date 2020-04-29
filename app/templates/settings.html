@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h1>Settings</h1>
+
+  <h3>Change password</h3>
+  
+  <form method=post>
+      <input type=hidden name="action" value="change_password" />
+    <dl>
+      <dt>Current Password:
+      <dd><input type=password name=curpassword>
+    </dl>
+    <dl>
+      <dt>New Password:
+      <dd><input type=password name=newpw1>
+    </dl>
+    <dl>
+      <dt>Confirm New Password:
+      <dd><input type=password name=newpw2>
+    </dl>
+    <p><input type=submit value="Change password">
+  </form>
+{% endblock %}

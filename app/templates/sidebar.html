@@ -1,0 +1,50 @@
+{% macro sideitem(cssclass, target, title) -%}
+<li class="nav-item">
+    {% if request.url_rule.endpoint == target %}
+    <a class="nav-link active" href="{{ url_for(target) }}">
+        {% else %}
+        <a class="nav-link" href="{{ url_for(target) }}">
+            {% endif %}
+            <i class="{{cssclass}}"></i>
+            {{ title }}
+        </a>
+</li>
+{%- endmacro %}
+
+<nav class="col-md-2 d-none d-md-block bg-light sidebar">
+    <div class="sidebar-sticky">
+        <ul class="nav flex-column">
+            {{ sideitem("fas fa-home", "index", "Overview") }}
+            {{ sideitem("fas fa-cogs", "settings", "Settings") }}
+        </ul>
+
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+            <span>Datasets</span>
+            <a class="d-flex align-items-center text-muted" href="{{ url_for('new_dataset') }}">
+                <i class="fas fa-plus-circle"></i>
+            </a>
+        </h6>
+        <ul class="nav flex-column mb-2">
+            {{ sideitem("fas fa-database", "dataset", "Manage") }}
+            <!-- {{ sideitem("fas fa-keyboard", "dataset", "Annotate") }} -->
+        </ul>
+
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+            <span>Annotate</span>
+        </h6>
+        <ul class="nav flex-column mb-2">
+            {% for task in tasks %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('annotate', dsid=task.id) }}">
+                    {{task.name}} <span class="sidemeta">{{task.annos}}/{{task.size}}</span>
+                </a>
+                <div class="progress sideprogress">
+                    <div class="progress-bar" role="progressbar" style="width: {{task.progress}}%"></div>
+                </div>
+            </li>
+            {% else %}
+            <li class="nav-item"><i class="nav-link">all done</i></li>
+            {% endfor %}
+        </ul>
+    </div>
+</nav>

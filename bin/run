@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+BASEDIR="$HOME/projects/omen-annotator"
+cd "$BASEDIR"
+source .venv/bin/activate
+export FLASK_APP="$BASEDIR/app/web.py"
+export FLASK_DEBUG=1
+flask run --host=127.0.0.1 --port=8042

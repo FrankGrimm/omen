@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h1>Datasets
+      <a style="font-size: 0.5em; position: absolute; top: 1em; margin-left: 0.5em;" class="text-muted" href="{{ url_for('new_dataset') }}">
+        <i class="fas fa-plus-circle"></i>
+      </a>
+  </h1>
+
+  <h4>My Datasets</h4>
+    
+  <div class="row">
+  
+      <ul class="dslist col-12">
+    {% for dsid, ds in my_datasets.items() %}
+        <li>
+            <a class="btn btn-sm btn-secondary" href="{{ url_for("new_dataset", dsid=dsid) }}"><i class="fas fa-cog"></i></a> 
+            <a class="btn btn-sm btn-primary" href="{{ url_for("download", dsid=dsid) }}"><i class="fas fa-download"></i></a> 
+            <a href="{{ url_for('dataset', dsid=dsid) }}">
+                {{ds.metadata.name or dsid}}
+            </a>
+
+            {% if ds and ds.check() %}
+            {% for errmsg in ds.check() %}
+            <div class="badge badge-warning">{{ errmsg }}</div>
+            {% endfor %}
+            {% endif %}
+        </li>
+    {% endfor %}
+      </ul>
+  
+  </div>
+
+  <h4>Shared Datasets</h4>
+
+  <div class="row">
+      <ul class="dslist col-12">
+    {% for dsid, ds in access_datasets.items() %}
+        <li>
+            <i class="fas fa-table"></i> <strong>{{ds.metadata.name or dsid}}</strong>, owned by {{ db.by_id(ds.owner).email }}
+        </li>
+    {% endfor %}
+      </ul>
+      
+    </div>
+{% endblock %}

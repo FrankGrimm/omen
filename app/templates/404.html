@@ -1,0 +1,7 @@
+{% extends "layout.html" %}
+{% block body %}
+  <h1>Page Not Found (404)</h1>
+  {% if error %}
+    <p class=error><strong>Error:</strong> {{ error }}
+  {% endif %}
+{% endblock %}
