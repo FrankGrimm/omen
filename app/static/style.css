@@ -105,6 +105,10 @@ table.dataframe {
     display: block;
 }
 
+table, tr, td, th {
+    border-color: gray;
+}
+
 table.dataframe tbody td {
     max-height: 2em;
     overflow-y: scroll;
