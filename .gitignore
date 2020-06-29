@@ -1,4 +1,5 @@
 database.db
+./dbdata/pgdata/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

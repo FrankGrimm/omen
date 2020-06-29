@@ -1,0 +1,18 @@
+version: '3'
+services:
+    web:
+        build: .
+        ports:
+            - "5000:5000"
+        volumes:
+            - ${PWD}/app:/home/omenuser/app
+            - ${PWD}/config.json:/home/omenuser/app/config.json
+    db:
+        image: postgres:12.3
+        restart: always
+        volumes:
+            - ${PWD}/dbdata:/var/lib/postgresql/data
+        environment:
+            - PGDATA=/var/lib/postgresql/data/pgdata
+            - POSTGRES_USER=omenusr
+            - POSTGRES_PASSWORD=omenusr
