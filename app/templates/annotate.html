@@ -8,23 +8,23 @@
 
 <div class="row">
 <div id="anno_actions">
-    {% if dataset.metadata.size > 0 and sample_idx > 0 %}
-    <a id="anno_nav_prev"class="btn btn-outline-secondary" href="{{ url_for('annotate', dsid=dataset.id, sample_idx=sample_idx - 1) }}">
+    {% if dataset.dsmetadata.size > 0 and sample_idx > 0 %}
+    <a id="anno_nav_prev"class="btn btn-outline-secondary" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_idx - 1) }}">
         <i class="fas fa-2x fa-arrow-left"></i>
     </a>
 {% endif %}
-    {% if dataset.metadata.size > 0 and sample_idx == 0 %}
-    <a id="anno_nav_prev" class="btn btn-outline-secondary" href="{{ url_for('annotate', dsid=dataset.id, sample_idx=dataset.metadata.size - 1) }}">
+    {% if dataset.dsmetadata.size > 0 and sample_idx == 0 %}
+    <a id="anno_nav_prev" class="btn btn-outline-secondary" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=dataset.dsmetadata.size - 1) }}">
         <i class="fas fa-2x fa-arrow-left"></i>
     </a>
 {% endif %}
 
-{% for tag in dataset.metadata.taglist %}
-{% if dataset.metadata.size > 0 and sample_idx < (dataset.metadata.size - 1) %}
-<a data-tagidx="{{loop.index - 1}}" class="btn btn{% if tag != curanno %}-outline{% endif %}-primary" href="{{ url_for('annotate', dsid=dataset.id, sample_idx=sample_idx + 1, set_sample_idx=sample_idx, set_value=tag) }}">
+{% for tag in dataset.dsmetadata.taglist %}
+{% if dataset.dsmetadata.size > 0 and sample_idx < (dataset.dsmetadata.size - 1) %}
+<a data-tagidx="{{loop.index - 1}}" class="btn btn{% if tag != curanno %}-outline{% endif %}-primary" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_idx + 1, set_sample_idx=sample_idx, set_value=tag) }}">
 {% endif %}
-{% if dataset.metadata.size > 0 and sample_idx == (dataset.metadata.size - 1) %}
-<a data-tagidx="{{loop.index - 1}}" class="btn btn{% if tag != curanno %}-outline{% endif %}-primary" href="{{ url_for('annotate', dsid=dataset.id, sample_idx=0, set_sample_idx=sample_idx, set_value=tag) }}">
+{% if dataset.dsmetadata.size > 0 and sample_idx == (dataset.dsmetadata.size - 1) %}
+<a data-tagidx="{{loop.index - 1}}" class="btn btn{% if tag != curanno %}-outline{% endif %}-primary" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=0, set_sample_idx=sample_idx, set_value=tag) }}">
 {% endif %}
 {{ tag }}
 </a>
@@ -32,18 +32,18 @@
 ERROR: no taglist
 {% endfor %}
 
-{% if dataset.metadata.size > 0 and sample_idx < (dataset.metadata.size - 1) %}
-<a id="anno_nav_next" class="btn btn-outline-secondary" href="{{ url_for('annotate', dsid=dataset.id, sample_idx=sample_idx + 1) }}">
+{% if dataset.dsmetadata.size > 0 and sample_idx < (dataset.dsmetadata.size - 1) %}
+<a id="anno_nav_next" class="btn btn-outline-secondary" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_idx + 1) }}">
     <i class="fas fa-2x fa-arrow-right"></i>
 </a>
 {% endif %}
-{% if dataset.metadata.size > 0 and sample_idx == (dataset.metadata.size - 1) %}
-<a id="anno_nav_next" class="btn btn-outline-secondary" href="{{ url_for('annotate', dsid=dataset.id, sample_idx=0) }}">
+{% if dataset.dsmetadata.size > 0 and sample_idx == (dataset.dsmetadata.size - 1) %}
+<a id="anno_nav_next" class="btn btn-outline-secondary" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=0) }}">
     <i class="fas fa-2x fa-arrow-right"></i>
 </a>
 {% endif %}
 
-<a id="anno_nav_random" class="btn btn-outline-secondary" href="{{ url_for('annotate', dsid=dataset.id, sample_idx=random_sample) }}">
+<a id="anno_nav_random" class="btn btn-outline-secondary" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=random_sample) }}">
     <i class="fas fa-2x fa-random"></i>
 </a>
 
@@ -88,7 +88,7 @@ ERROR: no taglist
                 }
                 if (event.keyCode > 48 && event.keyCode <= 57) {
                     let tagoffset = event.keyCode - 48 - 1;
-                    let tagcount = {{ dataset.metadata.taglist|length }};
+                    let tagcount = {{ dataset.dsmetadata.taglist|length }};
                     if (tagoffset < tagcount) {
                         $("a.btn").each(function() {
                             let $this = $(this);

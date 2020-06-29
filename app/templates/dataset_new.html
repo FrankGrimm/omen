@@ -3,9 +3,9 @@
 <div class="row">
     <h1 class="col-12">{% if editmode == 'create' %}Create Dataset{% else %}Edit Dataset{% endif %}</h1>
    
-    {% if dataset and dataset.check() %}
+    {% if dataset and db.check_dataset(dbsession, dataset.dataset_id) %}
     <ul class="dfissues">
-    {% for errmsg in dataset.check() %}
+    {% for errmsg in db.check_dataset(dbsession, dataset.dataset_id) %}
     <li class="badge badge-warning">{{ errmsg }}</li>
     {% else %}
     <li class="badge badge-info">All checks passing.</li>
@@ -20,7 +20,7 @@
             <input type="hidden" name="action" value="change_name" />
             <div class="col-2">Dataset name:</div>
             <div class="custom-file col-10">
-                <input type="text" placeholder="dataset name" class="custom-input" value="{{ dataset.metadata.name }}" id="dataset_name" name="dataset_name" required="required">
+                <input type="text" placeholder="dataset name" class="custom-input" value="{{ dataset.dsmetadata.name }}" id="dataset_name" name="dataset_name" required="required">
             </div>
             <div class="input-group-append">
                 <button class="btn btn-outline-primary input-group-text" id="inputGroupFileAddon02" onclick="return $('#form_change_name').submit();">
@@ -45,7 +45,7 @@
             </div>
             <div class="input-group-append">
                 <button class="btn btn-outline-primary input-group-text" id="inputGroupFileAddon02" onclick="return $('#form_upload_file').submit();">
-                    <i class="fas fa-file-upload"></i>&nbsp;{% if dataset and dataset.get_content() %} Replace {% else %} Upload {% endif %}
+                    <i class="fas fa-file-upload"></i>&nbsp;{% if dataset and dataset.content %} Replace {% else %} Upload {% endif %}
                 </button>
             </div>
         </div>
@@ -54,15 +54,15 @@
 
 <div class="row" id="upload_meta">
     <div class="col-12">
-        <span class="dsmeta">Original filename:</span> <span class="dsmetaval">{{ dataset.metadata.upload_filename }}</span></div>
+        <span class="dsmeta">Original filename:</span> <span class="dsmetaval">{{ dataset.dsmetadata.upload_filename }}</span></div>
     <div class="col-12">
-        <span class="dsmeta">MIME type:</span> <span class="dsmetaval">{{ dataset.metadata.upload_mimetype }}</span><br />
+        <span class="dsmeta">MIME type:</span> <span class="dsmetaval">{{ dataset.dsmetadata.upload_mimetype }}</span><br />
     </div>
     <div class="col-12">
-        <span class="dsmeta">Delimiter:<span> <span class="dsmetaval">{{ dataset.metadata.sep or ',' }}</span>
+        <span class="dsmeta">Delimiter:<span> <span class="dsmetaval">{{ dataset.dsmetadata.sep or ',' }}</span>
     </div>
     <div class="col-12">
-        <span class="dsmeta">Quote char:<span> <span class="dsmetaval">{{ dataset.metadata.quotechar or '"' }}</span>
+        <span class="dsmeta">Quote char:<span> <span class="dsmetaval">{{ dataset.dsmetadata.quotechar or '"' }}</span>
     </div>
 </div>
 
@@ -92,15 +92,15 @@
         <input type="hidden" name="action" value="change_textcol">
 
         <div class="form-group row">
-            <label for="textcol" class="col-4 col-form-label"><span class="{% if not dataset.metadata.textcol %}alert alert-warning{% endif %}">Select text column:</span></label> 
+            <label for="textcol" class="col-4 col-form-label"><span class="{% if not dataset.dsmetadata.textcol %}alert alert-warning{% endif %}">Select text column:</span></label> 
             <div class="col-8">
 
                 <select id='textcol' name='textcol' onchange="this.form.submit()">
-                    {% if not dataset.metadata.textcol %}
+                    {% if not dataset.dsmetadata.textcol %}
                     <option selected="true" disabled="disabled">-</option>
                     {% endif %}
                     {% for colname in previewdf.columns %}
-                    {% if dataset.metadata.textcol == colname %}
+                    {% if dataset.dsmetadata.textcol == colname %}
                     <option selected='true' value="{{ colname }}">{{ colname }}</option>
                     {% else %}
                     <option value="{{ colname }}">{{ colname }}</option>
@@ -124,7 +124,7 @@
             <div class="col-8">
 
                 <select id='annoorder' name='annoorder' onchange="this.form.submit()">
-                    {% if not dataset.metadata.annoorder or dataset.metadata.annoorder == 'sequential' %} 
+                    {% if not dataset.dsmetadata.annoorder or dataset.dsmetadata.annoorder == 'sequential' %} 
                     <option selected="true" value="sequential">sequential</option>
                     <option value="random">random</option>
                     {% else %}
@@ -144,10 +144,10 @@
             <input type="hidden" name="action" value="change_taglist" />
         <div class="form-group row">
             <label for="settaglist" class="col-4 col-form-label">
-                <span class="{% if not dataset.metadata.taglist %}alert alert-warning{% endif %}">Define a tag list<span>
+                <span class="{% if not dataset.dsmetadata.taglist %}alert alert-warning{% endif %}">Define a tag list<span>
             </label> 
             <div class="col-8">
-                <textarea id="settaglist" name="settaglist" cols="40" rows="5" class="form-control" aria-describedby="settaglistHelpBlock" required="required">{% if dataset.metadata.taglist %}{{ dataset.metadata.taglist|join('\n') }}{% endif %}</textarea> 
+                <textarea id="settaglist" name="settaglist" cols="40" rows="5" class="form-control" aria-describedby="settaglistHelpBlock" required="required">{% if dataset.dsmetadata.taglist %}{{ dataset.dsmetadata.taglist|join('\n') }}{% endif %}</textarea> 
                 <span id="settaglistHelpBlock" class="form-text text-muted">separate single entries by newlines</span>
             </div>
         </div> 
@@ -167,7 +167,7 @@
 </div>
 <div class="row">
     <ul class="col-12 dsacl" id="dsacl">
-    {% for userobj in db.userlist() %}
+    {% for userobj in db.userlist(dbsession) %}
 
     <li class="row">
         
@@ -176,7 +176,7 @@
         &nbsp; <span class="col-2 aclusermail">{{userobj.email}}</span>
     {% if userobj.uid == dataset.owner %}
         <span class="acluserowner">owner</span>
-    {% elif userobj.uid|string in dataset.metadata.acl %}
+    {% elif userobj.uid|string in dataset.dsmetadata.acl %}
     <a href="#" class="toggleacl btn btn-sm btn-outline-success" data-status="annotator" data-userid="{{userobj.uid}}">
             <span class="">annotator</span>
             <i class="far fa-check-square"></i>
@@ -190,8 +190,8 @@
     {% endif %}
     </li>
 
-        {% if userobj.uid == dataset.owner or userobj.uid|string in dataset.metadata.acl %}
-        {% set aprogress = dataset.annocount(userobj.uid) / dataset.metadata.size * 100.0 %}
+        {% if userobj.uid == dataset.owner or userobj.uid|string in dataset.dsmetadata.acl %}
+        {% set aprogress = dataset.annocount(userobj.uid) / dataset.dsmetadata.size * 100.0 %}
         <li class="progress singleprogress col-4">
 
             <div class="progress-bar" role="progressbar" style="width: {{aprogress|round}}%">
