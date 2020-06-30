@@ -1,0 +1,1 @@
+docker exec -e SCRIPT=createuser -w "/home/omenuser/app" -it `docker ps | grep "omen-annotator_web" | cut -d " " -f1` flask $*
