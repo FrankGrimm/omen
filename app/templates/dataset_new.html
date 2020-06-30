@@ -3,9 +3,9 @@
 <div class="row">
     <h1 class="col-12">{% if editmode == 'create' %}Create Dataset{% else %}Edit Dataset{% endif %}</h1>
    
-    {% if dataset and db.check_dataset(dbsession, dataset.dataset_id) %}
+    {% if dataset and ds_errors %}
     <ul class="dfissues">
-    {% for errmsg in db.check_dataset(dbsession, dataset.dataset_id) %}
+    {% for errmsg in ds_errors %}
     <li class="badge badge-warning">{{ errmsg }}</li>
     {% else %}
     <li class="badge badge-info">All checks passing.</li>
@@ -163,7 +163,11 @@
 <h3>Manage Access</h3>
 
 <div class="row">
-    <div class="col-12">These users are allowed to add annotations for this dataset:</div>
+    <div class="col-8">Manage users who are allowed to add annotations for this dataset:</div>
+    <div class="col-4"><a href="{{ url_for("createuser") }}" class="btn btn-sm btn-primary">
+            <span class="">create new</span><i class="far fa-plus"></i>
+        </a>
+        </div>
 </div>
 <div class="row">
     <ul class="col-12 dsacl" id="dsacl">
@@ -191,7 +195,7 @@
     </li>
 
         {% if userobj.uid == dataset.owner or userobj.uid|string in dataset.dsmetadata.acl %}
-        {% set aprogress = dataset.annocount(userobj.uid) / dataset.dsmetadata.size * 100.0 %}
+        {% set aprogress = dataset.annocount(dbsession, userobj.uid) / (dataset.dsmetadata.size or 1) * 100.0 %}
         <li class="progress singleprogress col-4">
 
             <div class="progress-bar" role="progressbar" style="width: {{aprogress|round}}%">

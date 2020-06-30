@@ -19,8 +19,8 @@
                 {{ds.metadata.name or dsid}}
             </a>
 
-            {% if ds and db.check_dataset(dbsession, ds.dataset_id) %}
-            {% for errmsg in db.check_dataset(dbsession, ds.dataset_id) %}
+            {% if ds and ds in ds_errors %}
+            {% for errmsg in ds_errors[ds] %}
             <div class="badge badge-warning">{{ errmsg }}</div>
             {% endfor %}
             {% endif %}
