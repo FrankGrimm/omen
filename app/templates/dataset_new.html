@@ -87,7 +87,7 @@
     </div>
     {% else %}
     <div class="col-12">
-        {{ previewdf.to_html(max_rows=20, classes='', table_id='previewdftable')|safe }}
+        {{ render_dataframe(previewdf, "previewdftable", "dataframe", 20) }}
     </div>
     {% endif %}
     {% endif %}

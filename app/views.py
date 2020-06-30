@@ -44,6 +44,25 @@ def logout():
 
     return redirect(url_for('index'))
 
+@app.route(BASEURI + "/dataset/<dsid>/inspect")
+@login_required
+def inspect_dataset(dsid = None):
+    with db.session_scope() as dbsession:
+        my_datasets = db.my_datasets(dbsession, session['user'])
+        access_datasets = db.accessible_datasets(dbsession, session['user'])
+
+        dataset = None
+        if not dsid is None and dsid in my_datasets:
+            dataset = my_datasets[dsid]
+        if not dsid is None and dsid in access_datasets:
+            dataset = access_datasets[dsid]
+
+        df = dataset.annotations(dbsession, foruser=session['user'])
+
+        err = None
+
+        return render_template("dataset_inspect.html", err=err, dataset=dataset, df=df)
+
 @app.route(BASEURI + "/dataset/<dsid>/download")
 @login_required
 def download(dsid = None):
@@ -57,10 +76,8 @@ def download(dsid = None):
             dataset = my_datasets[dsid]
         if not dsid is None and dsid in access_datasets:
             dataset = access_datasets[dsid]
-        print("a", my_datasets, file=sys.stderr)
-        print("b", access_datasets, file=sys.stderr)
-        print("search", dsid, type(dsid), file=sys.stderr)
-        df = dataset.annotations(dbsession)
+
+        df = dataset.annotations(dbsession, foruser=session['user'])
 
         s = StringIO()
         df.to_csv(s)

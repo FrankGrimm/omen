@@ -190,7 +190,9 @@ class Dataset(Base):
         flag_modified(self, "dsmetadata")
         dbsession.add(self)
 
-    def annotations(self, dbsession):
+    def annotations(self, dbsession, foruser=None):
+        # TODO check roles of "foruser" and only expose annotations accordingly
+
         df = self.as_df()
         df['idxmerge'] = df.index.astype(str)
 
@@ -202,6 +204,7 @@ class Dataset(Base):
             uannos = uannos.drop(["uid"], axis=1)
             uannos = uannos.set_index("sample")
             df = pd.merge(df, uannos, left_on='idxmerge', right_index=True, how='left', indicator=False)
+            # df = df.drop(["idxmerge"], axis=1)
             df = df.rename(columns={"annotation": "anno-%s-%s" % \
                     (userobj.uid, userobj.get_name())})
 

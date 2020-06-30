@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<h1>Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot; </h1>
+
+<div class="row">
+    <div class="dataset_inspect_meta col-12">
+        Owner: {{ dataset.owner.get_name() }}
+    </div>
+</div>
+
+<div class="row">
+    {{ render_dataframe(df, "dfid", "dfclasses") }}
+</div>
+<div class="row">
+    {{ df.to_html(max_rows=1000, classes='', table_id='previewdftable')|safe }}
+</div>
+
+{% endblock %}
+
+{% block addscript %}
+    <script>
+    </script>
+{% endblock %}
