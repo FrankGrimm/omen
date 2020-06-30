@@ -300,6 +300,8 @@ def settings():
             if act == 'change_displayname':
                 userobj.displayname = request.form.get("new_displayname", userobj.displayname) or ""
                 dbsession.add(userobj)
+                session['user_displayname'] = userobj.get_name()
+
             if act == 'change_password':
                 req_pwc = request.form.get("curpassword", None)
                 req_pw1 = request.form.get("newpw1", None)
@@ -331,6 +333,7 @@ def login(backto=None):
                         flash('You were successfully logged in')
                         session['user'] = req_user_obj.uid
                         session['user_email'] = req_user_obj.email
+                        session['user_displayname'] = req_user_obj.get_name()
                         loginerror = None
 
                         return redirect(url_for('index'))

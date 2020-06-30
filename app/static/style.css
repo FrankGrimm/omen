@@ -251,3 +251,9 @@ div.seprow form {
     margin-top: 0;
     margin-bottom: 2em;
 }
+
+select.taskdef_select {
+    min-width: 50%;
+}
+
+

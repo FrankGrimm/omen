@@ -65,6 +65,11 @@ class User(Base):
         self.email = email
         self.pwhash = pwhash
 
+    def get_name(self):
+        if not self.displayname is None and not self.displayname.strip() == '':
+            return self.displayname.strip()
+        return self.email
+
     def verify_password(self, pw):
         return scrypt.verify(pw, self.pwhash)
 

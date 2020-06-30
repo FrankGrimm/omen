@@ -120,7 +120,7 @@
             <label for="textcol" class="col-4 col-form-label"><div class="{% if not dataset.dsmetadata.textcol %}ds_new_field_error alert alert-warning{% endif %}">Select text column:</div></label> 
             <div class="col-8">
 
-                <select id='textcol' name='textcol' onchange="this.form.submit()">
+                <select class="taskdef_select" id='textcol' name='textcol' onchange="this.form.submit()">
                     {% if not dataset.dsmetadata.textcol %}
                     <option selected="true" disabled="disabled">-</option>
                     {% endif %}
@@ -148,7 +148,7 @@
             <label for="idcolumn" class="col-4 col-form-label"><div class="{% if not dataset.dsmetadata.idcolumn %}ds_new_field_error alert alert-warning{% endif %}">Select unique sample ID column:</div></label> 
             <div class="col-8">
 
-                <select id='idcolumn' name='idcolumn' onchange="this.form.submit()">
+                <select class="taskdef_select" id='idcolumn' name='idcolumn' onchange="this.form.submit()">
                     {% if not dataset.dsmetadata.idcolumn %}
                     <option selected="true" disabled="disabled">-</option>
                     {% endif %}
@@ -179,7 +179,7 @@
             </label> 
             <div class="col-8">
 
-                <select id='annoorder' name='annoorder' onchange="this.form.submit()">
+                <select class="taskdef_select" id='annoorder' name='annoorder' onchange="this.form.submit()">
                     {% if not dataset.dsmetadata.annoorder or dataset.dsmetadata.annoorder == 'sequential' %} 
                     <option selected="true" value="sequential">sequential</option>
                     <option value="random">random</option>
@@ -233,9 +233,9 @@
         
         <i title="{{userobj.uid}}" class="col-1 fas fa-user aclusericon" style="margin-top: 0.5em;"></i>
             
-        &nbsp; <span class="col-2 aclusermail">{{userobj.email}}</span>
+        &nbsp; <span class="col-4 aclusermail">{{ userobj.get_name() }} ({{userobj.email}})</span>
 
-    <div class="col-8">
+    <div class="col-6">
     {% if userobj.uid == dataset.owner_id %}
         <span class="acluserowner">owner</span>
     {% elif userobj.uid|string in dataset.dsmetadata.acl %}

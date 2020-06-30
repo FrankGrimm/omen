@@ -6,7 +6,7 @@
       {% if not session['user'] %}
           <a class="nav-link" href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt"></i> Login</a>
       {% else %}
-          <a class="nav-link" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> logout <i>{{ session['user_email'] }}</i></a>
+          <a class="nav-link" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> logout <i>{{ session['user_displayname'] }}</i></a>
       {% endif %}
     </li>
   </ul>
