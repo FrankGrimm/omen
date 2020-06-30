@@ -12,19 +12,27 @@
   
       <ul class="dslist col-12">
     {% for dsid, ds in my_datasets.items() %}
-        <li>
+        <li class="row ds_meta">
+            <div class="col-2">
             <a class="btn btn-sm btn-secondary" href="{{ url_for("new_dataset", dsid=dsid) }}"><i class="fas fa-cog"></i></a> 
             <a class="btn btn-sm btn-primary" href="{{ url_for("download", dsid=dsid) }}"><i class="fas fa-download"></i></a> 
-            <a href="{{ url_for('dataset', dsid=dsid) }}">
-                {{ds.metadata.name or dsid}}
+            </div>
+            <div class="col-10 ds_overview_label">
+            <a href="{{ url_for('new_dataset', dsid=dsid) }}">
+                {{ ds.get_name() }}
             </a>
-
-            {% if ds and ds in ds_errors %}
-            {% for errmsg in ds_errors[ds] %}
-            <div class="badge badge-warning">{{ errmsg }}</div>
-            {% endfor %}
-            {% endif %}
+            </div>
         </li>
+        {% if ds and ds in ds_errors and ds_errors %}
+        <li class="row">
+            <ul class="ds_overview_issues offset-2 col-10">
+                {% for errmsg in ds_errors[ds] %}
+                <li class="badge badge-warning">{{ errmsg }}</li>
+                {% endfor %}
+            </ul>
+        </li>
+        {% endif %}
+        <li class="ds_separator">&nbsp;</li>
     {% endfor %}
       </ul>
   
@@ -36,7 +44,7 @@
       <ul class="dslist col-12">
     {% for dsid, ds in access_datasets.items() %}
         <li>
-            <i class="fas fa-table"></i> <strong>{{ds.metadata.name or dsid}}</strong>, owned by {{ db.by_id(ds.owner).email }}
+            <i class="fas fa-table"></i> <strong>{{ ds.get_name() }}</strong>, owned by {{ db.by_id(ds.owner).email }}
         </li>
     {% endfor %}
       </ul>

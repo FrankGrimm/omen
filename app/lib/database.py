@@ -102,6 +102,11 @@ class Dataset(Base):
 
     persisted = False
 
+    def get_name(self):
+        if self.dsmetadata is None:
+            return self.dataset_id
+        return self.dsmetadata.get("name", self.dataset_id)
+
     def check_dataset(self):
         dataset = self
         errorlist = []

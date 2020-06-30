@@ -94,6 +94,16 @@
 </div>
 
 {% if not previewdf is none and not previewdf is string %}
+
+{% if dataset %}
+<h3>Actions</h3>
+
+<div class="row">
+    <a class="btn btn-sm btn-primary" href="{{ url_for("download", dsid=dataset.dataset_id) }}"><i class="fas fa-download"></i></a> 
+</div>
+
+{% endif %}
+
 <h3>Task Definition</h3>
 
 <div class="row seprow">

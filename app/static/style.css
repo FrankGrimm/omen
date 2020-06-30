@@ -185,4 +185,40 @@ div.dsnamecol {
     font-style: italic;
 }
 
+ul.ds_overview_issues {
+    list-style-type: none;
+    margin: 0 0 0 auto;
+    padding: 0;
+}
 
+ul.ds_overview_issues li {
+    float: left;
+    margin: 1em;
+    padding: 0.5em;
+    font-size: 10pt;
+}
+
+ul.dslist li.ds_separator {
+    display: none;
+    margin: 0 1em;
+    padding: 0;
+    height: 1px;
+    border-bottom: 1px solid #94c9de;
+}
+
+.ds_overview_label a {
+    display: block;
+    width: 100%;
+    padding: 0.1em;
+}
+
+.ds_overview_label {
+    line-height: 2em;
+    font-size: 12pt;
+}
+
+ul.dslist li.ds_meta {
+    background: #e7f0ff;
+    padding: 0;
+    border-radius: 3px;
+}
