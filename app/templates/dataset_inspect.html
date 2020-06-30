@@ -12,9 +12,6 @@
 <div class="row">
     {{ render_dataframe(df, "dfid", "dfclasses") }}
 </div>
-<div class="row">
-    {{ df.to_html(max_rows=1000, classes='', table_id='previewdftable')|safe }}
-</div>
 
 {% endblock %}
 

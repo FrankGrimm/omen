@@ -57,7 +57,15 @@ def inspect_dataset(dsid = None):
         if not dsid is None and dsid in access_datasets:
             dataset = access_datasets[dsid]
 
-        df = dataset.annotations(dbsession, foruser=session['user'])
+        session_user = db.by_id(dbsession, session['user'])
+        df, annotation_columns = dataset.annotations(dbsession, foruser=session_user, user_column="annotations", hideempty=True)
+
+        columns = [dataset.get_id_column(), dataset.get_text_column()] + [col for col in df.columns.intersection(annotation_columns)]
+
+        # drop other columns
+        df = df.loc[:, columns]
+        # reorder
+        df = df[columns]
 
         err = None
 
@@ -77,7 +85,7 @@ def download(dsid = None):
         if not dsid is None and dsid in access_datasets:
             dataset = access_datasets[dsid]
 
-        df = dataset.annotations(dbsession, foruser=session['user'])
+        df, _ = dataset.annotations(dbsession, foruser=session['user'])
 
         s = StringIO()
         df.to_csv(s)
@@ -194,7 +202,6 @@ def annotate(dsid=None, sample_idx=None):
         if curanno_data and 'data' in curanno_data and \
                 'value' in curanno_data['data']:
             curanno = curanno_data['data']['value']
-        print("*"*80, curanno_data, file=sys.stderr)
 
     return render_template("annotate.html", dataset=dataset, task=task, sample_idx=sample_idx, random_sample=random_sample, sample_content = sample_content, curanno=curanno)
 

@@ -17,6 +17,7 @@ import uuid
 import sys
 import os
 import pandas as pd
+import numpy as np
 import app.web as web
 from passlib.hash import scrypt
 import getpass
@@ -116,9 +117,10 @@ class Dataset(Base):
         return self.dsmetadata.get("name", self.dataset_id)
 
     def get_text_column(self):
-        textcol = dataset.dsmetadata.get("textcol", None)
+        textcol = self.dsmetadata.get("textcol", None)
         if textcol is None:
             return None
+        dferr = self.as_df(strerrors = True)
         if not dferr is None and \
                 not type(dferr) is str and \
                 not textcol in dferr.columns:
@@ -126,9 +128,10 @@ class Dataset(Base):
         return textcol
 
     def get_id_column(self):
-        idcolumn = dataset.dsmetadata.get("idcolumn", None)
+        idcolumn = self.dsmetadata.get("idcolumn", None)
         if idcolumn is None:
             return None
+        dferr = self.as_df(strerrors = True)
         if not dferr is None and \
                 not type(dferr) is str and \
                 not idcolumn in dferr.columns:
@@ -136,7 +139,6 @@ class Dataset(Base):
         return idcolumn
 
     def check_dataset(self):
-        dataset = self
         errorlist = []
 
         dsname = self.dsmetadata.get("name", None) if \
@@ -145,23 +147,23 @@ class Dataset(Base):
         if dsname is None or dsname.strip() == '':
             errorlist.append("unnamed dataset")
 
-        if not dataset.persisted and dataset.dataset_id is None:
+        if not self.persisted and self.dataset_id is None:
             errorlist.append("not saved")
 
-        if dataset.dsmetadata.get("hasdata", None) is None:
+        if self.dsmetadata.get("hasdata", None) is None:
             errorlist.append("no data")
 
-        if dataset.dsmetadata.get("taglist", None) is None or \
-                len(dataset.dsmetadata.get("taglist", [])) == 0:
+        if self.dsmetadata.get("taglist", None) is None or \
+                len(self.dsmetadata.get("taglist", [])) == 0:
             errorlist.append("no tags defined")
 
-        dferr = dataset.as_df(strerrors = True)
+        dferr = self.as_df(strerrors = True)
         if dferr is None:
             errorlist.append("no data")
         if type(dferr) is str:
             errorlist.append("data error: %s" % dferr)
 
-        textcol = dataset.dsmetadata.get("textcol", None)
+        textcol = self.dsmetadata.get("textcol", None)
         if textcol is None:
             errorlist.append("no text column")
         if not dferr is None and \
@@ -169,7 +171,7 @@ class Dataset(Base):
                 not textcol in dferr.columns:
             errorlist.append("text column '%s' not found in data" % textcol)
 
-        idcolumn = dataset.dsmetadata.get("idcolumn", None)
+        idcolumn = self.dsmetadata.get("idcolumn", None)
         if idcolumn is None:
             errorlist.append("no ID column")
         elif not dferr is None and \
@@ -177,7 +179,7 @@ class Dataset(Base):
                 not idcolumn in dferr.columns:
             errorlist.append("ID column '%s' not found in data" % idcolumn)
 
-        acl = dataset.dsmetadata.get("acl", [])
+        acl = self.dsmetadata.get("acl", [])
         if acl is None or len(acl) == 0:
             errorlist.append("no annotators")
 
@@ -190,11 +192,14 @@ class Dataset(Base):
         flag_modified(self, "dsmetadata")
         dbsession.add(self)
 
-    def annotations(self, dbsession, foruser=None):
+    def annotations(self, dbsession, foruser=None, user_column=None, hideempty=False):
         # TODO check roles of "foruser" and only expose annotations accordingly
 
         df = self.as_df()
         df['idxmerge'] = df.index.astype(str)
+
+        annotation_columns = []
+        target_user_column = None
 
         for userobj in userlist(dbsession):
             uannos = self.getannos(dbsession, userobj.uid, asdict=True)
@@ -205,10 +210,30 @@ class Dataset(Base):
             uannos = uannos.set_index("sample")
             df = pd.merge(df, uannos, left_on='idxmerge', right_index=True, how='left', indicator=False)
             # df = df.drop(["idxmerge"], axis=1)
-            df = df.rename(columns={"annotation": "anno-%s-%s" % \
-                    (userobj.uid, userobj.get_name())})
 
-        return df
+            cur_user_column = "anno-%s-%s" % \
+                    (userobj.uid, userobj.get_name())
+            df = df.rename(columns={"annotation": cur_user_column})
+
+            if not cur_user_column in annotation_columns:
+                annotation_columns.append(cur_user_column)
+
+            if not user_column is None and not foruser is None \
+                    and userobj is foruser:
+                target_user_column = cur_user_column
+
+        if not target_user_column is None and not user_column is None and \
+                target_user_column != user_column:
+
+            df = df.rename(columns={target_user_column: user_column})
+            annotation_columns.remove(target_user_column)
+            if not user_column in annotation_columns:
+                annotation_columns.append(user_column)
+
+        if hideempty:
+            df = df.dropna(axis=0, how="all", subset=annotation_columns)
+        df = df.replace(np.nan, '', regex=True)
+        return df, annotation_columns
 
     def getannos(self, dbsession, uid, asdict=False):
         user_obj = by_id(dbsession, uid)
