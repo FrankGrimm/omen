@@ -106,6 +106,12 @@ class Dataset(Base):
         dataset = self
         errorlist = []
 
+        dsname = self.dsmetadata.get("name", None) if \
+                not self.dsmetadata is None else None
+
+        if dsname is None or dsname.strip() == '':
+            errorlist.append("unnamed dataset")
+
         if not dataset.persisted and dataset.dataset_id is None:
             errorlist.append("not saved")
 

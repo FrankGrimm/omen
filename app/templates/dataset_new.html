@@ -4,13 +4,18 @@
     <h1 class="col-12">{% if editmode == 'create' %}Create Dataset{% else %}Edit Dataset{% endif %}</h1>
    
     {% if dataset and ds_errors %}
-    <ul class="dfissues">
+    <div class="row">
+        <h5 class="dfissues col-12">Open issues with this dataset:</h5>
+    </div>
+    <div class="row">
+        <ul class="dfissues">
     {% for errmsg in ds_errors %}
     <li class="badge badge-warning">{{ errmsg }}</li>
     {% else %}
     <li class="badge badge-info">All checks passing.</li>
     {% endfor %}
     </ul>
+    </div>
     {% endif %}
 </div>
 
@@ -18,7 +23,12 @@
     <form method="post" id="form_change_name" enctype="multipart/form-data" class="col-12">
         <div class="input-group col-12">
             <input type="hidden" name="action" value="change_name" />
-            <div class="col-2">Dataset name:</div>
+
+    {% if dataset and ds_errors and 'unnamed dataset' in ds_errors %}
+            <div class="col-2 dsnamecol ds_field_error">Dataset name:</div>
+    {% else %}
+            <div class="col-2 dsnamecol">Dataset name:</div>
+    {% endif %}
             <div class="custom-file col-10">
                 <input type="text" placeholder="dataset name" class="custom-input" value="{{ dataset.dsmetadata.name }}" id="dataset_name" name="dataset_name" required="required">
             </div>

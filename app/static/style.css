@@ -164,3 +164,25 @@ table.dataframe tbody td {
 	border: 1px solid #ced4da;
 	border-radius: .25rem;
 }
+
+ul.dfissues {
+}
+
+ul.dfissues li {
+    margin: 0.5em;
+}
+
+ul.dfissues li.badge {
+    font-size: 12pt;
+}
+
+div.dsnamecol {
+    line-height: 2em;
+}
+
+.ds_field_error {
+    color: #ff3649;
+    font-style: italic;
+}
+
+
