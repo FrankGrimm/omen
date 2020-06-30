@@ -278,7 +278,8 @@ class Dataset(Base):
             content = StringIO(content)
             sep = self.dsmetadata.get("sep", ",")
             quotechar = self.dsmetadata.get("quotechar", '"')
-            return pd.read_csv(content, sep=sep, header='infer', quotechar=quotechar)
+            df = pd.read_csv(content, sep=sep, header='infer', quotechar=quotechar)
+            return df
 
     def update_content(self, new_content):
         self.content = new_content
@@ -297,15 +298,9 @@ class Dataset(Base):
         conn.commit()
         return self.update()
 
-    def update(self):
+    def update_size(self):
         self.dsmetadata['updated'] = datetime.now().timestamp()
 
-        cur = conn.cursor()
-
-        if self.dataset_id is None:
-            raise Exception("no id")
-        if self.owner is None:
-            raise Exception("no owner")
         if self.dsmetadata is None:
             self.dsmetadata = {}
 
@@ -314,22 +309,9 @@ class Dataset(Base):
             df = self.as_df()
         except Exception as ignored:
             pass
+
         if not df is None:
             self.dsmetadata['size'] = df.shape[0]
-
-        if not self.persisted:
-            # initial insert
-            self.persisted = True
-
-            cur.execute("INSERT INTO datasets (id, owner, dsmetadata) VALUES(%s, %s, %s)", (self.dataset_id, self.owner, json.dumps(self.dsmetadata)))
-        else:
-            # update existing
-            cur.execute("UPDATE datasets SET dsmetadata=%s WHERE owner = %s AND id = %s", (json.dumps(self.dsmetadata), self.owner, self.dataset_id))
-
-        cur.close()
-        conn.commit()
-
-        return True
 
 class Annotation(Base):
     __tablename__ = 'annotations'

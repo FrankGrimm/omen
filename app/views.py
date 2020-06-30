@@ -263,12 +263,12 @@ def new_dataset(dsid=None):
                             if not new_content is None and not len(new_content) == 0:
                                 new_content = new_content.decode('utf-8')
 
-            dataset.dirty(dbsession)
-            dbsession.commit()
-
             if not new_content is None:
                 dataset.content = new_content
-                dbsession.commit()
+                dataset.update_size()
+
+            dataset.dirty(dbsession)
+            dbsession.commit()
 
             dbsession.flush()
 
