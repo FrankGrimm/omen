@@ -387,9 +387,7 @@ def annotation_tasks(dbsession, for_user):
         if not check_result is None and len(check_result) > 0:
             continue
 
-        dsname = dataset.dsmetadata.get("name", dsid)
-
-        # TODO calculate progress
+        dsname = dataset.get_name()
         task = {"id": dsid, "name": dsname, "dataset": dataset, "progress": 0, "size": dataset.dsmetadata.get("size", -1) or -1, "annos": dataset.annocount(dbsession, for_user) }
 
         if task['size'] and task['size'] > 0 and task['annos'] and task['annos'] > 0:

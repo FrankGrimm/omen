@@ -205,26 +205,27 @@
         <i title="{{userobj.uid}}" class="col-1 fas fa-user aclusericon" style="margin-top: 0.5em;"></i>
             
         &nbsp; <span class="col-2 aclusermail">{{userobj.email}}</span>
-    {% if userobj.uid == dataset.owner %}
+
+    <div class="col-8">
+    {% if userobj.uid == dataset.owner_id %}
         <span class="acluserowner">owner</span>
     {% elif userobj.uid|string in dataset.dsmetadata.acl %}
     <a href="#" class="toggleacl btn btn-sm btn-outline-success" data-status="annotator" data-userid="{{userobj.uid}}">
             <span class="">annotator</span>
             <i class="far fa-check-square"></i>
         </a>
-
     {% else %}
     <a href="#" class="toggleacl btn btn-sm btn-outline-primary" data-status="" data-userid="{{userobj.uid}}">
-            <span class="">add annotator</span>
+            <span class="">make annotator </span>
             <i class="far fa-square"></i>
         </a>
     {% endif %}
+    </div>
     </li>
 
         {% if userobj.uid == dataset.owner or userobj.uid|string in dataset.dsmetadata.acl %}
         {% set aprogress = dataset.annocount(dbsession, userobj.uid) / (dataset.dsmetadata.size or 1) * 100.0 %}
-        <li class="progress singleprogress col-4">
-
+        <li class="progress singleprogress offset-2 col-4">
             <div class="progress-bar" role="progressbar" style="width: {{aprogress|round}}%">
         </li>
         {% endif %}
@@ -264,6 +265,7 @@
             let annoaction = null;
             let annouser = $tgt.data("userid");
             let $newi = null;
+
             if ($icosquare && $icosquare.length) {
                 annoaction = "addannotator";
                 $icosquare.remove();
@@ -275,7 +277,7 @@
                 annoaction = "remannotator";
                 $icocheck.remove();
                 $newi = $('<i class="far fa-square"></i>');
-                $tgt.text("add annotator ");
+                $tgt.text("make annotator ");
             }
 
             $.ajax({
