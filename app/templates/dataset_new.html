@@ -98,8 +98,13 @@
 {% if dataset %}
 <h3>Actions</h3>
 
-<div class="row">
-    <a class="btn btn-sm btn-primary" href="{{ url_for("download", dsid=dataset.dataset_id) }}"><i class="fas fa-download"></i></a> 
+<div class="row ds_actions_toolbar">
+    <div class="btn-toolbar col-12">
+        <div class="btn-group">
+    <a class="btn btn-sm btn-primary" href="{{ url_for("download", dsid=dataset.dataset_id) }}"><i class="fas fa-download"></i> Download</a> 
+        </div>
+
+    </div>
 </div>
 
 {% endif %}
@@ -112,7 +117,7 @@
         <input type="hidden" name="action" value="change_textcol">
 
         <div class="form-group row">
-            <label for="textcol" class="col-4 col-form-label"><span class="{% if not dataset.dsmetadata.textcol %}alert alert-warning{% endif %}">Select text column:</span></label> 
+            <label for="textcol" class="col-4 col-form-label"><div class="{% if not dataset.dsmetadata.textcol %}ds_new_field_error alert alert-warning{% endif %}">Select text column:</div></label> 
             <div class="col-8">
 
                 <select id='textcol' name='textcol' onchange="this.form.submit()">
@@ -140,7 +145,9 @@
         <input type="hidden" name="action" value="change_annoorder">
 
         <div class="form-group row">
-            <label for="annoorder" class="col-4 col-form-label">Select annotation order:</span></label> 
+            <label for="annoorder" class="col-4 col-form-label">
+                <div class="">Select annotation order:</div>
+            </label> 
             <div class="col-8">
 
                 <select id='annoorder' name='annoorder' onchange="this.form.submit()">
@@ -164,7 +171,7 @@
             <input type="hidden" name="action" value="change_taglist" />
         <div class="form-group row">
             <label for="settaglist" class="col-4 col-form-label">
-                <span class="{% if not dataset.dsmetadata.taglist %}alert alert-warning{% endif %}">Define a tag list<span>
+                <div class="{% if not dataset.dsmetadata.taglist %}ds_new_field_error alert alert-warning{% endif %}">Define a tag list</div>
             </label> 
             <div class="col-8">
                 <textarea id="settaglist" name="settaglist" cols="40" rows="5" class="form-control" aria-describedby="settaglistHelpBlock" required="required">{% if dataset.dsmetadata.taglist %}{{ dataset.dsmetadata.taglist|join('\n') }}{% endif %}</textarea> 

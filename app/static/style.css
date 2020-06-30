@@ -12,7 +12,7 @@ ul.flashes li {
 }
 
 h1, h2, h3, h4 {
-    margin-bottom: 1em;
+    margin-bottom: 0.8em;
     margin-top: 0.5em;
 }
 
@@ -221,4 +221,23 @@ ul.dslist li.ds_meta {
     background: #e7f0ff;
     padding: 0;
     border-radius: 3px;
+}
+
+div.seprow form {
+    width: 100%;
+}
+
+.ds_new_field_error {
+    margin: 0;
+    padding: 0.1em;
+}
+
+.col-form-label {
+    line-height: 1.5em;
+    padding: 0.2em 0.5em;
+}
+
+.ds_actions_toolbar {
+    margin-top: 0;
+    margin-bottom: 2em;
 }
