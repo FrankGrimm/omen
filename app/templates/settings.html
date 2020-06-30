@@ -2,7 +2,18 @@
 {% block body %}
   <h1>Settings</h1>
 
-  <h3>Change password</h3>
+  <h3>Change Display Name</h3>
+
+  <form method=post>
+      <input type=hidden name="action" value="change_displayname" />
+    <dl>
+      <dt>Name:
+      <dd><input type="text" name="new_displayname" placeholder="{% if session_user.displayname %}{{session_user.displayname}}{% endif %}" value="{% if session_user.displayname %}{{session_user.displayname}}{% endif %}">
+    </dl>
+    <p><input type=submit value="Apply">
+  </form>
+
+  <h3>Change Password</h3>
   
   <form method=post>
       <input type=hidden name="action" value="change_password" />
