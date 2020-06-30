@@ -1,0 +1,17 @@
+#!/bin/bash
+set -e
+
+declare outputfile=$1
+
+if [[ -z $outputfile ]]; then
+    echo "Missing output filename parameter."
+    exit 1
+fi
+
+declare tempfile
+tempfile="$(mktemp)"
+
+echo "Enter password:"
+docker exec -it "$(docker ps | grep "omen-annotator_web" | cut -d " " -f1)" /usr/bin/pg_dump -h db -U omenusr omenusr > "$tempfile"
+
+tail -n +1 "$tempfile" > "$outputfile"
