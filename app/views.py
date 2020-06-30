@@ -57,7 +57,9 @@ def download(dsid = None):
             dataset = my_datasets[dsid]
         if not dsid is None and dsid in access_datasets:
             dataset = access_datasets[dsid]
-
+        print("a", my_datasets, file=sys.stderr)
+        print("b", access_datasets, file=sys.stderr)
+        print("search", dsid, type(dsid), file=sys.stderr)
         df = dataset.annotations(dbsession)
 
         s = StringIO()

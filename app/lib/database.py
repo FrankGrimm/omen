@@ -159,7 +159,7 @@ class Dataset(Base):
         df['idxmerge'] = df.index.astype(str)
 
         for userobj in userlist(dbsession):
-            uannos = dataset.getannos(userobj.uid)
+            uannos = self.getannos(dbsession, userobj.uid)
             if uannos is None or len(uannos) == 0:
                 continue
             uannos = pd.DataFrame.from_dict(uannos).drop(["uid", "dataset"], axis=1)
@@ -170,7 +170,7 @@ class Dataset(Base):
         return df
 
     def getannos(self, dbsession, uid):
-        user_obj = by_id(uid)
+        user_obj = by_id(dbsession, uid)
         return dbsession.query(Annotation).filter_by(owner_id=user_obj.uid, dataset_id=self.dataset_id).all()
 
     def getanno(self, uid, sample):
@@ -329,7 +329,7 @@ def my_datasets(dbsession, user_id):
     for ds in dbsession.query(Dataset).filter_by(owner=user_obj).all():
         if not ds or not ds.dataset_id:
             continue
-        res[ds.dataset_id] = ds
+        res[str(ds.dataset_id)] = ds
 
     return res
 
@@ -348,7 +348,7 @@ def accessible_datasets(dbsession, user_id, include_owned=False):
         dsacl = ds.dsmetadata['acl']
         if not user_obj.uid in dsacl:
             continue
-        res[ds.dataset_id] = ds
+        res[str(ds.dataset_id)] = ds
 
     return res
 
