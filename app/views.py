@@ -121,7 +121,13 @@ def annotate(dsid=None, sample_idx=None):
         if not dsid is None and dsid in access_datasets:
             dataset = access_datasets[dsid]
 
-        task = {"id": dsid, "name": dataset.dsmetadata.get("name", dataset.dataset_id), "dataset": dataset, "progress": 0, "size": dataset.dsmetadata.get("size", -1) or -1, "annos": dataset.annocount(session['user']) }
+        task = {"id": dsid,
+                "name": dataset.dsmetadata.get("name", dataset.dataset_id),
+                "dataset": dataset,
+                "progress": 0,
+                "size": dataset.dsmetadata.get("size", -1) or -1,
+                "annos": dataset.annocount(dbsession, session['user'])
+                }
 
         if task['size'] and task['size'] > 0 and task['annos'] and task['annos'] > 0:
             task['progress'] = round(task['annos'] / task['size'] * 100.0)
@@ -139,8 +145,8 @@ def annotate(dsid=None, sample_idx=None):
                 if dataset.dsmetadata.get("annoorder", "sequential") == 'random':
                     sample_idx = random.randint(0, dataset.dsmetadata.get("size", 1))
                 else:
-                    existing = dataset.getannos(session['user'])
-                    annotated_samples = set(map(lambda e: str(e['sample']), existing))
+                    existing = dataset.getannos(dbsession, session['user'])
+                    annotated_samples = set(map(lambda e: str(e.sample), existing))
                     print(annotated_samples)
 
                     sample_idx = 0
@@ -161,12 +167,17 @@ def annotate(dsid=None, sample_idx=None):
             set_sample_value = request.args.get("set_value", "")[:500]
 
         if not set_sample_idx is None and not set_sample_value is None:
-            dataset.setanno(session['user'], set_sample_idx, set_sample_value)
+            dataset.setanno(dbsession, session['user'], set_sample_idx, set_sample_value)
 
         random_sample = random.randint(0, dataset.dsmetadata.get("size", 1))
         sample_content = df[textcol][sample_idx]
 
-        curanno = dataset.getanno(session['user'], sample_idx)
+        curanno_data = dataset.getanno(dbsession, session['user'], sample_idx)
+        curanno = None
+        if curanno_data and 'data' in curanno_data and \
+                'value' in curanno_data['data']:
+            curanno = curanno_data['data']['value']
+        print("*"*80, curanno_data, file=sys.stderr)
 
     return render_template("annotate.html", dataset=dataset, task=task, sample_idx=sample_idx, random_sample=random_sample, sample_content = sample_content, curanno=curanno)
 

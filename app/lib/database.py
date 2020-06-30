@@ -206,18 +206,30 @@ class Dataset(Base):
         user_obj = by_id(dbsession, uid)
         return dbsession.query(Annotation).filter_by(owner_id=user_obj.uid, dataset_id=self.dataset_id).all()
 
-    def getanno(self, uid, sample):
-        user_obj = by_id(uid)
-        return {"sample": sample, "data": dbsession.query(Annotation).filter_by(owner_id=user_obj.uid, dataset_id=self.dataset_id, sample=sample).one_or_none()}
+    def getanno(self, dbsession, uid, sample):
+        user_obj = by_id(dbsession, uid)
+        sample = str(sample)
+        anno_obj_data = {}
 
-    def setanno(self, uid, sample, value):
-        # delete in case it exists
-        cur = conn.cursor()
+        anno_obj = dbsession.query(Annotation).filter_by(owner_id=user_obj.uid, dataset_id=self.dataset_id, sample=sample).one_or_none()
+        if not anno_obj is None:
+            anno_obj_data = anno_obj.data or {}
 
-        cur.execute("DELETE FROM annotations WHERE uid = %s AND dataset = %s AND sample = %s", (uid, self.dataset_id, str(sample)))
-        cur.execute("INSERT INTO annotations (uid, dataset, sample, annotation) VALUES (%s, %s, %s, %s)", (uid, self.dataset_id, str(sample), value))
-        cur.close()
-        conn.commit()
+        return {
+                "sample": sample,
+                "data": anno_obj_data
+               }
+
+    def setanno(self, dbsession, uid, sample, value):
+        user_obj = by_id(dbsession, uid)
+        anno_data = {"updated": datetime.now().timestamp(), "value": value}
+
+        sample=str(sample)
+        newanno = dbsession.query(Annotation).filter_by(owner_id=user_obj.uid, dataset_id=self.dataset_id, sample=sample).one_or_none()
+        if newanno is None:
+            newanno = Annotation(owner=user_obj, dataset=self, sample=str(sample), data=anno_data)
+        newanno.data=anno_data
+        dbsession.merge(newanno)
 
     def annocount(self, dbsession, uid):
         val = dbsession.query(Annotation).filter_by(\
@@ -281,23 +293,6 @@ class Dataset(Base):
             df = pd.read_csv(content, sep=sep, header='infer', quotechar=quotechar)
             return df
 
-    def update_content(self, new_content):
-        self.content = new_content
-        cur = conn.cursor()
-
-        if self.dataset_id is None:
-            raise Exception("no id")
-        if self.owner is None:
-            raise Exception("no owner")
-        if not self.persisted:
-            raise Exception("need to persist instance first")
-
-        cur.execute("UPDATE datasets SET content=%s WHERE owner = %s AND id = %s", (self.content, self.owner, self.dataset_id))
-
-        cur.close()
-        conn.commit()
-        return self.update()
-
     def update_size(self):
         self.dsmetadata['updated'] = datetime.now().timestamp()
 
@@ -322,7 +317,7 @@ class Annotation(Base):
     dataset_id = Column(Integer, ForeignKey("datasets.dataset_id"), primary_key=True)
     dataset = relationship("Dataset", back_populates="dsannotations")
 
-    sample = Column(String)
+    sample = Column(String, primary_key=True)
     data = Column(JSON)
 
 def dataset_by_id(dbsession, dataset_id, user_id=None):
