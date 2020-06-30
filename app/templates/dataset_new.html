@@ -142,6 +142,35 @@
 <div class="row seprow">
 
     <form method="post">
+        <input type="hidden" name="action" value="change_idcolumn">
+
+        <div class="form-group row">
+            <label for="idcolumn" class="col-4 col-form-label"><div class="{% if not dataset.dsmetadata.idcolumn %}ds_new_field_error alert alert-warning{% endif %}">Select unique sample ID column:</div></label> 
+            <div class="col-8">
+
+                <select id='idcolumn' name='idcolumn' onchange="this.form.submit()">
+                    {% if not dataset.dsmetadata.idcolumn %}
+                    <option selected="true" disabled="disabled">-</option>
+                    {% endif %}
+                    {% for colname in previewdf.columns %}
+                    {% if dataset.dsmetadata.idcolumn == colname %}
+                    <option selected='true' value="{{ colname }}">{{ colname }}</option>
+                    {% else %}
+                    <option value="{{ colname }}">{{ colname }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+
+            </div>
+        </div> 
+    </form>
+
+</div>
+
+
+<div class="row seprow">
+
+    <form method="post">
         <input type="hidden" name="action" value="change_annoorder">
 
         <div class="form-group row">

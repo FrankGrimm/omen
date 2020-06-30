@@ -107,6 +107,26 @@ class Dataset(Base):
             return self.dataset_id
         return self.dsmetadata.get("name", self.dataset_id)
 
+    def get_text_column(self):
+        textcol = dataset.dsmetadata.get("textcol", None)
+        if textcol is None:
+            return None
+        if not dferr is None and \
+                not type(dferr) is str and \
+                not textcol in dferr.columns:
+            return None
+        return textcol
+
+    def get_id_column(self):
+        idcolumn = dataset.dsmetadata.get("idcolumn", None)
+        if idcolumn is None:
+            return None
+        if not dferr is None and \
+                not type(dferr) is str and \
+                not idcolumn in dferr.columns:
+            return None
+        return idcolumn
+
     def check_dataset(self):
         dataset = self
         errorlist = []
@@ -140,6 +160,14 @@ class Dataset(Base):
                 not type(dferr) is str and \
                 not textcol in dferr.columns:
             errorlist.append("text column '%s' not found in data" % textcol)
+
+        idcolumn = dataset.dsmetadata.get("idcolumn", None)
+        if idcolumn is None:
+            errorlist.append("no ID column")
+        elif not dferr is None and \
+                not type(dferr) is str and \
+                not idcolumn in dferr.columns:
+            errorlist.append("ID column '%s' not found in data" % idcolumn)
 
         acl = dataset.dsmetadata.get("acl", [])
         if acl is None or len(acl) == 0:

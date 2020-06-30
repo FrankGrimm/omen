@@ -219,6 +219,10 @@ def new_dataset(dsid=None):
                 dataset.dsmetadata['textcol'] = request.form.get("textcol", None)
                 dsdirty = True
 
+            if not formaction is None and formaction == 'change_idcolumn' and not request.form.get("idcolumn", None) is None:
+                dataset.dsmetadata['idcolumn'] = request.form.get("idcolumn", None)
+                dsdirty = True
+
             if not formaction is None and formaction == 'change_annoorder' and not request.form.get("annoorder", None) is None:
                 dataset.dsmetadata['annoorder'] = request.form.get("annoorder", None)
                 dsdirty = True
