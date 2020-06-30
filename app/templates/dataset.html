@@ -44,7 +44,7 @@
       <ul class="dslist col-12">
     {% for dsid, ds in access_datasets.items() %}
         <li>
-            <i class="fas fa-table"></i> <strong>{{ ds.get_name() }}</strong>, owned by {{ db.by_id(ds.owner).email }}
+            <i class="fas fa-table"></i> <strong>{{ ds.get_name() }}</strong>, owned by {{ ds.owner.get_name() }}
         </li>
     {% endfor %}
       </ul>

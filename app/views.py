@@ -92,12 +92,12 @@ def dataset(dsid=None):
                 continue
             ds_errors[ds] = ds.check_dataset()
 
-        for dataset in access_datasets.values():
+        for ds in access_datasets.values():
             if ds in ds_errors:
                 continue
             ds_errors[ds] = ds.check_dataset()
 
-        return render_template('dataset.html', error=err, my_datasets=my_datasets, access_datasets=access_datasets, dataset=dataset, ds_errors=ds_errors, db = db)
+        return render_template('dataset.html', error=err, my_datasets=my_datasets, access_datasets=access_datasets, dataset=dataset, ds_errors=ds_errors)
 
 @app.route(BASEURI + "/user/create", methods=["GET", "POST"])
 @login_required

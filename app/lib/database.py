@@ -98,7 +98,7 @@ class Dataset(Base):
     dataset_id = Column(Integer, primary_key=True)
 
     owner_id = Column(Integer, ForeignKey("users.uid"), nullable=False)
-    owner = relationship("User", back_populates="datasets")
+    owner = relationship("User", back_populates="datasets", lazy="joined")
 
     dsannotations = relationship("Annotation")
 
@@ -106,6 +106,9 @@ class Dataset(Base):
     content = Column(String, nullable=True)
 
     persisted = False
+
+    def __repr__(self):
+        return "<Dataset (%s)>" % self.get_name()
 
     def get_name(self):
         if self.dsmetadata is None:
@@ -192,19 +195,33 @@ class Dataset(Base):
         df['idxmerge'] = df.index.astype(str)
 
         for userobj in userlist(dbsession):
-            uannos = self.getannos(dbsession, userobj.uid)
+            uannos = self.getannos(dbsession, userobj.uid, asdict=True)
             if uannos is None or len(uannos) == 0:
                 continue
-            uannos = pd.DataFrame.from_dict(uannos).drop(["uid", "dataset"], axis=1)
+            uannos = pd.DataFrame.from_dict(uannos)
+            uannos = uannos.drop(["uid"], axis=1)
             uannos = uannos.set_index("sample")
             df = pd.merge(df, uannos, left_on='idxmerge', right_index=True, how='left', indicator=False)
-            df = df.rename(columns={"annotation": "anno-%s" % userobj.uid})
+            df = df.rename(columns={"annotation": "anno-%s-%s" % \
+                    (userobj.uid, userobj.get_name())})
 
         return df
 
-    def getannos(self, dbsession, uid):
+    def getannos(self, dbsession, uid, asdict=False):
         user_obj = by_id(dbsession, uid)
-        return dbsession.query(Annotation).filter_by(owner_id=user_obj.uid, dataset_id=self.dataset_id).all()
+        annores = dbsession.query(Annotation).filter_by(owner_id=user_obj.uid, dataset_id=self.dataset_id).all()
+        if not asdict:
+            return annores
+
+        resdict = {"sample": [], "uid": [], "annotation": []}
+        for anno in annores:
+            resdict['uid'].append( anno.owner_id )
+            resdict['sample'].append( anno.sample )
+            resdict['annotation'].append( anno.data['value'] \
+                    if 'value' in anno.data and not anno.data['value'] is None \
+                    else None)
+
+        return resdict
 
     def getanno(self, dbsession, uid, sample):
         user_obj = by_id(dbsession, uid)
@@ -276,7 +293,6 @@ class Dataset(Base):
             curacl[uid] = 'annotate'
 
         self.dsmetadata['acl'] = curacl
-        print("-" * 20, self.dsmetadata)
         return True
 
     def as_df(self, strerrors = False):
@@ -356,7 +372,7 @@ def accessible_datasets(dbsession, user_id, include_owned=False):
         if not 'acl' in ds.dsmetadata:
             continue
         dsacl = ds.dsmetadata['acl']
-        if not user_obj.uid in dsacl:
+        if not str(user_obj.uid) in dsacl:
             continue
         res[str(ds.dataset_id)] = ds
 
