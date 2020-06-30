@@ -23,7 +23,7 @@
             </a>
             </div>
         </li>
-        {% if ds and ds in ds_errors and ds_errors %}
+        {% if ds and ds_errors and ds in ds_errors and ds_errors[ds] %}
         <li class="row">
             <ul class="ds_overview_issues offset-2 col-10">
                 {% for errmsg in ds_errors[ds] %}

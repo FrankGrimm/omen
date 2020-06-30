@@ -100,13 +100,23 @@ span.acluserowner {
 
 table.dataframe {
     width: 100%;
-    max-height: 30em;
+    max-height: 40em;
     overflow: scroll;
     display: block;
 }
 
-table, tr, td, th {
-    border-color: gray;
+th {
+    border-color: #ecf2ff;
+    color: #07517e;
+}
+table {
+    border-color: #ecf2ff;
+}
+tr, td {
+    border-color: #b4cbfe;
+}
+tr:nth-child(even) {
+    background: #e4f1fd;
 }
 
 table.dataframe tbody td {
