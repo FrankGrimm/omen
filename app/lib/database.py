@@ -179,9 +179,10 @@ class Dataset(Base):
                 not idcolumn in dferr.columns:
             errorlist.append("ID column '%s' not found in data" % idcolumn)
 
-        acl = self.dsmetadata.get("acl", [])
-        if acl is None or len(acl) == 0:
-            errorlist.append("no annotators")
+        # disabled. would annoy owners of private datasets
+        #acl = self.dsmetadata.get("acl", [])
+        #if acl is None or len(acl) == 0:
+        #    errorlist.append("no annotators")
 
         if len(errorlist) is 0:
             return None
@@ -299,7 +300,6 @@ class Dataset(Base):
             return False
 
         self.dsmetadata['acl'] = curacl
-        print("-" * 20, self.dsmetadata)
         return True
 
     def addannotator(self, uid):
