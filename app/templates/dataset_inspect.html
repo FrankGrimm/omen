@@ -42,8 +42,39 @@
     </div>
 </div>
 
+<div class="row df_pagination">
+    <div class="col-12">
+        Results: {{results}}<br />
+    <div class="btn-group">
+        {% set addclass="" %}
+        {% if page == 1 %}{% set addclass="active" %}{% endif %}
+
+        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, hideempty=hideempty, page=1) }}"><i class="fa fa-angle-double-left"> </i></a>
+        {% if not 1 in pagination_elements %}
+        <a class="btn btn-sm btn-outline-secondary" disabled href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, hideempty=hideempty, page=1) }}"><i class="fas fa-ellipsis-h"></i> </a>
+        {% endif %}
+
+        {% for pagination_page in pagination_elements %}
+
+        {% set addclass="" %}
+        {% if page == pagination_page %}{% set addclass="active" %}{% endif %}
+        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, hideempty=hideempty, page=pagination_page) }}">{{ pagination_page }}</a>
+
+        {% endfor %}
+
+        {% if not pages in pagination_elements %}
+        <a class="btn btn-sm btn-outline-secondary" disabled href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, hideempty=hideempty, page=1) }}"><i class="fas fa-ellipsis-h"></i> </a>
+        {% endif %}
+
+        {% set addclass="" %}
+        {% if page == pages %}{% set addclass="active" %}{% endif %}
+        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, hideempty=hideempty, page=pages) }}"><i class="fa fa-angle-double-right"> </i></a>
+    </div>
+
+    </div>
+</div>
 <div class="row">
-    {{ render_dataframe(df, "dfid", "dfclasses", query=query) }}
+    {{ render_dataframe(df, "dfid", "dfclasses", query=query, maxrows=page_size) }}
 </div>
 
 {% endblock %}

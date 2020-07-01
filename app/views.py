@@ -10,6 +10,7 @@ from werkzeug.utils import secure_filename
 from flask import Flask, flash, redirect, render_template, request, url_for, session, Response
 from functools import wraps
 from io import StringIO
+import math
 
 import app.lib.config as config
 from app.web import app, BASEURI, db
@@ -92,7 +93,37 @@ def inspect_dataset(dsid = None):
 
         err = None
 
-        return render_template("dataset_inspect.html", err=err, dataset=dataset, df=df, hideempty=hideempty, query=query)
+        # pagination
+        results = df.shape[0]
+        page_size = 100
+        page = 1
+        pages = 1
+        try:
+            page_size = int(config.get("inspect_page_size", "100"))
+        except Exception as e:
+            err = "Invalid config value for 'inspect_page_size': %s" % e
+
+        try:
+            page = int(request.args.get("page", "1"))
+        except Exception as e:
+            err = "Invalid value for param 'page': %s" % e
+
+        pages = math.ceil(df.shape[0] / page_size)
+        if df.shape[0] > page_size:
+            if page > pages:
+                page = pages
+
+            onset = max(0, page - 1) * page_size
+            offset = onset + page_size
+
+            df = df[onset:offset]
+
+        pagination_size = 5
+        pagination_elements = list(range(max(1, page - pagination_size), min(page + pagination_size + 1, pages + 1)))
+        pagination_elements.sort()
+
+        return render_template("dataset_inspect.html", err=err, dataset=dataset, df=df, hideempty=hideempty, query=query, \
+                                page_size=page_size, page=page, pages=pages, results=results, pagination_elements=pagination_elements)
 
 @app.route(BASEURI + "/dataset/<dsid>/download")
 @login_required
