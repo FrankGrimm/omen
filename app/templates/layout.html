@@ -10,7 +10,17 @@
 <body>
 {% include "navbar.html" %}
 
-{% macro render_dataframe(df, id=None, class=None, maxrows=50, hide_nan=True) -%}
+{% macro render_cell(row, column, query) -%}
+
+{% if query is none or not row[column] is string %}
+{{ row[column] }}
+{% else %}
+{{ row[column]|highlight(query) }}
+{% endif %}
+
+{%- endmacro %}
+
+{% macro render_dataframe(df, id=None, class=None, maxrows=50, hide_nan=True, query=None) -%}
 
 <table id="{{id}}" class="{{class}}" border="1">
     <thead>
@@ -20,53 +30,60 @@
         {% endfor %}
     </thead>
     <tbody>
-        {% set showdots = false %}
-        {% if maxrows < 0 %}
-        {% set maxrows = df.shape[0] %}
-        {% endif %}
-        {% if maxrows < df.shape[0] %}
-            {% set showdots = true %}
-        {% endif %}
-        {% if showdots %}
-                 {% for index, row in df.iterrows() if index < maxrows / 2 %}
-                 <tr>
-                     <th>{{index}}</th>
-                     {% for column in df.columns %}
-                     <td>
-                         {% if not (hide_nans and not row[column].is_na()) %}{{ row[column] }}{% endif %}
-                     </td>
-                     {% endfor %}
-                 </tr>
-                 {% endfor %}
-
-                {% if showdots %} 
-                <tr>
-                    <th>...</th>
-                    <td colspan="{{df.shape[1]}}">...</td>
-                </tr>
-                {% endif %}
-                 
-                {% for index, row in df.iterrows() if index > df.shape[0] - maxrows / 2 %}
-                 <tr>
-                     <th>{{index}}</th>
-                     {% for column in df.columns %}
-                     <td>
-                         {% if not (hide_nans and not row[column].is_na()) %}{{ row[column] }}{% endif %}
-                     </td>
-                     {% endfor %}
-                 </tr>
-                 {% endfor %}
-        {% else %}
-            {% for index, row in df.iterrows() %}
+        {% if df.shape[0] == 0 %}
             <tr>
-                <th>{{index}}</th>
-                {% for column in df.columns %}
-                     <td>
-                         {% if not (hide_nans and not row[column].is_na()) %}{{ row[column] }}{% endif %}
-                     </td>
-                {% endfor %}
+                <th> </th>
+                <td colspan="{{df.shape[1]}}"><i>empty</i></td>
             </tr>
-            {% endfor %}
+        {% else %}
+            {% set showdots = false %}
+            {% if maxrows < 0 %}
+            {% set maxrows = df.shape[0] %}
+            {% endif %}
+            {% if maxrows < df.shape[0] %}
+                {% set showdots = true %}
+            {% endif %}
+            {% if showdots %}
+                     {% for index, row in df.iterrows() if index < maxrows / 2 %}
+                     <tr>
+                         <th>{{index}}</th>
+                         {% for column in df.columns %}
+                         <td>
+                             {% if not (hide_nans and not row[column].is_na()) %}{{ render_cell(row, column, query) }}{% endif %}
+                         </td>
+                         {% endfor %}
+                     </tr>
+                     {% endfor %}
+
+                    {% if showdots %} 
+                    <tr>
+                        <th>...</th>
+                        <td colspan="{{df.shape[1]}}">...</td>
+                    </tr>
+                    {% endif %}
+                     
+                    {% for index, row in df.iterrows() if index > df.shape[0] - maxrows / 2 %}
+                     <tr>
+                         <th>{{index}}</th>
+                         {% for column in df.columns %}
+                         <td>
+                             {% if not (hide_nans and not row[column].is_na()) %}{{ render_cell(row, column, query) }}{% endif %}
+                         </td>
+                         {% endfor %}
+                     </tr>
+                     {% endfor %}
+            {% else %}
+                {% for index, row in df.iterrows() %}
+                <tr>
+                    <th>{{index}}</th>
+                    {% for column in df.columns %}
+                         <td>
+                             {% if not (hide_nans and not row[column].is_na()) %}{{ render_cell(row, column, query) }}{% endif %}
+                         </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            {% endif %}
         {% endif %}
     </tbody>
 </table>

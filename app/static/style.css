@@ -125,7 +125,7 @@ table.dataframe tbody td {
 }
 
 .tdwrap {
-    max-width: 150px;
+    max-width: 300px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -256,4 +256,26 @@ select.taskdef_select {
     min-width: 50%;
 }
 
+div.dataset_inspect_metadata {
+    margin-bottom: 1em;
+    padding: 0;
+    background: #ebf4ff;
+    border-radius: 3px;
+}
+div.dataset_inspect_metadata {
+    padding: 0.5em 0 0 0;
+}
+
+span.dataset_inspect_meta_label {
+    font-style: italic;
+    min-width: 4rem;
+    display: inline-block;
+}
+
+span.dataset_inspect_meta_value {
+}
+
+.ds_highlight {
+    color: #ec0b0b;
+}
 
