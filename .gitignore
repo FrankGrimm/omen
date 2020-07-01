@@ -1,6 +1,8 @@
 database.db
 ./dbdata/pgdata/
 app/config.json
+testdata/quotes.json
+testdata/quotes.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
