@@ -114,18 +114,18 @@
 <div class="row seprow">
 
     <form method="post">
-        <input type="hidden" name="action" value="change_textcol">
+        <input type="hidden" name="action" value="change_idcolumn">
 
         <div class="form-group row">
-            <label for="textcol" class="col-4 col-form-label"><div class="{% if not dataset.dsmetadata.textcol %}ds_new_field_error alert alert-warning{% endif %}">Select text column:</div></label> 
+            <label for="idcolumn" class="col-4 col-form-label"><div class="{% if not dataset.dsmetadata.idcolumn %}ds_new_field_error alert alert-warning{% endif %}">Select unique sample ID column:</div></label> 
             <div class="col-8">
 
-                <select class="taskdef_select" id='textcol' name='textcol' onchange="this.form.submit()">
-                    {% if not dataset.dsmetadata.textcol %}
+                <select class="taskdef_select" id='idcolumn' name='idcolumn' onchange="this.form.submit()">
+                    {% if not dataset.dsmetadata.idcolumn %}
                     <option selected="true" disabled="disabled">-</option>
                     {% endif %}
                     {% for colname in previewdf.columns %}
-                    {% if dataset.dsmetadata.textcol == colname %}
+                    {% if dataset.dsmetadata.idcolumn == colname %}
                     <option selected='true' value="{{ colname }}">{{ colname }}</option>
                     {% else %}
                     <option value="{{ colname }}">{{ colname }}</option>
@@ -139,21 +139,22 @@
 
 </div>
 
+
 <div class="row seprow">
 
     <form method="post">
-        <input type="hidden" name="action" value="change_idcolumn">
+        <input type="hidden" name="action" value="change_textcol">
 
         <div class="form-group row">
-            <label for="idcolumn" class="col-4 col-form-label"><div class="{% if not dataset.dsmetadata.idcolumn %}ds_new_field_error alert alert-warning{% endif %}">Select unique sample ID column:</div></label> 
+            <label for="textcol" class="col-4 col-form-label"><div class="{% if not dataset.dsmetadata.textcol %}ds_new_field_error alert alert-warning{% endif %}">Select text column:</div></label> 
             <div class="col-8">
 
-                <select class="taskdef_select" id='idcolumn' name='idcolumn' onchange="this.form.submit()">
-                    {% if not dataset.dsmetadata.idcolumn %}
+                <select class="taskdef_select" id='textcol' name='textcol' onchange="this.form.submit()">
+                    {% if not dataset.dsmetadata.textcol %}
                     <option selected="true" disabled="disabled">-</option>
                     {% endif %}
                     {% for colname in previewdf.columns %}
-                    {% if dataset.dsmetadata.idcolumn == colname %}
+                    {% if dataset.dsmetadata.textcol == colname %}
                     <option selected='true' value="{{ colname }}">{{ colname }}</option>
                     {% else %}
                     <option value="{{ colname }}">{{ colname }}</option>
