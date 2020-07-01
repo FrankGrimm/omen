@@ -65,6 +65,7 @@ class User(Base):
         self.uid = uid
         self.email = email
         self.pwhash = pwhash
+        self._cached_df = None
 
     def get_name(self):
         if not self.displayname is None and not self.displayname.strip() == '':
@@ -93,6 +94,8 @@ class User(Base):
     def __str__(self):
         return "[User #%s, %s]" % (self.uid, self.email)
 
+DATASET_CONTENT_CACHE = {}
+
 class Dataset(Base):
     __tablename__ = 'datasets'
 
@@ -107,6 +110,7 @@ class Dataset(Base):
     content = Column(String, nullable=True)
 
     persisted = False
+    _cached_df = None
 
     def __repr__(self):
         return "<Dataset (%s)>" % self.get_name()
@@ -330,14 +334,32 @@ class Dataset(Base):
             except Exception as e:
                 return str(e)
         else:
+            if not self._cached_df is None:
+                #print("CACHE HIT(1)", self, file=sys.stderr)
+                return self._cached_df.copy()
+
+            if self.dataset_id in DATASET_CONTENT_CACHE and \
+                    not DATASET_CONTENT_CACHE[self.dataset_id] is None:
+                #print("CACHE HIT(2)", self, file=sys.stderr)
+                return DATASET_CONTENT_CACHE[self.dataset_id].copy()
+
+            #print("CACHE MISS", self, file=sys.stderr)
+
             content = self.content
             content = StringIO(content)
             sep = self.dsmetadata.get("sep", ",")
             quotechar = self.dsmetadata.get("quotechar", '"')
             df = pd.read_csv(content, sep=sep, header='infer', quotechar=quotechar)
+            self._cached_df = df.copy()
+            DATASET_CONTENT_CACHE[self.dataset_id] = self._cached_df
             return df
 
+    def invalidate(self):
+        self._cached_df = None
+        DATASET_CONTENT_CACHE[self.dataset_id] = None
+
     def update_size(self):
+        self.invalidate()
         self.dsmetadata['updated'] = datetime.now().timestamp()
 
         if self.dsmetadata is None:

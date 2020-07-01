@@ -3,6 +3,8 @@ import sys
 from datetime import datetime
 import tempfile
 import random
+import re
+from markupsafe import Markup, escape
 
 from werkzeug.utils import secure_filename
 from flask import Flask, flash, redirect, render_template, request, url_for, session, Response
@@ -21,6 +23,14 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@app.template_filter(name="highlight")
+def highlight(value, query):
+    result = Markup.escape(value)
+    if not query is None and query.strip() != "":
+        query = r"(" + re.escape(query.strip()) + ")"
+        value = re.sub(query, r'<span class="ds_highlight">\1</span>', value, \
+                flags = re.IGNORECASE)
+    return Markup(value)
 
 @app.route('/')
 @app.route(BASEURI + '/')
@@ -57,8 +67,15 @@ def inspect_dataset(dsid = None):
         if not dsid is None and dsid in access_datasets:
             dataset = access_datasets[dsid]
 
+        hideempty = True
+        if not request.args.get("hideempty", None) is None and \
+                request.args.get("hideempty", None).lower() == "false":
+            hideempty = False
+
+        query = request.args.get("query", "").strip()
+
         session_user = db.by_id(dbsession, session['user'])
-        df, annotation_columns = dataset.annotations(dbsession, foruser=session_user, user_column="annotations", hideempty=True)
+        df, annotation_columns = dataset.annotations(dbsession, foruser=session_user, user_column="annotations", hideempty=hideempty)
 
         columns = [dataset.get_id_column(), dataset.get_text_column()] + [col for col in df.columns.intersection(annotation_columns)]
 
@@ -67,9 +84,15 @@ def inspect_dataset(dsid = None):
         # reorder
         df = df[columns]
 
+        # text query filter
+        if query != '':
+            textcol = dataset.get_text_column()
+            df[textcol] = df[textcol].astype(str)
+            df = df[df[textcol].str.contains(query, na=False, regex=False, case=False)]
+
         err = None
 
-        return render_template("dataset_inspect.html", err=err, dataset=dataset, df=df)
+        return render_template("dataset_inspect.html", err=err, dataset=dataset, df=df, hideempty=hideempty, query=query)
 
 @app.route(BASEURI + "/dataset/<dsid>/download")
 @login_required
