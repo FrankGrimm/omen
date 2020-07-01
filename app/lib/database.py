@@ -124,21 +124,11 @@ class Dataset(Base):
         textcol = self.dsmetadata.get("textcol", None)
         if textcol is None:
             return None
-        dferr = self.as_df(strerrors = True)
-        if not dferr is None and \
-                not type(dferr) is str and \
-                not textcol in dferr.columns:
-            return None
         return textcol
 
     def get_id_column(self):
         idcolumn = self.dsmetadata.get("idcolumn", None)
         if idcolumn is None:
-            return None
-        dferr = self.as_df(strerrors = True)
-        if not dferr is None and \
-                not type(dferr) is str and \
-                not idcolumn in dferr.columns:
             return None
         return idcolumn
 
@@ -335,15 +325,15 @@ class Dataset(Base):
                 return str(e)
         else:
             if not self._cached_df is None:
-                #print("CACHE HIT(1)", self, file=sys.stderr)
+                # print("CACHE HIT(1)", self, self._cached_df.shape, file=sys.stderr)
                 return self._cached_df.copy()
 
             if self.dataset_id in DATASET_CONTENT_CACHE and \
                     not DATASET_CONTENT_CACHE[self.dataset_id] is None:
-                #print("CACHE HIT(2)", self, file=sys.stderr)
+                # print("CACHE HIT(2)", self, DATASET_CONTENT_CACHE[self.dataset_id].shape, file=sys.stderr)
                 return DATASET_CONTENT_CACHE[self.dataset_id].copy()
 
-            #print("CACHE MISS", self, file=sys.stderr)
+            # print("CACHE MISS", self, file=sys.stderr)
 
             content = self.content
             content = StringIO(content)
