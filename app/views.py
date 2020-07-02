@@ -211,11 +211,14 @@ def annotate(dsid=None, sample_idx=None):
                 "dataset": dataset,
                 "progress": 0,
                 "size": dataset.dsmetadata.get("size", -1) or -1,
-                "annos": dataset.annocount(dbsession, session['user'])
+                "annos": dataset.annocount(dbsession, session['user']),
+                "annos_today": dataset.annocount_today(dbsession, session['user'])
                 }
 
         if task['size'] and task['size'] > 0 and task['annos'] and task['annos'] > 0:
             task['progress'] = round(task['annos'] / task['size'] * 100.0)
+            task['progress_today'] = round(task['annos_today'] / task['size'] * 100.0)
+            task['progress_beforetoday'] = task['progress'] - task['progress_today']
 
         df = dataset.as_df()
         sample_content = None
@@ -232,7 +235,6 @@ def annotate(dsid=None, sample_idx=None):
                 else:
                     existing = dataset.getannos(dbsession, session['user'])
                     annotated_samples = set(map(lambda e: str(e.sample), existing))
-                    print(annotated_samples)
 
                     sample_idx = 0
                     for attempt in range(0, df.shape[0]):

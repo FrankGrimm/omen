@@ -313,6 +313,30 @@ class Dataset(Base):
         newanno.data=anno_data
         dbsession.merge(newanno)
 
+    def annocount_today(self, dbsession, uid):
+        allannos = dbsession.query(Annotation).filter_by(\
+                dataset_id=self.dataset_id,
+                owner_id=uid).all()
+
+        count_today = 0
+        for anno in allannos:
+            if anno.data is None:
+                continue
+            anno_upd = anno.data.get("updated", None)
+            if anno_upd is None:
+                continue
+            try:
+                anno_upd = datetime.fromtimestamp(anno_upd)
+            except Exception as ignored:
+                fprint("malformed annotation timestamp %s" % anno_upd)
+                continue
+
+            if not anno_upd.date() == datetime.today().date():
+                continue
+
+            count_today += 1
+        return count_today
+
     def annocount(self, dbsession, uid):
         val = dbsession.query(Annotation).filter_by(\
                 dataset_id=self.dataset_id,
@@ -498,10 +522,18 @@ def annotation_tasks(dbsession, for_user):
             continue
 
         dsname = dataset.get_name()
-        task = {"id": dsid, "name": dsname, "dataset": dataset, "progress": 0, "size": dataset.dsmetadata.get("size", -1) or -1, "annos": dataset.annocount(dbsession, for_user) }
+        task = {"id": dsid, "name": dsname,
+                "dataset": dataset,
+                "progress": 0,
+                "size": dataset.dsmetadata.get("size", -1) or -1,
+                "annos": dataset.annocount(dbsession, for_user),
+                "annos_today": dataset.annocount_today(dbsession, for_user)
+                }
 
         if task['size'] and task['size'] > 0 and task['annos'] and task['annos'] > 0:
             task['progress'] = round(task['annos'] / task['size'] * 100.0)
+            task['progress_today'] = round(task['annos_today'] / task['size'] * 100.0)
+            task['progress_beforetoday'] = task['progress'] - task['progress_today']
 
         tasks.append(task)
 

@@ -18,6 +18,13 @@
 <body>
 {% include "navbar.html" %}
 
+{% macro render_progress(task, addclass="") -%}
+<div class="progress {{ addclass }}">
+        <div class="progress-bar bg-info" role="progressbar" style="width: {{task.progress_beforetoday}}%"></div>
+        <div class="progress-bar bg-success" role="progressbar" style="width: {{task.progress_today}}%"></div>
+    </div>
+{%- endmacro %}
+
 {% macro render_cell(row, column, query) -%}
 
 {% if query is none or not row[column] is string %}

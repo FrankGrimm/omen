@@ -38,9 +38,7 @@
                 <a class="nav-link" href="{{ url_for('annotate', dsid=task.id) }}">
                     {{task.name}} <span class="sidemeta">{{task.annos}}/{{task.size}}</span>
                 </a>
-                <div class="progress sideprogress">
-                    <div class="progress-bar" role="progressbar" style="width: {{task.progress}}%"></div>
-                </div>
+                {{ render_progress(task, addclass="sideprogress") }}
             </li>
             {% else %}
             <li class="nav-item"><i class="nav-link">all done</i></li>
