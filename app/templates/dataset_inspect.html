@@ -50,7 +50,7 @@
         {% if page == 1 %}{% set addclass="active" %}{% endif %}
 
         <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, hideempty=hideempty, page=1) }}"><i class="fa fa-angle-double-left"> </i></a>
-        {% if not 1 in pagination_elements %}
+        {% if not 1 in pagination_elements and pages > 0 %}
         <a class="btn btn-sm btn-outline-secondary" disabled href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, hideempty=hideempty, page=1) }}"><i class="fas fa-ellipsis-h"></i> </a>
         {% endif %}
 
@@ -62,7 +62,7 @@
 
         {% endfor %}
 
-        {% if not pages in pagination_elements %}
+        {% if not pages in pagination_elements and pages > 0 %}
         <a class="btn btn-sm btn-outline-secondary" disabled href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, hideempty=hideempty, page=1) }}"><i class="fas fa-ellipsis-h"></i> </a>
         {% endif %}
 
