@@ -22,7 +22,7 @@ except Exception as e:
 
 @app.before_request
 def check_auth():
-    if request and request.url_rule and request.url_rule.endpoint == 'login':
+    if request and request.url_rule and request.url_rule.endpoint in ['login', 'static']:
         return None
     if session and 'user' in session and not session['user'] is None:
         return None
