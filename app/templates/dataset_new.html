@@ -101,7 +101,8 @@
 <div class="row ds_actions_toolbar">
     <div class="btn-toolbar col-12">
         <div class="btn-group">
-    <a class="btn btn-sm btn-primary" href="{{ url_for("download", dsid=dataset.dataset_id) }}"><i class="fas fa-download"></i> Download</a> 
+            <a class="btn btn-sm btn-primary" href="{{ url_for("download", dsid=dataset.dataset_id) }}"><i class="fas fa-download"></i> Download</a> 
+            <a class="btn btn-sm btn-secondary" href="{{ url_for("inspect_dataset", dsid=dsid) }}"><i class="fas fa-table"></i></a> 
         </div>
 
     </div>
