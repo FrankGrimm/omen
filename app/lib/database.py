@@ -30,7 +30,9 @@ flask_db = None
 def fprint(*args):
     print(*args, file=sys.stderr)
 
-PW_MINLEN = 4
+PW_MINLEN = 5
+
+VALID_ROLES = set(['annotator', 'curator'])
 
 @contextmanager
 def session_scope():
@@ -132,6 +134,32 @@ class Dataset(Base):
             return None
         return idcolumn
 
+    def get_roles(self, dbsession, user_obj):
+        if type(user_obj) is str:
+            user_obj = int(user_obj)
+        if type(user_obj) is int:
+            user_obj = by_id(dbsession, user_obj)
+        if not user_obj:
+            return set()
+
+        roles = []
+        if user_obj.uid == self.owner_id:
+            # add all roles for owned datasets
+            roles.append("owner")
+            roles.append("annotator")
+            roles.append("curator")
+        else:
+            curacl = self.get_acl()
+            uid = str(user_obj.uid)
+            if uid in curacl and not curacl[uid] is None:
+                if curacl[uid] == "annotator":
+                    roles.append("annotator")
+                elif curacl[uid] == "curator":
+                    roles.append("curator")
+                    roles.append("annotator")
+
+        return set(roles)
+
     def check_dataset(self):
         errorlist = []
 
@@ -202,7 +230,7 @@ class Dataset(Base):
                 continue
             uannos = pd.DataFrame.from_dict(uannos)
             uannos = uannos.drop(["uid"], axis=1)
-            uannos = uannos.set_index("sample")
+            uannos = uannos.set_index("sample") # TODO merge on str(id_column) instead?
             df = pd.merge(df, uannos, left_on='idxmerge', right_index=True, how='left', indicator=False)
             # df = df.drop(["idxmerge"], axis=1)
 
@@ -260,7 +288,7 @@ class Dataset(Base):
                 "data": anno_obj_data
                }
 
-    def setanno(self, dbsession, uid, sample, value):
+    def setanno(self, dbsession, uid, sample_idx, value):
         user_obj = by_id(dbsession, uid)
         anno_data = {"updated": datetime.now().timestamp(), "value": value}
 
@@ -277,47 +305,34 @@ class Dataset(Base):
                 owner_id=uid).count()
         return val
 
-    def remannotator(self, uid):
+    def set_role(self, dbsession, uid, role):
         if uid is None:
             return False
-
         if not type(uid) is str:
-            uid = int(uid)
-
-        if uid == self.owner:
-            return True
-
-        curacl = self.dsmetadata.get("acl", {})
-        if uid in curacl:
-            del curacl[uid]
-        else:
+            uid = str(uid)
+        if uid == self.owner_id:
             return False
+
+        curacl = self.get_acl()
+        fprint("CURACL", curacl)
+        if not uid in curacl:
+            curacl[uid] = None
+
+        fprint("changing role for user %s from %s to %s" % (uid, curacl[uid], role))
+        curacl[uid] = role
 
         self.dsmetadata['acl'] = curacl
+        self.dirty(dbsession)
         return True
 
-    def addannotator(self, uid):
-        if uid is None:
-            return False
-
-        if not type(uid) is str:
-            uid = int(uid)
-
-        if uid == self.owner:
-            return True
-
+    def get_acl(self):
         curacl = self.dsmetadata.get("acl", {})
         if not curacl:
             curacl = {}
-        if uid in curacl:
-            return True
-        else:
-            curacl[uid] = 'annotate'
-
-        self.dsmetadata['acl'] = curacl
-        return True
+        return curacl
 
     def as_df(self, strerrors = False):
+        # TODO convert id_column and text_colum to string
         if strerrors:
             try:
                 return self.as_df(strerrors = False)
@@ -399,6 +414,17 @@ def my_datasets(dbsession, user_id):
 
     return res
 
+def dataset_roles(dbsession, user_id):
+    res = {}
+
+    user_obj = by_id(dbsession, user_id)
+    all_datasets = accessible_datasets(dbsession, user_id, include_owned=True)
+
+    for dataset_id, dataset in all_datasets.items():
+        res[dataset_id] = dataset.get_roles(dbsession, user_obj)
+
+    return res
+
 def accessible_datasets(dbsession, user_id, include_owned=False):
     res = {}
 
@@ -412,7 +438,10 @@ def accessible_datasets(dbsession, user_id, include_owned=False):
         if not 'acl' in ds.dsmetadata:
             continue
         dsacl = ds.dsmetadata['acl']
-        if not str(user_obj.uid) in dsacl:
+        if not int(user_obj.uid) in dsacl:
+            continue
+        if dsacl[int(user_obj.uid)] is None or \
+                dsacl[int(user_obj.uid)] == '':
             continue
         res[str(ds.dataset_id)] = ds
 

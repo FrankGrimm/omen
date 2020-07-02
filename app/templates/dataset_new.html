@@ -237,19 +237,37 @@
         &nbsp; <span class="col-4 aclusermail">{{ userobj.get_name() }} ({{userobj.email}})</span>
 
     <div class="col-6">
+        {% set dsroles = dataset.get_roles(dbsession, userobj) %}
     {% if userobj.uid == dataset.owner_id %}
         <span class="acluserowner">owner</span>
-    {% elif userobj.uid|string in dataset.dsmetadata.acl %}
-    <a href="#" class="toggleacl btn btn-sm btn-outline-success" data-status="annotator" data-userid="{{userobj.uid}}">
+    {% else %}
+
+    {% if 'annotator' in dsroles and not 'curator' in dsroles %}
+    <a href="#" class="toggleacl btn btn-sm btn-outline-success" data-roleid="annotator" data-userid="{{userobj.uid}}">
             <span class="">annotator</span>
             <i class="far fa-check-square"></i>
         </a>
     {% else %}
-    <a href="#" class="toggleacl btn btn-sm btn-outline-primary" data-status="" data-userid="{{userobj.uid}}">
+    <a href="#" class="toggleacl btn btn-sm btn-outline-primary" data-roleid="annotator" data-userid="{{userobj.uid}}">
             <span class="">make annotator </span>
             <i class="far fa-square"></i>
         </a>
     {% endif %}
+
+    {% if 'curator' in dsroles %}
+    <a href="#" class="toggleacl btn btn-sm btn-outline-success" data-roleid="curator" data-userid="{{userobj.uid}}">
+            <span class="">curator</span>
+            <i class="far fa-check-square"></i>
+        </a>
+    {% else %}
+    <a href="#" class="toggleacl btn btn-sm btn-outline-primary" data-roleid="curator" data-userid="{{userobj.uid}}">
+            <span class="">make curator </span>
+            <i class="far fa-square"></i>
+        </a>
+    {% endif %}
+
+    {% endif %}
+
     </div>
     </li>
 
@@ -285,6 +303,58 @@
             });
         }
 
+        function setACLstatus($elem, elemrole, newrole) {
+            // remove icons
+            let $icocheck = $elem.find(".fa-check-square");
+            if ($icocheck && $icocheck.length) {
+                $icocheck.remove();
+            }
+            let $icosquare = $elem.find(".fa-square");
+            if ($icosquare && $icosquare.length) {
+                $icosquare.remove();
+            }
+
+            if (!newrole || elemrole !== newrole) {
+                $elem.addClass("btn-outline-primary");
+                $elem.removeClass("btn-outline-success");
+                $newi = $('<i class="far fa-square"></i>');
+                $elem.text("make " + elemrole + " ");
+                $elem.append($newi);
+            } else {
+                $elem.removeClass("btn-outline-primary");
+                $elem.addClass("btn-outline-success");
+                $newi = $('<i class="far fa-check-square"></i>');
+                $elem.text(elemrole + " ");
+                $elem.append($newi);
+            }
+        }
+
+        function updateACL(foruser, annoaction, newrole) {
+            $("a.toggleacl").each(function(idx, elem) {
+                const $elem = $(elem);
+                if ($elem.data("userid") != foruser) { return; }
+                const elemrole = $elem.data("roleid");
+
+                setACLstatus($elem, elemrole, newrole);
+
+                console.log("updateACL", elem, "elemrole", elemrole, "newrole", newrole);
+                if (annoaction === "add_role") {
+                    if (elemrole === 'curator') {
+                        if (newrole === 'curator') {
+                            console.log("elemrole", elemrole, "show");
+                            $elem.show();
+                        }
+                    }
+                    if (elemrole === 'annotator') {
+                        if (newrole === 'annotator') {
+                            console.log("elemrole", elemrole, "show");
+                            $elem.show();
+                        }
+                    }
+                }
+            });
+        }
+
         $("a.toggleacl").click(function(e) {
             e.preventDefault();
             let $tgt = $(this);
@@ -294,30 +364,37 @@
             
             let annoaction = null;
             let annouser = $tgt.data("userid");
+            let annorole = $tgt.data("roleid");
             let $newi = null;
 
             if ($icosquare && $icosquare.length) {
-                annoaction = "addannotator";
+                annoaction = "add_role";
                 $icosquare.remove();
                 $newi = $('<i class="far fa-check-square"></i>');
-                $tgt.text("annotator ");
+                $tgt.text(annorole + " ");
             }
 
             if ($icocheck && $icocheck.length) {
-                annoaction = "remannotator";
+                annoaction = "rem_role";
                 $icocheck.remove();
                 $newi = $('<i class="far fa-square"></i>');
-                $tgt.text("make annotator ");
+                $tgt.text("make " + annorole + " ");
             }
 
             $.ajax({
                 type: "POST",
                 url: $(location).attr("href"),
-                data: {"action": annoaction, "annouser": annouser},
+                data: {"action": annoaction, "annouser": annouser, "annorole": annorole},
                 success: function() {
                     $tgt.toggleClass("btn-outline-primary");
                     $tgt.toggleClass("btn-outline-success");
                     $tgt.append($newi);
+                    
+                    if (annoaction == "add_role") {
+                        updateACL(annouser, annoaction, annorole);
+                    } else {
+                        updateACL(annouser, annoaction, null);
+                    }
                 },
                 error: function(jqXHR, textstatus, err) {
                     if (!err) { return; }

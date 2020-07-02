@@ -316,15 +316,25 @@ def new_dataset(dsid=None):
                 dataset.dsmetadata['annoorder'] = request.form.get("annoorder", None)
                 dsdirty = True
 
-            if not formaction is None and formaction == 'addannotator' and not request.form.get("annouser", None) is None:
+            if not formaction is None and formaction == 'add_role' and \
+                    not request.form.get("annouser", None) is None and \
+                    not request.form.get("annorole", None) is None:
                 annouser = request.form.get("annouser", None)
-                dataset.addannotator(annouser)
-                dsdirty = True
+                annorole = request.form.get("annorole", None)
+                if annorole in db.VALID_ROLES:
+                    dataset.set_role(dbsession, annouser, annorole)
+                    dsdirty = True
 
-            if not formaction is None and formaction == 'remannotator' and not request.form.get("annouser", None) is None:
+            if not formaction is None and formaction == 'rem_role' and \
+                    not request.form.get("annouser", None) is None and \
+                    not request.form.get("annorole", None) is None:
                 annouser = request.form.get("annouser", None)
-                dataset.remannotator(annouser)
-                dsdirty = True
+                annorole = request.form.get("annorole", None)
+                if annorole in dataset.get_roles(dbsession, annouser):
+                    dataset.set_role(dbsession, annouser, None)
+                    dsdirty = True
+                else:
+                    db.fprint("failed to remove role %s from user %s: not in active roles" % (annorole, annouser))
 
             if not formaction is None and formaction == 'change_taglist' and not request.form.get("settaglist", None) is None:
                 newtags = request.form.get("settaglist", None).split("\n")
