@@ -156,6 +156,9 @@ def dataset(dsid=None):
     err = None
 
     with db.session_scope() as dbsession:
+
+        userobj = db.by_id(dbsession, session['user'])
+
         my_datasets = db.my_datasets(dbsession, session['user'])
         access_datasets = db.accessible_datasets(dbsession, session['user'])
 
@@ -176,7 +179,8 @@ def dataset(dsid=None):
                 continue
             ds_errors[ds] = ds.check_dataset()
 
-        return render_template('dataset.html', error=err, my_datasets=my_datasets, access_datasets=access_datasets, dataset=dataset, ds_errors=ds_errors)
+        return render_template('dataset.html', error=err, my_datasets=my_datasets, access_datasets=access_datasets, \
+                                    dataset=dataset, ds_errors=ds_errors, dbsession=dbsession, userobj=userobj)
 
 @app.route(BASEURI + "/user/create", methods=["GET", "POST"])
 @login_required

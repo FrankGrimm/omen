@@ -53,8 +53,19 @@
   <div class="row">
       <ul class="dslist col-12">
     {% for dsid, ds in access_datasets.items() %}
-        <li>
-            <i class="fas fa-table"></i> <strong>{{ ds.get_name() }}</strong>, owned by {{ ds.owner.get_name() }}
+        {% set dsroles = ds.get_roles(dbsession, userobj) %}
+        <li class="row ds_meta">
+            <div class="col-2">
+                <div class="btn-group">
+                    {% if 'curator' in dsroles %}
+                    <a class="btn btn-sm btn-secondary" href="{{ url_for("download", dsid=dsid) }}"><i class="fas fa-download"></i></a> 
+                    <a class="btn btn-sm btn-secondary" href="{{ url_for("inspect_dataset", dsid=dsid) }}"><i class="fas fa-table"></i></a> 
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-10 ds_overview_label">
+                <i class="fas fa-table"></i> <strong>{{ ds.get_name() }}</strong>, owned by {{ ds.owner.get_name() }} (access: {{ dsroles|join(", ") }})
+            </div>
         </li>
     {% endfor %}
       </ul>

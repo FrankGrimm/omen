@@ -438,10 +438,12 @@ def accessible_datasets(dbsession, user_id, include_owned=False):
         if not 'acl' in ds.dsmetadata:
             continue
         dsacl = ds.dsmetadata['acl']
-        if not int(user_obj.uid) in dsacl:
+        uid = str(user_obj.uid)
+
+        if not uid in dsacl:
             continue
-        if dsacl[int(user_obj.uid)] is None or \
-                dsacl[int(user_obj.uid)] == '':
+        if dsacl[uid] is None or \
+                dsacl[uid] == '':
             continue
         res[str(ds.dataset_id)] = ds
 
