@@ -219,6 +219,19 @@ class Dataset(Base):
         # TODO check roles of "foruser" and only expose annotations accordingly
 
         df = self.as_df()
+
+        if type(foruser) is str:
+            foruser = int(foruser)
+        if type(foruser) is int:
+            foruser = by_id(dbsession, foruser)
+
+        user_roles = self.get_roles(dbsession, foruser)
+
+        if not 'curator' in user_roles:
+            raise Exception("Unauthorized, user %s does not have role 'curator'. Active roles: %s" % (user_obj, user_roles))
+
+        id_column = self.get_id_column()
+        df = df.set_index(id_column)
         df['idxmerge'] = df.index.astype(str)
 
         annotation_columns = []
@@ -230,7 +243,8 @@ class Dataset(Base):
                 continue
             uannos = pd.DataFrame.from_dict(uannos)
             uannos = uannos.drop(["uid"], axis=1)
-            uannos = uannos.set_index("sample") # TODO merge on str(id_column) instead?
+            uannos = uannos.set_index("sample")
+
             df = pd.merge(df, uannos, left_on='idxmerge', right_index=True, how='left', indicator=False)
             # df = df.drop(["idxmerge"], axis=1)
 
@@ -288,14 +302,14 @@ class Dataset(Base):
                 "data": anno_obj_data
                }
 
-    def setanno(self, dbsession, uid, sample_idx, value):
+    def setanno(self, dbsession, uid, sample, value):
         user_obj = by_id(dbsession, uid)
         anno_data = {"updated": datetime.now().timestamp(), "value": value}
 
         sample=str(sample)
         newanno = dbsession.query(Annotation).filter_by(owner_id=user_obj.uid, dataset_id=self.dataset_id, sample=sample).one_or_none()
         if newanno is None:
-            newanno = Annotation(owner=user_obj, dataset=self, sample=str(sample), data=anno_data)
+            newanno = Annotation(owner=user_obj, dataset=self, sample=sample, data=anno_data)
         newanno.data=anno_data
         dbsession.merge(newanno)
 
@@ -314,7 +328,6 @@ class Dataset(Base):
             return False
 
         curacl = self.get_acl()
-        fprint("CURACL", curacl)
         if not uid in curacl:
             curacl[uid] = None
 

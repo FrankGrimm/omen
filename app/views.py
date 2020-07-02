@@ -81,7 +81,9 @@ def inspect_dataset(dsid = None):
         columns = [dataset.get_id_column(), dataset.get_text_column()] + [col for col in df.columns.intersection(annotation_columns)]
 
         # drop other columns
+        df = df.reset_index()
         df = df.loc[:, columns]
+        df.set_index(dataset.get_id_column())
         # reorder
         df = df[columns]
 
@@ -249,19 +251,23 @@ def annotate(dsid=None, sample_idx=None):
         if not set_sample_idx is None:
             set_sample_value = request.args.get("set_value", "")[:500]
 
+        id_column = dataset.get_id_column()
         if not set_sample_idx is None and not set_sample_value is None:
-            dataset.setanno(dbsession, session['user'], set_sample_idx, set_sample_value)
+            set_sample = df.iloc[int(set_sample_idx)][id_column]
+            dataset.setanno(dbsession, session['user'], set_sample, set_sample_value)
 
         random_sample = random.randint(0, dataset.dsmetadata.get("size", 1))
         sample_content = df[textcol][sample_idx]
 
-        curanno_data = dataset.getanno(dbsession, session['user'], sample_idx)
+        set_sample = df.iloc[int(sample_idx)][id_column]
+        curanno_data = dataset.getanno(dbsession, session['user'], set_sample)
         curanno = None
         if curanno_data and 'data' in curanno_data and \
                 'value' in curanno_data['data']:
             curanno = curanno_data['data']['value']
 
-    return render_template("annotate.html", dataset=dataset, task=task, sample_idx=sample_idx, random_sample=random_sample, sample_content = sample_content, curanno=curanno)
+    return render_template("annotate.html", dataset=dataset, task=task, sample_idx=sample_idx, set_sample=set_sample, \
+                                            random_sample=random_sample, sample_content = sample_content, curanno=curanno)
 
 @app.route(BASEURI + "/dataset/<dsid>/edit", methods=['GET', 'POST'])
 @app.route(BASEURI + "/dataset/create", methods=['GET', 'POST'])
