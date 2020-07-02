@@ -54,6 +54,10 @@ span.sidemeta {
     font-style: italic;
 }
 
+a.btn .fa-2x {
+    margin-top: -1em;
+}
+
 #anno_actions {
     margin: 0 auto;
 }
@@ -278,4 +282,5 @@ span.dataset_inspect_meta_value {
 .ds_highlight {
     color: #ec0b0b;
 }
+
 
