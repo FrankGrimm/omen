@@ -54,6 +54,24 @@ span.sidemeta {
     font-style: italic;
 }
 
+span.index_task_meta {
+    font-weight: normal;
+    font-size: 0.8em;
+    font-style: italic;
+}
+
+span.index_task_role:before {
+    content: "("
+}
+span.index_task_role:after {
+    content: ")"
+}
+span.index_task_role {
+    font-weight: normal;
+    font-size: 0.8em;
+    font-style: italic;
+}
+
 a.btn .fa-2x {
     margin-top: -1em;
 }

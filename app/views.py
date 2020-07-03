@@ -36,7 +36,28 @@ def highlight(value, query):
 @app.route('/')
 @app.route(BASEURI + '/')
 def index():
-    return render_template("index.html")
+    with db.session_scope() as dbsession:
+
+        session_user = db.by_id(dbsession, session['user'])
+        annotation_tasks = db.annotation_tasks(dbsession, session['user'])
+
+        my_datasets = db.my_datasets(dbsession, session['user'])
+        access_datasets = db.accessible_datasets(dbsession, session['user'])
+
+        ds_errors = {}
+        for ds in my_datasets.values():
+            if ds in ds_errors:
+                continue
+            ds_errors[ds] = ds.check_dataset()
+
+        for ds in access_datasets.values():
+            if ds in ds_errors:
+                continue
+            ds_errors[ds] = ds.check_dataset()
+
+        return render_template('index.html', my_datasets=my_datasets, access_datasets=access_datasets, \
+                                    ds_errors=ds_errors, dbsession=dbsession, session_user=session_user, \
+                                    tasks = annotation_tasks)
 
 @app.before_request
 def before_handler():

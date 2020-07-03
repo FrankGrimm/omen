@@ -4,8 +4,28 @@
   {% if not session['user'] %}
       <p>Authentication required. <a href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt"></i> login</a></p>
   {% else %}
-      <p>user: {{ session['user'] }} 
+  <div class="row">
+      <p class="col-12">Welcome back, {{ session_user.get_name() }}! 
       <a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> logout</a>
       </p>
+  </div>
+  <div class="row">
+      <div class="col-12">
+          Jump straight back in:
+          <div class="list-group">
+            {% for task in tasks %}
+                <a class="list-group-item list-group-item-action" href="{{ url_for('annotate', dsid=task.id) }}">
+                    {{task.name}} <span class="index_task_meta">{{task.annos}}/{{task.size}}</span> 
+                    <span class="index_task_role">{% if 'owner' in task.user_roles%}owned by you{% elif 'curator' in task.user_roles %}curator{% elif 'annotator' in task.user_roles %}annotator{% endif %}</span>
+                </a>
+                {{ render_progress(task, addclass="indexprogress") }}
+            {% else %}
+            <a href="list-group-item">
+            You don't seem to have any tasks yet.
+            </a>
+            {% endfor %}
+          </div>
+      </div>
+  </div>
   {% endif %}
 {% endblock %}

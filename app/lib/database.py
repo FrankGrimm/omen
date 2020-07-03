@@ -532,6 +532,7 @@ def annotation_tasks(dbsession, for_user):
                 "dataset": dataset,
                 "progress": 0,
                 "size": dataset.dsmetadata.get("size", -1) or -1,
+                "user_roles": dataset.get_roles(dbsession, for_user),
                 "annos": dataset.annocount(dbsession, for_user),
                 "annos_today": dataset.annocount_today(dbsession, for_user)
                 }
