@@ -301,4 +301,13 @@ span.dataset_inspect_meta_value {
     color: #ec0b0b;
 }
 
+span.badge-sm {
+    font-size: 0.8em;
+}
 
+a.nav-taskinfo {
+}
+a.nav-taskinfo-completed {
+    color: gray !important;
+    font-style: italic;
+}

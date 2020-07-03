@@ -321,7 +321,6 @@ def annotate(dsid=None, sample_idx=None):
             dataset.setanno(dbsession, session['user'], set_sample, set_sample_value)
 
         random_sample, random_sample_id = get_random_sample(df, id_column)
-        print("RANDOM", random_sample, random_sample_id, df[df['annotations'].isna()], file=sys.stderr)
         sample_content = df[textcol][sample_idx]
 
         set_sample = df.iloc[int(sample_idx)][id_column]
