@@ -4,7 +4,7 @@
 
   <div class="row">
       <div class="col-12">
-          <a class="btn btn-primary" style="font-size: 12pt" href="{{ url_for('new_dataset') }}">
+          <a class="btn btn-light" style="font-size: 12pt" href="{{ url_for('new_dataset') }}">
         create new <i class="fas fa-plus-circle"></i>
       </a>
       </div>
@@ -19,7 +19,7 @@
         <li class="row ds_meta">
             <div class="col-2">
                 <div class="btn-group">
-                <a class="btn btn-sm btn-primary" href="{{ url_for("new_dataset", dsid=dsid) }}"><i class="fas fa-cog"></i></a> 
+                <a class="btn btn-sm btn-light" href="{{ url_for("new_dataset", dsid=dsid) }}"><i class="fas fa-cog"></i></a> 
                 <a class="btn btn-sm btn-secondary" href="{{ url_for("download", dsid=dsid) }}"><i class="fas fa-download"></i></a> 
 
                 {% if not (ds and ds_errors and ds in ds_errors and ds_errors[ds]) %}
