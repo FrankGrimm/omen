@@ -39,7 +39,7 @@ def inject_globals():
         if is_authenticated:
             annotation_tasks = db.annotation_tasks(dbsession, session['user'])
 
-    return dict(product_name="Annotations", is_authenticated=is_authenticated, tasks=annotation_tasks)
+    return dict(product_name=config.get("product_name", "Annotations"), is_authenticated=is_authenticated, tasks=annotation_tasks)
 
 @app.errorhandler(404)
 def page_not_found(error):
