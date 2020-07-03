@@ -17,9 +17,14 @@
     </a>
 {% endif %}
 
+{% set nextsampleidx = sample_idx + 1 %}
+{% if not next_sample_idx is none %}
+{% set nextsampleidx = next_sample_idx %}
+{% endif %}
+
 {% for tag in dataset.dsmetadata.taglist %}
 {% if dataset.dsmetadata.size > 0 and sample_idx < (dataset.dsmetadata.size - 1) %}
-<a data-tagidx="{{loop.index - 1}}" class="btn {% if tag != curanno %}btn-light{% else %}btn-primary{% endif %}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_idx + 1, set_sample_idx=sample_idx, set_value=tag) }}">
+<a data-tagidx="{{loop.index - 1}}" class="btn {% if tag != curanno %}btn-light{% else %}btn-primary{% endif %}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=nextsampleidx, set_sample_idx=sample_idx, set_value=tag) }}">
 {% endif %}
 {% if dataset.dsmetadata.size > 0 and sample_idx == (dataset.dsmetadata.size - 1) %}
 <a data-tagidx="{{loop.index - 1}}" class="btn {% if tag != curanno %}btn-light{% else %}btn-primary{% endif %}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=0, set_sample_idx=sample_idx, set_value=tag) }}">
@@ -31,7 +36,7 @@ ERROR: no taglist
 {% endfor %}
 
 {% if dataset.dsmetadata.size > 0 and sample_idx < (dataset.dsmetadata.size - 1) %}
-<a id="anno_nav_next" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_idx + 1) }}" title="next sample">
+<a id="anno_nav_next" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=nextsampleidx) }}" title="next sample">
     <i class="fas fa-2x fa-arrow-right"></i>
 </a>
 {% endif %}

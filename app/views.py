@@ -216,12 +216,26 @@ def createuser():
     with db.session_scope() as dbsession:
         return render_template("createuser.html", dataset=dataset)
 
+def get_random_sample(df, id_column):
+    no_anno = df[~(df.annotations != '')]
+    # make sure to randomly select a sample that has not been annotated yet (if any are left)
+    if not no_anno.empty:
+        df = no_anno
+    if df.empty:
+        return None, None
+
+    sample_row = df.sample(n=1)
+    sample_idx = sample_row.index.values.astype(int)[0]
+    sample_id = sample_row[id_column].values[0]
+    return sample_idx, sample_id
+
 @app.route(BASEURI + "/dataset/<dsid>/annotate", methods=["GET", "POST"])
 @login_required
 def annotate(dsid=None, sample_idx=None):
     dataset = None
 
     with db.session_scope() as dbsession:
+        session_user = db.by_id(dbsession, session['user'])
         my_datasets = db.my_datasets(dbsession, session['user'])
         access_datasets = db.accessible_datasets(dbsession, session['user'])
 
@@ -229,6 +243,13 @@ def annotate(dsid=None, sample_idx=None):
             dataset = my_datasets[dsid]
         if not dsid is None and dsid in access_datasets:
             dataset = access_datasets[dsid]
+
+        if dataset is None:
+            raise Exception("Forbidden. User does not have access to requested dataset.")
+
+        user_roles = dataset.get_roles(dbsession, session_user)
+        if not 'annotator' in user_roles:
+            raise Exception("Forbidden. Current user roles %s do not allow annotation." % user_roles)
 
         task = {"id": dsid,
                 "name": dataset.dsmetadata.get("name", dataset.dataset_id),
@@ -244,28 +265,46 @@ def annotate(dsid=None, sample_idx=None):
             task['progress_today'] = round(task['annos_today'] / task['size'] * 100.0)
             task['progress_beforetoday'] = task['progress'] - task['progress_today']
 
-        df = dataset.as_df()
+        id_column = dataset.get_id_column()
+
+        #df = dataset.as_df()
+        df, annotation_columns = dataset.annotations(dbsession, foruser=session_user, user_column="annotations", \
+                                                    hideempty=False, only_user=True)
+        columns = [id_column, dataset.get_text_column()] + [col for col in df.columns.intersection(annotation_columns)]
+
+        df = df.reset_index()
+        df = df.loc[:, columns]
+        df = df[columns]
+        df = df.reset_index()
+
         sample_content = None
         textcol = dataset.dsmetadata.get("textcol", None)
+
+        next_sample_idx = None
+        next_sample_id = None
 
         if sample_idx is None:
             try:
                 sample_idx = int(request.args.get("sample_idx", None))
             except Exception as ignored:
                 pass
+
             if sample_idx is None:
                 if dataset.dsmetadata.get("annoorder", "sequential") == 'random':
-                    sample_idx = random.randint(0, dataset.dsmetadata.get("size", 1))
+                    sample_idx, sample_id = get_random_sample(df, id_column)
                 else:
-                    existing = dataset.getannos(dbsession, session['user'])
-                    annotated_samples = set(map(lambda e: str(e.sample), existing))
+                    no_anno = df[~(df.annotations != '')]
+                    # make sure to select a sample that has not been annotated yet (if any are left)
+                    if no_anno.empty:
+                        no_anno = df
 
-                    sample_idx = 0
-                    for attempt in range(0, df.shape[0]):
-                        if str(attempt) in annotated_samples:
-                            continue
-                        sample_idx = attempt
-                        break
+                    first_row = no_anno.iloc[no_anno.index[0]]
+                    sample_idx = first_row['index']
+                    sample_id = first_row[id_column]
+
+                    next_row = no_anno.iloc[no_anno.index[1]]
+                    next_sample_idx = next_row['index']
+                    next_sample_id = next_row[id_column]
 
         set_sample_idx = None
         set_sample_value = None
@@ -277,12 +316,12 @@ def annotate(dsid=None, sample_idx=None):
         if not set_sample_idx is None:
             set_sample_value = request.args.get("set_value", "")[:500]
 
-        id_column = dataset.get_id_column()
         if not set_sample_idx is None and not set_sample_value is None:
             set_sample = df.iloc[int(set_sample_idx)][id_column]
             dataset.setanno(dbsession, session['user'], set_sample, set_sample_value)
 
-        random_sample = random.randint(0, dataset.dsmetadata.get("size", 1))
+        random_sample, random_sample_id = get_random_sample(df, id_column)
+        print("RANDOM", random_sample, random_sample_id, df[df['annotations'].isna()], file=sys.stderr)
         sample_content = df[textcol][sample_idx]
 
         set_sample = df.iloc[int(sample_idx)][id_column]
@@ -293,7 +332,8 @@ def annotate(dsid=None, sample_idx=None):
             curanno = curanno_data['data']['value']
 
     return render_template("annotate.html", dataset=dataset, task=task, sample_idx=sample_idx, set_sample=set_sample, \
-                                            random_sample=random_sample, sample_content = sample_content, curanno=curanno)
+                                            random_sample=random_sample, sample_content = sample_content, curanno=curanno, \
+                                            next_sample_idx=next_sample_idx, next_sample_id=next_sample_id)
 
 @app.route(BASEURI + "/dataset/<dsid>/edit", methods=['GET', 'POST'])
 @app.route(BASEURI + "/dataset/create", methods=['GET', 'POST'])

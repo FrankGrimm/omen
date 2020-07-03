@@ -215,7 +215,7 @@ class Dataset(Base):
         flag_modified(self, "dsmetadata")
         dbsession.add(self)
 
-    def annotations(self, dbsession, foruser=None, user_column=None, hideempty=False):
+    def annotations(self, dbsession, foruser=None, user_column=None, hideempty=False, only_user=False):
         # TODO check roles of "foruser" and only expose annotations accordingly
 
         df = self.as_df()
@@ -239,7 +239,7 @@ class Dataset(Base):
         target_user_column = None
 
         target_users = [foruser] # if user is annotator, only export and show their own annotations
-        if 'curator' in user_roles:
+        if 'curator' in user_roles and not only_user:
             # curator, also implied by owner role
             target_users = userlist(dbsession)
 
