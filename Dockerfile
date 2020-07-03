@@ -23,4 +23,4 @@ ENV FLASK_DEBUG 1
 ENV FLASK_RUN_HOST 0.0.0.0
 ENV FLASK_SKIP_DOTENV 1
 EXPOSE 5000
-CMD ["flask", "run"]
+CMD ["flask", "run", "-p", "5000"]
