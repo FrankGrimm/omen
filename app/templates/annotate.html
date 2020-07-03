@@ -7,12 +7,12 @@
 <div class="row">
 <div id="anno_actions">
     {% if dataset.dsmetadata.size > 0 and sample_idx > 0 %}
-    <a id="anno_nav_prev"class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_idx - 1) }}">
+    <a id="anno_nav_prev"class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_idx - 1) }}" title="previous sample">
         <i class="fas fa-2x fa-arrow-left"></i>
     </a>
 {% endif %}
     {% if dataset.dsmetadata.size > 0 and sample_idx == 0 %}
-    <a id="anno_nav_prev" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=dataset.dsmetadata.size - 1) }}">
+    <a id="anno_nav_prev" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=dataset.dsmetadata.size - 1) }}" title="previous sample">
         <i class="fas fa-2x fa-arrow-left"></i>
     </a>
 {% endif %}
@@ -31,17 +31,17 @@ ERROR: no taglist
 {% endfor %}
 
 {% if dataset.dsmetadata.size > 0 and sample_idx < (dataset.dsmetadata.size - 1) %}
-<a id="anno_nav_next" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_idx + 1) }}">
+<a id="anno_nav_next" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_idx + 1) }}" title="next sample">
     <i class="fas fa-2x fa-arrow-right"></i>
 </a>
 {% endif %}
 {% if dataset.dsmetadata.size > 0 and sample_idx == (dataset.dsmetadata.size - 1) %}
-<a id="anno_nav_next" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=0) }}">
+<a id="anno_nav_next" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=0) }}" title="next sample">
     <i class="fas fa-2x fa-arrow-right"></i>
 </a>
 {% endif %}
 
-<a id="anno_nav_random" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=random_sample) }}">
+<a id="anno_nav_random" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=random_sample) }}" title="random sample">
     <i class="fas fa-2x fa-random"></i>
 </a>
 
