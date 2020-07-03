@@ -78,6 +78,8 @@ def inspect_dataset(dsid = None):
         session_user = db.by_id(dbsession, session['user'])
         df, annotation_columns = dataset.annotations(dbsession, foruser=session_user, user_column="annotations", hideempty=hideempty)
 
+        user_roles = dataset.get_roles(dbsession, session_user)
+
         columns = [dataset.get_id_column(), dataset.get_text_column()] + [col for col in df.columns.intersection(annotation_columns)]
 
         # drop other columns
@@ -125,7 +127,8 @@ def inspect_dataset(dsid = None):
         pagination_elements.sort()
 
         return render_template("dataset_inspect.html", err=err, dataset=dataset, df=df, hideempty=hideempty, query=query, \
-                                page_size=page_size, page=page, pages=pages, results=results, pagination_elements=pagination_elements)
+                                page_size=page_size, page=page, pages=pages, results=results, pagination_elements=pagination_elements, \
+                                user_roles=user_roles)
 
 @app.route(BASEURI + "/dataset/<dsid>/download")
 @login_required

@@ -6,7 +6,8 @@
 <div class="row dataset_inspect_metadata">
     <div class="dataset_inspect_meta col-6">
         <span class="dataset_inspect_meta_label">Owner:</span> <span class="dataset_inspect_meta_value">{{ dataset.owner.get_name() }}</span><br />
-        <span class="dataset_inspect_meta_label">Fields:</span> <span class="dataset_inspect_meta_value">{{ ", ".join(df.columns) }}</span>
+        <span class="dataset_inspect_meta_label">Fields:</span> <span class="dataset_inspect_meta_value">{{ ", ".join(df.columns) }}</span><br />
+        <span class="dataset_inspect_meta_label">Access Roles:</span> <span class="dataset_inspect_meta_value">{{ user_roles|join(", ") }}</span>
     </div>
     <div class="dataset_inspect_meta col-6">
         <form action="{{ url_for("inspect_dataset", dsid=dataset.dataset_id) }}" method="get" id="form_doquery">
