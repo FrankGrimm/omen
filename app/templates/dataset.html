@@ -59,6 +59,8 @@
                 <div class="btn-group">
                     {% if 'curator' in dsroles %}
                     <a class="btn btn-sm btn-secondary" href="{{ url_for("download", dsid=dsid) }}"><i class="fas fa-download"></i></a> 
+                    {% endif %}
+                    {% if 'annotator' in dsroles %}
                     <a class="btn btn-sm btn-secondary" href="{{ url_for("inspect_dataset", dsid=dsid) }}"><i class="fas fa-table"></i></a> 
                     {% endif %}
                 </div>

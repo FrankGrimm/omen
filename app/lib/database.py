@@ -227,8 +227,9 @@ class Dataset(Base):
 
         user_roles = self.get_roles(dbsession, foruser)
 
-        if not 'curator' in user_roles:
-            raise Exception("Unauthorized, user %s does not have role 'curator'. Active roles: %s" % (user_obj, user_roles))
+        if not 'annotator' in user_roles and \
+                not 'curator' in user_roles:
+            raise Exception("Unauthorized, user %s does not have role 'curator'. Active roles: %s" % (foruser, user_roles))
 
         id_column = self.get_id_column()
         df = df.set_index(id_column)
@@ -237,7 +238,12 @@ class Dataset(Base):
         annotation_columns = []
         target_user_column = None
 
-        for userobj in userlist(dbsession):
+        target_users = [foruser] # if user is annotator, only export and show their own annotations
+        if 'curator' in user_roles:
+            # curator, also implied by owner role
+            target_users = userlist(dbsession)
+
+        for userobj in target_users:
             uannos = self.getannos(dbsession, userobj.uid, asdict=True)
             if uannos is None or len(uannos) == 0:
                 continue
