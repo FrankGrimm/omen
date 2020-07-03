@@ -2,12 +2,12 @@
 <li class="nav-item">
     {% if request.url_rule.endpoint == target %}
     <a class="nav-link active" href="{{ url_for(target) }}">
-        {% else %}
-        <a class="nav-link" href="{{ url_for(target) }}">
-            {% endif %}
-            <i class="{{cssclass}}"></i>
-            {{ title }}
-        </a>
+    {% else %}
+    <a class="nav-link" href="{{ url_for(target) }}">
+    {% endif %}
+    <i class="{{cssclass}}"></i>
+    {{ title }}
+    </a>
 </li>
 {%- endmacro %}
 
@@ -33,12 +33,12 @@
             <span>Annotate</span>
         </h6>
         <ul class="nav flex-column mb-2">
-            {% for task in tasks %}
+            {% for sbtask in tasks %}
             <li class="nav-item">
-                <a class="nav-link nav-taskinfo{% if task.progress >= 100.0 %} nav-taskinfo-completed{% endif %}" href="{{ url_for('annotate', dsid=task.id) }}">
-                    {{task.name}} <span class="sidemeta">{{task.annos}}/{{task.size}}</span>
+                <a class="nav-link nav-taskinfo{% if request.url_rule.endpoint == 'annotate' and task and task.id == sbtask.id %} active{% else %}{% if sbtask.progress >= 100.0 %} nav-taskinfo-completed{% endif %}{% endif %}" href="{{ url_for('annotate', dsid=sbtask.id) }}">
+                    {{sbtask.name}} <span class="sidemeta">{{sbtask.annos}}/{{sbtask.size}}</span>
                 </a>
-                {{ render_progress(task, addclass="sideprogress") }}
+                {{ render_progress(sbtask, addclass="sideprogress") }}
             </li>
             {% else %}
             <li class="nav-item"><i class="nav-link">all done</i></li>
