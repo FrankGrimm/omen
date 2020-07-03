@@ -6,6 +6,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy_utils import database_exists, create_database
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from sqlalchemy.orm.attributes import flag_dirty, flag_modified
 
 from contextlib import contextmanager
@@ -26,6 +27,7 @@ from contextlib import contextmanager
 from . import config
 
 flask_db = None
+migrate = None
 
 def fprint(*args):
     print(*args, file=sys.stderr)
@@ -594,6 +596,7 @@ def connect():
         web.app.config["SQLALCHEMY_ECHO"] = True
     web.app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     flask_db = SQLAlchemy(web.app, session_options={"expire_on_commit": False})
+    migrate = Migrate(web.app, flask_db)
 
     masked_connstring = connection_string
     if 'password' in masked_connstring.lower():
