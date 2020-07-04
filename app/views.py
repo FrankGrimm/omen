@@ -7,7 +7,7 @@ import re
 from markupsafe import Markup, escape
 
 from werkzeug.utils import secure_filename
-from flask import Flask, flash, redirect, render_template, request, url_for, session, Response
+from flask import Flask, flash, redirect, render_template, request, url_for, session, Response, abort
 from functools import wraps
 from io import StringIO
 import math
@@ -246,7 +246,7 @@ def annotate(dsid=None, sample_idx=None):
             dataset = access_datasets[dsid]
 
         if dataset is None:
-            raise Exception("Forbidden. User does not have access to requested dataset.")
+            return abort(404, description="Forbidden. User does not have access to requested dataset.")
 
         user_roles = dataset.get_roles(dbsession, session_user)
         if not 'annotator' in user_roles:
