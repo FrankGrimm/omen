@@ -225,7 +225,7 @@ ul.ds_overview_issues {
 
 ul.ds_overview_issues li {
     float: left;
-    margin: 1em;
+    margin: 0 0 0 1em;
     padding: 0.5em;
     font-size: 10pt;
 }
