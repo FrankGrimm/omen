@@ -3,7 +3,8 @@ $(document).ready(function() {
     document.getElementById("sidebar-brandlink").addEventListener("click", function() {
         const smenu = document.getElementById("sidebar-menu");
         $(smenu).toggleClass("d-sm-block", 500);
-        console.log("foobar");
+        $(smenu).toggleClass("d-none", 500);
+        console.log("toggled sidebar");
     });
 
     $(".description_modal_text").each(function(idx, elem) {
