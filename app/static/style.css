@@ -314,9 +314,11 @@ a.nav-taskinfo-completed {
 
 .btn-primary {
     background-color: #f5f5f5;
+    color: #424242;
 }
 .btn-secondary {
     background-color: #424242;
+    color: #f5f5f5;
 }
 
 a {
