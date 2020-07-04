@@ -24,10 +24,10 @@
 
 {% for tag in dataset.dsmetadata.taglist %}
 {% if dataset.dsmetadata.size > 0 and sample_idx < (dataset.dsmetadata.size - 1) %}
-<a data-tagidx="{{loop.index - 1}}" class="btn {% if tag != curanno %}btn-light{% else %}btn-primary{% endif %}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=nextsampleidx, set_sample_idx=sample_idx, set_value=tag) }}">
+<a data-tagidx="{{loop.index - 1}}" class="btn {% if tag != curanno %}btn-light{% else %}btn-success{% endif %}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=nextsampleidx, set_sample_idx=sample_idx, set_value=tag) }}">
 {% endif %}
 {% if dataset.dsmetadata.size > 0 and sample_idx == (dataset.dsmetadata.size - 1) %}
-<a data-tagidx="{{loop.index - 1}}" class="btn {% if tag != curanno %}btn-light{% else %}btn-primary{% endif %}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=0, set_sample_idx=sample_idx, set_value=tag) }}">
+<a data-tagidx="{{loop.index - 1}}" class="btn {% if tag != curanno %}btn-light{% else %}btn-success{% endif %}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=0, set_sample_idx=sample_idx, set_value=tag) }}">
 {% endif %}
 {{ tag }}
 </a>
@@ -104,6 +104,7 @@ ERROR: no taglist
                 if ($tgtbtn && $tgtbtn[0]) { 
                     $($tgtbtn[0]).removeClass("btn-info");
                     $($tgtbtn[0]).removeClass("btn-primary");
+                    $($tgtbtn[0]).removeClass("btn-success");
                     $($tgtbtn[0]).removeClass("btn-light");
                     $($tgtbtn[0]).addClass("btn-dark");
                     $tgtbtn[0].click();
