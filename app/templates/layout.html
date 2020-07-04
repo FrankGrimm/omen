@@ -123,7 +123,7 @@
   <div class="row">
     <ul class="flashes col-md-12">
     {% for category, message in messages %}
-    <li class="alert alert-{% if category=='error' %}danger{% elif not category %}info{%else%}{{category}}{% endif %}">{{ message }}</li>
+    <li class="alert alert-{% if category=='error' %}danger{% elif not category or category=='message'%}info{%else%}{{category}}{% endif %}">{{ message }}</li>
     {% endfor %}
     </ul>
   </div>

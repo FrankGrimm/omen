@@ -465,8 +465,6 @@ def new_dataset(dsid=None):
 @app.route(BASEURI + '/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
-    acterror = None
-
     with db.session_scope() as dbsession:
         userobj = db.by_id(dbsession, session['user'])
         if request.method == 'POST':
@@ -488,12 +486,10 @@ def settings():
                     flash("Password successfully changed.", "success")
                 except Exception as e:
                     acterror = "%s %s %s" % (e, userobj, session['user'])
-
                     db.fprint(acterror)
-
                     flash('%s' % e, "error")
 
-        return render_template('settings.html', error=acterror, session_user=userobj)
+        return render_template('settings.html', session_user=userobj)
 
 @app.route(BASEURI + '/login', methods=['GET', 'POST'])
 def login(backto=None):
@@ -511,7 +507,7 @@ def login(backto=None):
                 req_user_obj = db.by_email(dbsession, req_user, doraise=False)
                 if not req_user_obj is None:
                     if req_user_obj.verify_password(req_pw):
-                        flash('You were successfully logged in')
+                        flash('You were successfully logged in.', "success")
                         session['user'] = req_user_obj.uid
                         session['user_email'] = req_user_obj.email
                         session['user_displayname'] = req_user_obj.get_name()
@@ -520,5 +516,7 @@ def login(backto=None):
                         return redirect(url_for('index'))
         else:
             return redirect(url_for('index'))
+    if not loginerror is None:
+        flash("%s" % loginerror, "error")
 
-    return render_template('login.html', error=loginerror)
+    return render_template('login.html')
