@@ -218,6 +218,28 @@
 
 </div>
 
+<div class="row seprow">
+    <form method="post">
+        <input type="hidden" name="action" value="change_description" />
+        <div class="form-group row">
+            <label for="setdescription" class="col-4 col-form-label">
+                <div><strong>Description</strong> or annotation guidelines.<br />
+                    This is visible to all users, markdown is supported.</div>
+            </label> 
+            <div class="col-8">
+                <textarea id="setdescription" name="setdescription" cols="40" rows="5" class="form-control" aria-describedby="setdescriptionHelpBlock" required="required">{% if dataset.dsmetadata.description %}{{ dataset.dsmetadata.description }}{% endif %}</textarea> 
+                <span id="setdescriptionHelpBlock" class="form-text text-muted">separate single entries by newlines</span>
+            </div>
+        </div> 
+        <div class="form-group row">
+            <div class="offset-4 col-8">
+                <button name="submit" type="submit" class="btn btn-primary">Update Description</button>
+            </div>
+        </div>
+    </form>
+
+</div>
+
 <h3>Manage Access</h3>
 
 <div class="row">

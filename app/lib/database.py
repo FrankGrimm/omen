@@ -124,6 +124,11 @@ class Dataset(Base):
             return self.dataset_id
         return self.dsmetadata.get("name", self.dataset_id)
 
+    def get_description(self):
+        if self.dsmetadata is None:
+            return ""
+        return self.dsmetadata.get("description", "")
+
     def get_text_column(self):
         textcol = self.dsmetadata.get("textcol", None)
         if textcol is None:

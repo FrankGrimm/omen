@@ -344,5 +344,8 @@ span.anno_vote {
     color: #3e6a80;
 }
 
-
+button.btn-ds-description {
+    position: absolute;
+    right: 0;
+}
 

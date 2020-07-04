@@ -399,6 +399,13 @@ def new_dataset(dsid=None):
                         dataset.dsmetadata['name'] = dsname
                         dsdirty = True
 
+            if not formaction is None and formaction == 'change_description':
+                ds_description = request.form.get('setdescription', None)
+                if not ds_description is None:
+                    ds_description = ds_description.strip()
+                    dataset.dsmetadata['description'] = ds_description
+                    dsdirty = True
+
             if not formaction is None and formaction == 'delete_dataset' and \
                     request.form.get("confirmation", "") == "delete_dataset_confirmed" and \
                     not dataset is None and not dataset.dataset_id is None:

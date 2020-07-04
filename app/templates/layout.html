@@ -25,6 +25,30 @@
     </div>
 {%- endmacro %}
 
+{% macro render_description_modal(modal_id, description, modal_title="Description") -%}
+{% if description %}
+
+<div class="modal fade description_modal" id="{{ modal_id }}" tabindex="-1" role="dialog" aria-labelledby="{{modal_id}}Label" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+          <h5 class="modal-title" id="{{ modal_id }}Label">{{ modal_title }}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body description_modal_text">
+          {{ description }}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{%- endmacro %}
+
 {% macro render_cell(row, column, query) -%}
 
 {% if query is none or not row[column] is string %}
@@ -137,6 +161,7 @@
 <script src="{{ url_for("static", filename="js/popper.min.js") }}"></script>
 <script src="{{ url_for("static", filename="js/bootstrap.min.js") }}"></script>
 <script src="{{ url_for("static", filename="js/fa-5.13.all.min.js") }}"></script>
+<script src="{{ url_for("static", filename="js/marked.min.js") }}"></script>
 <script src="{{ url_for("static", filename="js/material.min.js") }}"></script>
 <script src="{{ url_for("static", filename="main.js") }}"></script>
 
