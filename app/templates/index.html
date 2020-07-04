@@ -15,7 +15,11 @@
           <div class="list-group">
             {% for task in tasks %}
                 <a class="list-group-item list-group-item-action" href="{{ url_for('annotate', dsid=task.id) }}">
+                    {% if 'owner' in task.user_roles%}
                     <i class="fas fa-database index_taskicon"></i>
+                    {% else %}
+                    <i class="fas fa-users index_taskicon"></i>
+                    {% endif %}
                     {{task.name}} <span class="index_task_meta">{{task.annos}}/{{task.size}}</span> 
                     <span class="index_task_role">{% if 'owner' in task.user_roles%}owned by you{% elif 'curator' in task.user_roles %}curator{% elif 'annotator' in task.user_roles %}annotator{% endif %}{% if not 'owner' in task.user_roles %}, owned by <i class="fas fa-user"></i> <span class="index_task_dsowner">{{ task.dataset.owner.get_name() }}</span>{% endif %}
                     </span>
