@@ -292,6 +292,23 @@
 </div>
 {% endif %}
 
+<div class="row seprow">
+    <h4 class="col-12">Delete Dataset</h4>
+</div>
+<div class="row seprow">
+    <div class="col-12">
+    <form method="post" id="form_delete_dataset" enctype="multipart/form-data" class="col-12">
+        <div class="input-group col-12">
+            <input type="hidden" name="action" value="delete_dataset" />
+            <input type="hidden" name="confirmation" id="confirmation" value="delete_dataset_unconfirmed" />
+            <button class="btn btn-danger" id="form_delete_dataset_confirm">
+                <i class="fas fa-trash"></i>&nbsp;OK
+            </button>
+        </div>
+    </form>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block addscript %}
@@ -303,6 +320,17 @@
                 $(this).find("td").wrapInner('<div class="tdwrap">');
             });
         }
+
+        document.getElementById("form_delete_dataset_confirm").addEventListener("click", function(e) {
+            e.preventDefault();
+            if (window.confirm("Warning: You are about to delete a dataset.\nAre you sure?")) {
+            if (window.confirm("Are you really sure?\nDeleting a dataset cannot be undone.")) {
+                $("input#confirmation").attr("value", "delete_dataset_confirmed");
+                return $('#form_delete_dataset').submit();
+            }
+            }
+            return false;
+        });
 
         function setACLstatus($elem, elemrole, newrole) {
             // remove icons

@@ -355,11 +355,14 @@ def new_dataset(dsid=None):
         if dataset.dsmetadata is None:
             dataset.dsmetadata = {}
 
+        userobj = db.by_id(dbsession, session['user'])
         if dataset.owner is None:
-            userobj = db.by_id(dbsession, session['user'])
             dataset.owner = userobj
 
         dbsession.add(dataset)
+
+        if not dataset.owner is userobj:
+            raise Exception("You cannot modify datasets you do not own.")
 
         if dataset.dataset_id is None:
             dataset.dirty(dbsession)
@@ -384,6 +387,17 @@ def new_dataset(dsid=None):
                     if dsname != '':
                         dataset.dsmetadata['name'] = dsname
                         dsdirty = True
+
+            if not formaction is None and formaction == 'delete_dataset' and \
+                    request.form.get("confirmation", "") == "delete_dataset_confirmed" and \
+                    not dataset is None and not dataset.dataset_id is None:
+                db.fprint("User %s triggers delete on dataset %s" % (userobj, dataset))
+                dbsession.delete(dataset)
+
+                dbsession.commit()
+                dbsession.flush()
+                flash("Dataset was deleted successfully.", "success")
+                return redirect(url_for("dataset"))
 
             if not formaction is None and formaction == 'change_textcol' and not request.form.get("textcol", None) is None:
                 dataset.dsmetadata['textcol'] = request.form.get("textcol", None)
@@ -461,7 +475,6 @@ def new_dataset(dsid=None):
         if not dataset is None:
             ds_errors = dataset.check_dataset()
 
-        db.fprint("EDITMODE", editmode, "DSID", dataset, dataset.dataset_id)
         if editmode == 'create' and not dataset.dataset_id is None:
             # redirect to edit URI once dataset has been persisted
             return redirect(url_for('new_dataset', dsid=dataset.dataset_id))
