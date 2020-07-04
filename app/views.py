@@ -147,7 +147,10 @@ def inspect_dataset(dsid = None):
         pagination_elements = list(range(max(1, page - pagination_size), min(page + pagination_size + 1, pages + 1)))
         pagination_elements.sort()
 
-        return render_template("dataset_inspect.html", err=err, dataset=dataset, df=df, hideempty=hideempty, query=query, \
+        if not err is None:
+            flash("%s" % err, "error")
+
+        return render_template("dataset_inspect.html", dataset=dataset, df=df, hideempty=hideempty, query=query, \
                                 page_size=page_size, page=page, pages=pages, results=results, pagination_elements=pagination_elements, \
                                 user_roles=user_roles)
 
@@ -179,8 +182,6 @@ def download(dsid = None):
 @app.route(BASEURI + "/dataset/<dsid>")
 @login_required
 def dataset(dsid=None):
-    err = None
-
     with db.session_scope() as dbsession:
 
         userobj = db.by_id(dbsession, session['user'])
@@ -205,7 +206,7 @@ def dataset(dsid=None):
                 continue
             ds_errors[ds] = ds.check_dataset()
 
-        return render_template('dataset.html', error=err, my_datasets=my_datasets, access_datasets=access_datasets, \
+        return render_template('dataset.html', my_datasets=my_datasets, access_datasets=access_datasets, \
                                     dataset=dataset, ds_errors=ds_errors, dbsession=dbsession, userobj=userobj)
 
 @app.route(BASEURI + "/user/create", methods=["GET", "POST"])
@@ -338,7 +339,6 @@ def annotate(dsid=None, sample_idx=None):
 @app.route(BASEURI + "/dataset/create", methods=['GET', 'POST'])
 @login_required
 def new_dataset(dsid=None):
-    err = None
     dataset = None
     editmode = 'create'
 
@@ -460,7 +460,7 @@ def new_dataset(dsid=None):
             # redirect to edit URI once dataset has been persisted
             return redirect(url_for('new_dataset', dsid=dataset.dataset_id))
 
-        return render_template('dataset_new.html', error=err, dataset=dataset, editmode=editmode, previewdf=df, db=db, ds_errors=ds_errors, dbsession=dbsession)
+        return render_template('dataset_new.html', dataset=dataset, editmode=editmode, previewdf=df, db=db, ds_errors=ds_errors, dbsession=dbsession)
 
 @app.route(BASEURI + '/settings', methods=['GET', 'POST'])
 @login_required
