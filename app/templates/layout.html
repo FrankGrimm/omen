@@ -37,7 +37,7 @@
 
 {% macro render_dataframe(df, id=None, class=None, maxrows=50, hide_nan=True, query=None) -%}
 
-<table id="{{id}}" class="{{class}}" border="1">
+<table id="{{id}}" class="alert alert-{% if class=='error' %}danger{%else%}{{class}}{% endif %}" border="1">
     <thead>
         <th></th>
         {% for column in df.columns %}
@@ -123,7 +123,7 @@
   <div class="row">
     <ul class="flashes col-md-12">
     {% for category, message in messages %}
-      <li class="alert alert-{{ category }}">{{ message }}</li>
+    <li class="alert alert-{% if category=='error' %}danger{% elif not category %}info{%else%}{{category}}{% endif %}">{{ message }}</li>
     {% endfor %}
     </ul>
   </div>

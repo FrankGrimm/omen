@@ -455,6 +455,7 @@ def new_dataset(dsid=None):
         if not dataset is None:
             ds_errors = dataset.check_dataset()
 
+        db.fprint("EDITMODE", editmode, "DSID", dataset, dataset.dataset_id)
         if editmode == 'create' and not dataset.dataset_id is None:
             # redirect to edit URI once dataset has been persisted
             return redirect(url_for('new_dataset', dsid=dataset.dataset_id))
@@ -475,6 +476,7 @@ def settings():
                 userobj.displayname = request.form.get("new_displayname", userobj.displayname) or ""
                 dbsession.add(userobj)
                 session['user_displayname'] = userobj.get_name()
+                flash("Your display name was changed successfully.", "success")
 
             if act == 'change_password':
                 req_pwc = request.form.get("curpassword", None)
@@ -483,8 +485,13 @@ def settings():
 
                 try:
                     userobj.change_password(dbsession, req_pwc, req_pw1, req_pw2)
+                    flash("Password successfully changed.", "success")
                 except Exception as e:
-                    acterror = "%s %s %s" % (e, req_user_obj, session['user'])
+                    acterror = "%s %s %s" % (e, userobj, session['user'])
+
+                    db.fprint(acterror)
+
+                    flash('%s' % e, "error")
 
         return render_template('settings.html', error=acterror, session_user=userobj)
 
