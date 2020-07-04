@@ -346,7 +346,11 @@ def new_dataset(dsid=None):
         if dsid is None:
             dataset = db.Dataset()
         else:
-            dataset = db.dataset_by_id(dbsession, dsid, user_id=session['user'])
+            try:
+                dataset = db.dataset_by_id(dbsession, dsid, user_id=session['user'])
+            except Exception as e:
+                flash("Dataset not found or access denied", "error")
+                return abort(404, description="Dataset not found or access denied")
             if not dataset is None:
                 editmode = 'edit'
             else:
