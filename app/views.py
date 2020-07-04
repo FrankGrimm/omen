@@ -312,7 +312,8 @@ def annotate(dsid=None, sample_idx=None):
 
         if sample_idx is None:
             try:
-                sample_idx = int(request.args.get("sample_idx", None))
+                if not request.args.get("sample_idx", None) is None:
+                    sample_idx = int(request.args.get("sample_idx", None))
             except ValueError as _:
                 pass
 
@@ -336,7 +337,8 @@ def annotate(dsid=None, sample_idx=None):
         set_sample_idx = None
         set_sample_value = None
         try:
-            set_sample_idx = str(int(request.args.get("set_sample_idx", None)))
+            if not request.args.get("set_sample_idx", None) is None:
+                set_sample_idx = str(int(request.args.get("set_sample_idx", None)))
         except ValueError as _:
             pass
 
