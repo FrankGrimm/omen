@@ -33,11 +33,28 @@
         </h6>
         <ul class="nav flex-column mb-2">
             {% for sbtask in tasks %}
-            <li class="nav-item">
-                <a class="nav-link nav-taskinfo{% if request.url_rule.endpoint == 'annotate' and task and task.id == sbtask.id %} active{% else %}{% if sbtask.progress >= 100.0 %} nav-taskinfo-completed{% endif %}{% endif %}" href="{{ url_for('annotate', dsid=sbtask.id) }}">
-                    {{sbtask.name}} <span class="sidemeta">{{sbtask.annos}}/{{sbtask.size}}</span>
+            {% set is_active_task = request.url_rule.endpoint == 'annotate' and task and task.id == sbtask.id %}
+            <li class="nav-item{% if is_active_task %} nav-active-task{% endif %}">
+
+                <a class="nav-link nav-taskinfo{% if is_active_task %} active{% else %}{% if sbtask.progress >= 100.0 %} nav-taskinfo-completed{% endif %}{% endif %}" href="{{ url_for('annotate', dsid=sbtask.id) }}">
+                    {{sbtask.name}} {% if not is_active_task %}<span class="sidemeta">{{sbtask.annos}}/{{sbtask.size}}</span>{% endif %}
                 </a>
-                {{ render_progress(sbtask, addclass="sideprogress") }}
+                {% if is_active_task %}
+                
+                    <p class="navbar-text nav-active-task-data d-none d-md-block row">
+                    <strong>Annotations:</strong>
+                    <span>{{ task.annos }} / {{ task.size }}</span>
+                    </p>
+                    {% if task.annos_today %}
+                    <p class="navbar-text nav-active-task-data d-none d-md-block row">
+                    <strong>Today:</strong>
+                    <span>{{ task.annos_today }}</span>
+                    </p>
+                    {% endif %}
+                    {{ render_progress(sbtask, addclass="sideprogress-active") }}
+                {% else %}
+                    {{ render_progress(sbtask, addclass="sideprogress") }}
+                {% endif %}
             </li>
             {% else %}
             <li class="nav-item"><i class="nav-link">all done</i></li>

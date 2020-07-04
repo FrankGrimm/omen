@@ -104,12 +104,6 @@ div.annoprogress {
     margin: -2em 0 1em 0;
 }
 
-div.sideprogress {
-    height: 0.5em;
-    padding: 0;
-    margin: 0 0 1em 0;
-}
-
 i.aclusericon {
     margin-top: 0.5em;
 }
@@ -372,6 +366,44 @@ div.df_pagination a:hover {
     color: #424242;
 }
 
+.nav-active-task {
+    background-color: #ebf1f9;
+    padding-bottom: 0;
+}
+
+a.nav-link.nav-taskinfo.active {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-top: 1px solid #c3d5f0;
+    color: #163b64;
+}
+
+li.nav-active-task div.sideprogress {
+    padding: 0;
+    margin: 0;
+}
+li.nav-active-task div.sideprogress-active {
+    padding: 0;
+    margin: 0;
+}
+
+.nav-active-task-data {
+    font-size: 0.9em;
+    font-family: Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0.2rem 1rem 0.2rem 0.5rem;
+    background: #ebf1f9;
+    color: #4a4a4d;
+    width: 100%;
+    display: block;
+    border-left: 0.5rem solid #c3d5f0;
+    height: auto;
+}
+
+.nav-active-task-data strong {
+    min-width: 5rem;
+    display: inline-block;
+}
 
 
 
