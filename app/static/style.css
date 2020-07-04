@@ -311,3 +311,21 @@ a.nav-taskinfo-completed {
     color: gray !important;
     font-style: italic;
 }
+
+.btn-primary {
+    background-color: #f5f5f5;
+}
+.btn-secondary {
+    background-color: #424242;
+}
+
+a {
+    color: #424242;
+}
+
+a:hover {
+    color: #77249d;
+}
+
+
+
