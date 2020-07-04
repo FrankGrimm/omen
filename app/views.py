@@ -5,6 +5,7 @@ import tempfile
 import random
 import re
 from markupsafe import Markup, escape
+import string
 
 from werkzeug.utils import secure_filename
 from flask import Flask, flash, redirect, render_template, request, url_for, session, Response, abort
@@ -173,10 +174,19 @@ def download(dsid = None):
         s = StringIO()
         df.to_csv(s)
         csvc = s.getvalue()
+
+        download_filename = "dataset.csv"
+        dataset_name_sanitized = "".join(filter(lambda c: c in string.ascii_letters or c in string.digits or c in "-_. ", dataset.get_name()))
+        dataset_name_sanitized = dataset_name_sanitized.strip()
+        dataset_name_sanitized = dataset_name_sanitized.replace(' ', '\ ')
+
+        if len(dataset_name_sanitized) > 0:
+            download_filename = "%s.csv" % dataset_name_sanitized
+
         return Response(csvc,
             mimetype="text/csv",
             headers={"Content-disposition":
-                     "attachment; filename=dataset.csv"})
+                     "attachment; filename=\"%s\"" % download_filename})
 
 @app.route(BASEURI + "/dataset")
 @app.route(BASEURI + "/dataset/<dsid>")
