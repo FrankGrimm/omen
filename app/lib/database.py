@@ -212,6 +212,45 @@ class Dataset(Base):
             return None
         return errorlist
 
+    def accessible_by(self, dbsession, for_user):
+        if self.dataset_id is None:
+            raise Exception("cannot check accessibility. dataset needs to be committed first.")
+
+        for dsid, ds in accessible_datasets(dbsession, for_user, include_owned=True).items():
+            if ds is None or ds.dataset_id is None:
+                continue
+            if ds.dataset_id == self.dataset_id:
+                return True
+        return False
+
+    def gettask(self, dbsession, for_user):
+        if not self.accessible_by(dbsession, for_user):
+            return None
+        if not type(for_user) is User:
+            raise Exception("dataset::gettask - argument for_user needs to be of type User")
+
+        dsid = self.dataset_id
+        check_result = self.check_dataset()
+        if not check_result is None and len(check_result) > 0:
+            return None
+
+        dsname = self.get_name()
+        task = {"id": dsid, "name": dsname,
+                "dataset": self,
+                "progress": 0,
+                "size": self.dsmetadata.get("size", -1) or -1,
+                "user_roles": self.get_roles(dbsession, for_user),
+                "annos": self.annocount(dbsession, for_user),
+                "annos_today": self.annocount_today(dbsession, for_user)
+                }
+
+        if task['size'] and task['size'] > 0 and task['annos'] and task['annos'] > 0:
+            task['progress'] = round(task['annos'] / task['size'] * 100.0)
+            task['progress_today'] = round(task['annos_today'] / task['size'] * 100.0)
+            task['progress_beforetoday'] = task['progress'] - task['progress_today']
+
+        return task
+
     def dirty(self, dbsession):
         flag_dirty(self)
         flag_modified(self, "dsmetadata")
@@ -333,6 +372,8 @@ class Dataset(Base):
         dbsession.flush()
 
     def annocount_today(self, dbsession, uid):
+        if type(uid) is User:
+            uid = uid.uid
         allannos = dbsession.query(Annotation).filter_by(\
                 dataset_id=self.dataset_id,
                 owner_id=uid).all()
@@ -357,6 +398,8 @@ class Dataset(Base):
         return count_today
 
     def annocount(self, dbsession, uid):
+        if type(uid) is User:
+            uid = uid.uid
         val = dbsession.query(Annotation).filter_by(\
                 dataset_id=self.dataset_id,
                 owner_id=uid).count()
@@ -461,7 +504,9 @@ def all_datasets(dbsession):
 def my_datasets(dbsession, user_id):
     res = {}
 
-    user_obj = by_id(dbsession, user_id)
+    user_obj = user_id
+    if not type(user_obj) is User:
+        user_obj = by_id(dbsession, user_id)
 
     for ds in dbsession.query(Dataset).filter_by(owner=user_obj).all():
         if not ds or not ds.dataset_id:
@@ -473,7 +518,9 @@ def my_datasets(dbsession, user_id):
 def dataset_roles(dbsession, user_id):
     res = {}
 
-    user_obj = by_id(dbsession, user_id)
+    user_obj = user_id
+    if not type(user_obj) is User:
+        user_obj = by_id(dbsession, user_id)
     all_datasets = accessible_datasets(dbsession, user_id, include_owned=True)
 
     for dataset_id, dataset in all_datasets.items():
@@ -484,7 +531,10 @@ def dataset_roles(dbsession, user_id):
 def accessible_datasets(dbsession, user_id, include_owned=False):
     res = {}
 
-    user_obj = by_id(dbsession, user_id)
+    user_obj = user_id
+    if not type(user_obj) is User:
+        user_obj = by_id(dbsession, user_id)
+
     if include_owned:
         res = my_datasets(dbsession, user_id)
 

@@ -273,10 +273,12 @@
     </li>
 
         {% if userobj.uid == dataset.owner or userobj.uid|string in dataset.dsmetadata.acl %}
-        {% set aprogress = dataset.annocount(dbsession, userobj.uid) / (dataset.dsmetadata.size or 1) * 100.0 %}
-        <li class="progress singleprogress offset-2 col-4">
-            <div class="progress-bar" role="progressbar" style="width: {{aprogress|round}}%">
+
+        <li>
+            {% set task = dataset.gettask(dbsession, userobj) %}
+        {{ render_progress(task, addclass="singleprocess") }}
         </li>
+
         {% endif %}
     {% endfor %}
     </ul>
