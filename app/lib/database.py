@@ -319,6 +319,27 @@ class Dataset(Base):
         df = df.replace(np.nan, '', regex=True)
         return df, annotation_columns
 
+    def get_taglist(self):
+        return self.dsmetadata.get("taglist", [])
+
+    def get_anno_votes(self, dbsession, sample_id, exclude_user=None):
+        anno_votes = {}
+        if not type(sample_id) is str:
+            sample_id = str(sample_id)
+
+        for tag in self.get_taglist():
+            anno_votes[tag] = []
+
+        for anno in dbsession.query(Annotation).filter_by(dataset_id=self.dataset_id, sample=sample_id).all():
+            if not exclude_user is None and exclude_user is anno.owner:
+                continue
+            if anno.data is None or not 'value' in anno.data or anno.data['value'] is None or \
+                    not anno.data['value'] in self.get_taglist():
+                        continue
+            anno_votes[anno.data['value']].append(anno.owner)
+
+        return anno_votes
+
     def getannos(self, dbsession, uid, asdict=False):
         user_obj = by_id(dbsession, uid)
         annores = dbsession.query(Annotation).filter_by(owner_id=user_obj.uid, dataset_id=self.dataset_id).all()
@@ -489,6 +510,10 @@ class Annotation(Base):
 
     sample = Column(String, primary_key=True)
     data = Column(JSON)
+
+    def __repr__(self):
+        return "<Annotation (dataset: %s, owner: %s, sample: %s, data: %s)>" % \
+                (self.dataset_id, self.owner_id, self.sample, self.data)
 
 def dataset_by_id(dbsession, dataset_id, user_id=None):
     qry = None

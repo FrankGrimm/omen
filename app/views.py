@@ -323,6 +323,7 @@ def annotate(dsid=None, sample_idx=None):
 
         random_sample, random_sample_id = get_random_sample(df, id_column)
         sample_content = df[textcol][sample_idx]
+        sample_id = df[id_column][sample_idx]
 
         set_sample = df.iloc[int(sample_idx)][id_column]
         curanno_data = dataset.getanno(dbsession, session['user'], set_sample)
@@ -331,9 +332,15 @@ def annotate(dsid=None, sample_idx=None):
                 'value' in curanno_data['data']:
             curanno = curanno_data['data']['value']
 
-    return render_template("annotate.html", dataset=dataset, task=task, sample_idx=sample_idx, set_sample=set_sample, \
-                                            random_sample=random_sample, sample_content = sample_content, curanno=curanno, \
-                                            next_sample_idx=next_sample_idx, next_sample_id=next_sample_id)
+        anno_votes = None
+        if 'curator' in user_roles:
+            anno_votes = dataset.get_anno_votes(dbsession, sample_id=sample_id, exclude_user=session_user)
+            for tag in anno_votes.keys():
+                anno_votes[tag] = [annouser.get_name() for annouser in anno_votes[tag]]
+
+        return render_template("annotate.html", dataset=dataset, task=task, sample_idx=sample_idx, set_sample=set_sample, \
+                                                random_sample=random_sample, sample_content = sample_content, curanno=curanno, \
+                                                next_sample_idx=next_sample_idx, next_sample_id=next_sample_id, votes=anno_votes)
 
 @app.route(BASEURI + "/dataset/<dsid>/edit", methods=['GET', 'POST'])
 @app.route(BASEURI + "/dataset/create", methods=['GET', 'POST'])

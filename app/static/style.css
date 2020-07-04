@@ -329,5 +329,16 @@ a:hover {
     color: #77249d;
 }
 
+a.with_anno_vote {
+    padding-right: 30px;
+}
+
+span.anno_vote {
+    position: absolute;
+    top: 1px;
+    right: 5px;
+}
+
+
 
 
