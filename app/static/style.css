@@ -349,3 +349,14 @@ button.btn-ds-description {
     right: 0;
 }
 
+footer {
+    border-top: 1px solid #85abdb;
+    width: 100%;
+    margin: 5em 0 1em 0;
+    padding: 0.5em 0 0 0;
+    color: #3e5271;
+}
+
+footer a {
+    color: #3e5271;
+}

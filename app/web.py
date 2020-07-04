@@ -1,6 +1,8 @@
 import sys
 from flask import Flask, flash, redirect, render_template, request, url_for, session, Response
 
+from datetime import datetime
+
 import app.lib.config as config
 
 BASEURI = config.get("base_uri", "/omen") or "/omen"
@@ -39,7 +41,10 @@ def inject_globals():
         if is_authenticated:
             annotation_tasks = db.annotation_tasks(dbsession, session['user'])
 
-    return dict(product_name=config.get("product_name", "Annotations"), is_authenticated=is_authenticated, tasks=annotation_tasks)
+    return dict(product_name=config.get("product_name", "Annotations"), \
+                is_authenticated=is_authenticated,
+                tasks=annotation_tasks,
+                cur_year=datetime.utcnow().year)
 
 @app.errorhandler(404)
 def page_not_found(error):
