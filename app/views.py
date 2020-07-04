@@ -361,6 +361,12 @@ def new_dataset(dsid=None):
 
         dbsession.add(dataset)
 
+        if dataset.dataset_id is None:
+            dataset.dirty(dbsession)
+            dbsession.commit()
+
+            dbsession.flush()
+
         if request.method == 'POST':
 
             formaction = request.form.get("action", None)
