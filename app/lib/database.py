@@ -91,7 +91,7 @@ class User(Base):
 
         newpwhash = scrypt.hash(pw1)
         self.pwhash = newpwhash
-        dbsession.update(self)
+        dbsession.merge(self)
 
         return self.verify_password(pw1)
 
@@ -595,7 +595,7 @@ def connect():
     if not config.get("db_debug", None) is None:
         web.app.config["SQLALCHEMY_ECHO"] = True
     web.app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    flask_db = SQLAlchemy(web.app, session_options={"expire_on_commit": False})
+    flask_db = SQLAlchemy(web.app, session_options={"expire_on_commit": False, "autoflush": False})
     migrate = Migrate(web.app, flask_db)
 
     masked_connstring = connection_string
