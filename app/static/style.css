@@ -360,3 +360,18 @@ footer {
 footer a {
     color: #3e5271;
 }
+
+div.df_pagination {
+}
+
+div.df_pagination a {
+    color: #205482;
+}
+
+div.df_pagination a:hover {
+    color: #424242;
+}
+
+
+
+
