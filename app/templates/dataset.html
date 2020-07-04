@@ -4,7 +4,7 @@
 
   <div class="row">
       <div class="col-12">
-          <a class="btn btn-light" style="font-size: 12pt" href="{{ url_for('new_dataset') }}">
+          <a class="btn btn-light" style="font-size: 12pt" href="{{ url_for('new_dataset') }}" title="Create new dataset">
         create new <i class="fas fa-plus-circle"></i>
       </a>
       </div>
@@ -19,16 +19,16 @@
         <li class="row ds_meta">
             <div class="col-2">
                 <div class="btn-group">
-                <a class="btn btn-sm btn-light" href="{{ url_for("new_dataset", dsid=dsid) }}"><i class="fas fa-cog"></i></a> 
+                <a class="btn btn-sm btn-light" href="{{ url_for("new_dataset", dsid=dsid) }}" title="Edit Dataset"><i class="fas fa-cog"></i></a> 
 
                 {% if not (ds and ds_errors and ds in ds_errors and ds_errors[ds]) %}
-                <a class="btn btn-sm btn-secondary" href="{{ url_for("download", dsid=dsid) }}"><i class="fas fa-download"></i></a> 
-                <a class="btn btn-sm btn-secondary" href="{{ url_for("inspect_dataset", dsid=dsid) }}"><i class="fas fa-table"></i></a> 
+                <a class="btn btn-sm btn-secondary" href="{{ url_for("download", dsid=dsid) }}" title="Download"><i class="fas fa-download"></i></a> 
+                <a class="btn btn-sm btn-secondary" href="{{ url_for("inspect_dataset", dsid=dsid) }}" title="View"><i class="fas fa-table"></i></a> 
                 {% endif %}
                 </div>
             </div>
             <div class="col-10 ds_overview_label">
-            <a href="{{ url_for('new_dataset', dsid=dsid) }}">
+            <a href="{{ url_for('new_dataset', dsid=dsid) }}" title="Edit Dataset">
                 {{ ds.get_name() }}
             </a>
             </div>
@@ -58,10 +58,10 @@
             <div class="col-2">
                 <div class="btn-group">
                     {% if 'curator' in dsroles %}
-                    <a class="btn btn-sm btn-secondary" href="{{ url_for("download", dsid=dsid) }}"><i class="fas fa-download"></i></a> 
+                    <a class="btn btn-sm btn-secondary" href="{{ url_for("download", dsid=dsid) }}" title="Download"><i class="fas fa-download"></i></a> 
                     {% endif %}
                     {% if 'annotator' in dsroles %}
-                    <a class="btn btn-sm btn-secondary" href="{{ url_for("inspect_dataset", dsid=dsid) }}"><i class="fas fa-table"></i></a> 
+                    <a class="btn btn-sm btn-secondary" href="{{ url_for("inspect_dataset", dsid=dsid) }}" title="View"><i class="fas fa-table"></i></a> 
                     {% endif %}
                 </div>
             </div>
