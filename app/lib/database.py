@@ -1,29 +1,27 @@
-from sqlalchemy import MetaData
-from sqlalchemy.ext.declarative import declarative_base
-Base = declarative_base()
-from sqlalchemy import Column, Integer, String, JSON
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship
-from sqlalchemy_utils import database_exists, create_database
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from sqlalchemy.orm.attributes import flag_dirty, flag_modified
-
+"""
+Database model and utilities
+"""
 from contextlib import contextmanager
 
 from datetime import datetime
 from io import StringIO
-import json
-import uuid
 import sys
-import os
-import pandas as pd
-import numpy as np
-import app.web as web
-from passlib.hash import scrypt
 import getpass
 import atexit
-from contextlib import contextmanager
+
+from passlib.hash import scrypt
+from sqlalchemy.ext.declarative import declarative_base
+Base = declarative_base()
+from sqlalchemy import Column, Integer, String, JSON, ForeignKey
+from sqlalchemy.orm import relationship
+from sqlalchemy.orm.attributes import flag_dirty, flag_modified
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+
+import pandas as pd
+import numpy as np
+
+import app.web as web
 from . import config
 
 flask_db = None
@@ -65,7 +63,7 @@ class User(Base):
     datasets = relationship("Dataset")
     annotations = relationship("Annotation")
 
-    def __init__(self, uid = None, email = None, pwhash = None):
+    def __init__(self, uid=None, email=None, pwhash=None):
         self.uid = uid
         self.email = email
         self.pwhash = pwhash
@@ -142,9 +140,9 @@ class Dataset(Base):
         return idcolumn
 
     def get_roles(self, dbsession, user_obj):
-        if type(user_obj) is str:
+        if isinstance(user_obj, str):
             user_obj = int(user_obj)
-        if type(user_obj) is int:
+        if isinstance(user_obj, int):
             user_obj = by_id(dbsession, user_obj)
         if not user_obj:
             return set()
@@ -186,17 +184,17 @@ class Dataset(Base):
                 len(self.dsmetadata.get("taglist", [])) == 0:
             errorlist.append("no tags defined")
 
-        dferr = self.as_df(strerrors = True)
+        dferr = self.as_df(strerrors=True)
         if dferr is None:
             errorlist.append("no data")
-        if type(dferr) is str:
+        if isinstance(dferr, str):
             errorlist.append("data error: %s" % dferr)
 
         textcol = self.dsmetadata.get("textcol", None)
         if textcol is None:
             errorlist.append("no text column")
         if not dferr is None and \
-                not type(dferr) is str and \
+                not isinstance(dferr, str) and \
                 not textcol in dferr.columns:
             errorlist.append("text column '%s' not found in data" % textcol)
 
@@ -204,7 +202,7 @@ class Dataset(Base):
         if idcolumn is None:
             errorlist.append("no ID column")
         elif not dferr is None and \
-                not type(dferr) is str and \
+                not isinstance(dferr, str) and \
                 not idcolumn in dferr.columns:
             errorlist.append("ID column '%s' not found in data" % idcolumn)
 
@@ -213,7 +211,7 @@ class Dataset(Base):
         #if acl is None or len(acl) == 0:
         #    errorlist.append("no annotators")
 
-        if len(errorlist) is 0:
+        if len(errorlist) == 0:
             return None
         return errorlist
 
@@ -221,7 +219,7 @@ class Dataset(Base):
         if self.dataset_id is None:
             raise Exception("cannot check accessibility. dataset needs to be committed first.")
 
-        for dsid, ds in accessible_datasets(dbsession, for_user, include_owned=True).items():
+        for _, ds in accessible_datasets(dbsession, for_user, include_owned=True).items():
             if ds is None or ds.dataset_id is None:
                 continue
             if ds.dataset_id == self.dataset_id:
@@ -231,7 +229,7 @@ class Dataset(Base):
     def gettask(self, dbsession, for_user):
         if not self.accessible_by(dbsession, for_user):
             return None
-        if not type(for_user) is User:
+        if not isinstance(for_user, User):
             raise Exception("dataset::gettask - argument for_user needs to be of type User")
 
         dsid = self.dataset_id
@@ -262,20 +260,16 @@ class Dataset(Base):
         dbsession.add(self)
 
     def annotations(self, dbsession, foruser=None, user_column=None, hideempty=False, only_user=False):
-        # TODO check roles of "foruser" and only expose annotations accordingly
-
         df = self.as_df()
 
-        if type(foruser) is str:
-            foruser = int(foruser)
-        if type(foruser) is int:
-            foruser = by_id(dbsession, foruser)
+        foruser = by_id(dbsession, foruser)
 
         user_roles = self.get_roles(dbsession, foruser)
 
         if not 'annotator' in user_roles and \
                 not 'curator' in user_roles:
-            raise Exception("Unauthorized, user %s does not have role 'curator'. Active roles: %s" % (foruser, user_roles))
+            raise Exception("Unauthorized, user %s does not have role 'curator'. Active roles: %s" \
+                                % (foruser, user_roles))
 
         id_column = self.get_id_column()
         df = df.set_index(id_column)
@@ -297,7 +291,9 @@ class Dataset(Base):
             uannos = uannos.drop(["uid"], axis=1)
             uannos = uannos.set_index("sample")
 
-            df = pd.merge(df, uannos, left_on='idxmerge', right_index=True, how='left', indicator=False)
+            df = pd.merge(df, uannos, \
+                            left_on='idxmerge', right_index=True, how='left', \
+                            indicator=False)
             # df = df.drop(["idxmerge"], axis=1)
 
             cur_user_column = "anno-%s-%s" % \
@@ -329,33 +325,36 @@ class Dataset(Base):
 
     def get_anno_votes(self, dbsession, sample_id, exclude_user=None):
         anno_votes = {}
-        if not type(sample_id) is str:
+        if not isinstance(sample_id, str):
             sample_id = str(sample_id)
 
         for tag in self.get_taglist():
             anno_votes[tag] = []
 
-        for anno in dbsession.query(Annotation).filter_by(dataset_id=self.dataset_id, sample=sample_id).all():
+        for anno in dbsession.query(Annotation).filter_by( \
+                dataset_id=self.dataset_id, sample=sample_id).all():
+
             if not exclude_user is None and exclude_user is anno.owner:
                 continue
             if anno.data is None or not 'value' in anno.data or anno.data['value'] is None or \
                     not anno.data['value'] in self.get_taglist():
-                        continue
+                continue
             anno_votes[anno.data['value']].append(anno.owner)
 
         return anno_votes
 
     def getannos(self, dbsession, uid, asdict=False):
         user_obj = by_id(dbsession, uid)
-        annores = dbsession.query(Annotation).filter_by(owner_id=user_obj.uid, dataset_id=self.dataset_id).all()
+        annores = dbsession.query(Annotation).filter_by( \
+                    owner_id=user_obj.uid, dataset_id=self.dataset_id).all()
         if not asdict:
             return annores
 
         resdict = {"sample": [], "uid": [], "annotation": []}
         for anno in annores:
-            resdict['uid'].append( anno.owner_id )
-            resdict['sample'].append( anno.sample )
-            resdict['annotation'].append( anno.data['value'] \
+            resdict['uid'].append(anno.owner_id)
+            resdict['sample'].append(anno.sample)
+            resdict['annotation'].append(anno.data['value'] \
                     if 'value' in anno.data and not anno.data['value'] is None \
                     else None)
 
@@ -366,7 +365,9 @@ class Dataset(Base):
         sample = str(sample)
         anno_obj_data = {}
 
-        anno_obj = dbsession.query(Annotation).filter_by(owner_id=user_obj.uid, dataset_id=self.dataset_id, sample=sample).one_or_none()
+        anno_obj = dbsession.query(Annotation).filter_by(owner_id=user_obj.uid, \
+                        dataset_id=self.dataset_id, sample=sample).one_or_none()
+
         if not anno_obj is None:
             anno_obj_data = anno_obj.data or {}
 
@@ -376,29 +377,27 @@ class Dataset(Base):
                }
 
     def setanno(self, dbsession, uid, sample, value):
-        user_obj = None
-        if type(uid) is User:
-            user_obj = uid
-        else:
-            user_obj = by_id(dbsession, uid)
+        user_obj = by_id(dbsession, uid)
 
         if user_obj is None:
             raise Exception("setanno() requires a user object or id")
 
         anno_data = {"updated": datetime.now().timestamp(), "value": value}
 
-        sample=str(sample)
-        existing_anno = dbsession.query(Annotation).filter_by(owner_id=user_obj.uid, dataset_id=self.dataset_id, sample=sample).one_or_none()
+        sample = str(sample)
+        existing_anno = dbsession.query(Annotation).filter_by( \
+                owner_id=user_obj.uid, dataset_id=self.dataset_id, sample=sample).one_or_none()
+
         if existing_anno is None:
             newanno = Annotation(owner=user_obj, dataset=self, sample=sample, data=anno_data)
             dbsession.add(newanno)
         else:
-            existing_anno.data=anno_data
+            existing_anno.data = anno_data
             dbsession.merge(existing_anno)
         dbsession.flush()
 
     def annocount_today(self, dbsession, uid):
-        if type(uid) is User:
+        if isinstance(uid, User):
             uid = uid.uid
         allannos = dbsession.query(Annotation).filter_by(\
                 dataset_id=self.dataset_id,
@@ -413,18 +412,18 @@ class Dataset(Base):
                 continue
             try:
                 anno_upd = datetime.fromtimestamp(anno_upd)
-            except Exception as ignored:
+            except ValueError as _:
                 fprint("malformed annotation timestamp %s" % anno_upd)
                 continue
 
-            if not anno_upd.date() == datetime.today().date():
+            if anno_upd.date() != datetime.today().date():
                 continue
 
             count_today += 1
         return count_today
 
     def annocount(self, dbsession, uid):
-        if type(uid) is User:
+        if isinstance(uid, User):
             uid = uid.uid
         val = dbsession.query(Annotation).filter_by(\
                 dataset_id=self.dataset_id,
@@ -434,13 +433,14 @@ class Dataset(Base):
     def set_role(self, dbsession, uid, role):
         if uid is None:
             return False
-        if not type(uid) is str:
+
+        if not isinstance(uid, str):
             uid = str(uid)
         if uid == self.owner_id:
             return False
 
         curacl = self.get_acl()
-        if not uid in curacl:
+        if uid not in curacl:
             curacl[uid] = None
 
         fprint("changing role for user %s from %s to %s" % (uid, curacl[uid], role))
@@ -456,11 +456,11 @@ class Dataset(Base):
             curacl = {}
         return curacl
 
-    def as_df(self, strerrors = False):
-        # TODO convert id_column and text_colum to string
+    def as_df(self, strerrors=False):
+        # TODO convert id_column and text_colum to string?
         if strerrors:
             try:
-                return self.as_df(strerrors = False)
+                return self.as_df(strerrors=False)
             except Exception as e:
                 return str(e)
         else:
@@ -498,7 +498,7 @@ class Dataset(Base):
         df = None
         try:
             df = self.as_df()
-        except Exception as ignored:
+        except Exception as _:
             pass
 
         if not df is None:
@@ -534,9 +534,7 @@ def all_datasets(dbsession):
 def my_datasets(dbsession, user_id):
     res = {}
 
-    user_obj = user_id
-    if not type(user_obj) is User:
-        user_obj = by_id(dbsession, user_id)
+    user_obj = by_id(dbsession, user_id)
 
     for ds in dbsession.query(Dataset).filter_by(owner=user_obj).all():
         if not ds or not ds.dataset_id:
@@ -548,12 +546,11 @@ def my_datasets(dbsession, user_id):
 def dataset_roles(dbsession, user_id):
     res = {}
 
-    user_obj = user_id
-    if not type(user_obj) is User:
-        user_obj = by_id(dbsession, user_id)
-    all_datasets = accessible_datasets(dbsession, user_id, include_owned=True)
+    user_obj = by_id(dbsession, user_id)
 
-    for dataset_id, dataset in all_datasets.items():
+    all_user_datasets = accessible_datasets(dbsession, user_id, include_owned=True)
+
+    for dataset_id, dataset in all_user_datasets.items():
         res[dataset_id] = dataset.get_roles(dbsession, user_obj)
 
     return res
@@ -561,9 +558,7 @@ def dataset_roles(dbsession, user_id):
 def accessible_datasets(dbsession, user_id, include_owned=False):
     res = {}
 
-    user_obj = user_id
-    if not type(user_obj) is User:
-        user_obj = by_id(dbsession, user_id)
+    user_obj = by_id(dbsession, user_id)
 
     if include_owned:
         res = my_datasets(dbsession, user_id)
@@ -587,15 +582,17 @@ def accessible_datasets(dbsession, user_id, include_owned=False):
 
 def by_email(dbsession, email, doraise=True):
     qry = dbsession.query(User).filter_by(email=email)
+
     if doraise:
         return qry.one()
-    else:
-        try:
-            return qry.one()
-        except:
-            return None
+
+    return qry.one_or_none()
 
 def by_id(dbsession, uid):
+    if isinstance(uid, User):
+        return uid
+    if isinstance(uid, str):
+        uid = int(uid)
     return dbsession.query(User).filter_by(uid=uid).one()
 
 def insert_user(dbsession, email, pwhash):
@@ -612,7 +609,7 @@ def insert_user(dbsession, email, pwhash):
     return (True, newobj)
 
 def annotation_tasks(dbsession, for_user):
-    datasets = accessible_datasets(dbsession, for_user, include_owned = True)
+    datasets = accessible_datasets(dbsession, for_user, include_owned=True)
     tasks = []
 
     for dsid, dataset in datasets.items():
@@ -670,18 +667,11 @@ def create_user(dbsession, email=None):
     else:
         fprint("user already exists", obj)
 
-def dotest(dbsession):
-    print("db::dotest")
-    hashtest(dbsession)
-
-    print("by_email", by_email(dbsession, "admin"))
-    print("by_uid", by_id(dbsession, 1))
-
 def connect():
-    global flask_db
+    global flask_db, migrate
 
     print("[database] connect")
-    connection_string = config.get("dbconnection", raise_missing = True)
+    connection_string = config.get("dbconnection", raise_missing=True)
     web.app.config["SQLALCHEMY_DATABASE_URI"] = connection_string
     if not config.get("db_debug", None) is None:
         web.app.config["SQLALCHEMY_ECHO"] = True
@@ -695,7 +685,7 @@ def connect():
         masked_connstring = masked_connstring[:delim+ len("password")] + ":::" + "*" * len(masked_connstring[delim :])
     print("[database] connection string (masked): %s" % masked_connstring)
     db_pool_size = config.get("dbpool", "10", raise_missing=False)
-    if not type(db_pool_size) is int:
+    if not isinstance(db_pool_size, int):
         db_pool_size = int(db_pool_size)
     if not db_pool_size:
         db_pool_size = 1

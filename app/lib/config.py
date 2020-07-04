@@ -1,7 +1,7 @@
 import json
 import os
 
-CFG_FILENAME="./config.json"
+CFG_FILENAME = "./config.json"
 
 def load_config():
     obj = {}
@@ -19,7 +19,7 @@ def store_config(cfg):
         json.dump(cfg, outfile)
     return cfg
 
-def get(key, default_value = None, raise_missing = False):
+def get(key, default_value=None, raise_missing=False):
     cfg = load_config()
 
     if not cfg or not key in cfg:
@@ -29,7 +29,7 @@ def get(key, default_value = None, raise_missing = False):
 
     return cfg[key]
 
-def set(key, val):
+def store(key, val):
+    cfg = load_config()
     cfg[key] = val
     store_config(cfg)
-

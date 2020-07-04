@@ -1,37 +1,36 @@
-import os
-import sys
+"""
+Route definitions and business logic.
+"""
 from datetime import datetime
 import tempfile
-import random
 import re
-from markupsafe import Markup, escape
 import string
-
-from werkzeug.utils import secure_filename
-from flask import Flask, flash, redirect, render_template, request, url_for, session, Response, abort
 from functools import wraps
 from io import StringIO
 import math
 
+from markupsafe import Markup
+from werkzeug.utils import secure_filename
+from flask import flash, redirect, render_template, request, url_for, session, Response, abort
+
 import app.lib.config as config
 from app.web import app, BASEURI, db
 
-def login_required(f):
-    @wraps(f)
+def login_required(func):
+    @wraps(func)
     def decorated_function(*args, **kwargs):
         if not session or \
                 session.get("user", None) is None:
             return redirect(url_for("login", backto=request.url))
-        return f(*args, **kwargs)
+        return func(*args, **kwargs)
     return decorated_function
 
 @app.template_filter(name="highlight")
 def highlight(value, query):
-    result = Markup.escape(value)
     if not query is None and query.strip() != "":
         query = r"(" + re.escape(query.strip()) + ")"
         value = re.sub(query, r'<span class="ds_highlight">\1</span>', value, \
-                flags = re.IGNORECASE)
+                flags=re.IGNORECASE)
     return Markup(value)
 
 @app.route('/')
@@ -46,19 +45,22 @@ def index():
         access_datasets = db.accessible_datasets(dbsession, session['user'])
 
         ds_errors = {}
-        for ds in my_datasets.values():
-            if ds in ds_errors:
+        for cur_dataset in my_datasets.values():
+            if cur_dataset in ds_errors:
                 continue
-            ds_errors[ds] = ds.check_dataset()
+            ds_errors[cur_dataset] = cur_dataset.check_dataset()
 
-        for ds in access_datasets.values():
-            if ds in ds_errors:
+        for cur_dataset in access_datasets.values():
+            if cur_dataset in ds_errors:
                 continue
-            ds_errors[ds] = ds.check_dataset()
+            ds_errors[cur_dataset] = cur_dataset.check_dataset()
 
-        return render_template('index.html', my_datasets=my_datasets, access_datasets=access_datasets, \
-                                    ds_errors=ds_errors, dbsession=dbsession, session_user=session_user, \
-                                    tasks = annotation_tasks)
+        return render_template('index.html', my_datasets=my_datasets, \
+                                    access_datasets=access_datasets, \
+                                    ds_errors=ds_errors, \
+                                    dbsession=dbsession, \
+                                    session_user=session_user, \
+                                    tasks=annotation_tasks)
 
 @app.before_request
 def before_handler():
@@ -72,23 +74,45 @@ def before_handler():
 @app.route(BASEURI + "/logout")
 @login_required
 def logout():
-    [session.pop(key) for key in list(session.keys())]
+    _ = [session.pop(key) for key in list(session.keys())]
     session.clear()
 
     return redirect(url_for('index'))
 
+def get_accessible_dataset(dbsession, dsid):
+    my_datasets = db.my_datasets(dbsession, session['user'])
+    access_datasets = db.accessible_datasets(dbsession, session['user'])
+
+    cur_dataset = None
+    if not dsid is None and dsid in my_datasets:
+        cur_dataset = my_datasets[dsid]
+    if not dsid is None and dsid in access_datasets:
+        cur_dataset = access_datasets[dsid]
+    return cur_dataset
+
+def reorder_dataframe(df, cur_dataset, annotation_columns):
+    columns = [cur_dataset.get_id_column(), cur_dataset.get_text_column()] + \
+                list(df.columns.intersection(annotation_columns))
+
+    # drop other columns
+    df = df.reset_index()
+    df = df.loc[:, columns]
+    df.set_index(cur_dataset.get_id_column())
+    # reorder
+    df = df[columns]
+    return df
+
+def query_dataframe(df, textcol, query):
+    # text query filter
+    if not query is None and query != '':
+        df[textcol] = df[textcol].astype(str)
+        df = df[df[textcol].str.contains(query, na=False, regex=False, case=False)]
+    return df
+
 @app.route(BASEURI + "/dataset/<dsid>/inspect")
 @login_required
-def inspect_dataset(dsid = None):
+def inspect_dataset(dsid=None):
     with db.session_scope() as dbsession:
-        my_datasets = db.my_datasets(dbsession, session['user'])
-        access_datasets = db.accessible_datasets(dbsession, session['user'])
-
-        dataset = None
-        if not dsid is None and dsid in my_datasets:
-            dataset = my_datasets[dsid]
-        if not dsid is None and dsid in access_datasets:
-            dataset = access_datasets[dsid]
 
         hideempty = True
         if not request.args.get("hideempty", None) is None and \
@@ -97,27 +121,17 @@ def inspect_dataset(dsid = None):
 
         query = request.args.get("query", "").strip()
 
+        cur_dataset = get_accessible_dataset(dbsession, dsid)
+
         session_user = db.by_id(dbsession, session['user'])
-        df, annotation_columns = dataset.annotations(dbsession, foruser=session_user, user_column="annotations", hideempty=hideempty)
+        df, annotation_columns = cur_dataset.annotations(dbsession, \
+                                                foruser=session_user, \
+                                                user_column="annotations", \
+                                                hideempty=hideempty)
 
-        user_roles = dataset.get_roles(dbsession, session_user)
+        df = reorder_dataframe(df, cur_dataset, annotation_columns)
 
-        columns = [dataset.get_id_column(), dataset.get_text_column()] + [col for col in df.columns.intersection(annotation_columns)]
-
-        # drop other columns
-        df = df.reset_index()
-        df = df.loc[:, columns]
-        df.set_index(dataset.get_id_column())
-        # reorder
-        df = df[columns]
-
-        # text query filter
-        if query != '':
-            textcol = dataset.get_text_column()
-            df[textcol] = df[textcol].astype(str)
-            df = df[df[textcol].str.contains(query, na=False, regex=False, case=False)]
-
-        err = None
+        df = query_dataframe(df, textcol=cur_dataset.get_text_column(), query=query)
 
         # pagination
         results = df.shape[0]
@@ -126,13 +140,13 @@ def inspect_dataset(dsid = None):
         pages = 1
         try:
             page_size = int(config.get("inspect_page_size", "100"))
-        except Exception as e:
-            err = "Invalid config value for 'inspect_page_size': %s" % e
+        except ValueError as e:
+            flash("Invalid config value for 'inspect_page_size': %s" % e, "error")
 
         try:
             page = int(request.args.get("page", "1"))
-        except Exception as e:
-            err = "Invalid value for param 'page': %s" % e
+        except ValueError as e:
+            flash("Invalid value for param 'page': %s" % e, "error")
 
         pages = math.ceil(df.shape[0] / page_size)
         if df.shape[0] > page_size:
@@ -145,40 +159,39 @@ def inspect_dataset(dsid = None):
             df = df[onset:offset]
 
         pagination_size = 5
-        pagination_elements = list(range(max(1, page - pagination_size), min(page + pagination_size + 1, pages + 1)))
+        pagination_elements = list(range(max(1, page - pagination_size), \
+                                         min(page + pagination_size + 1, pages + 1)))
         pagination_elements.sort()
 
-        if not err is None:
-            flash("%s" % err, "error")
-
-        return render_template("dataset_inspect.html", dataset=dataset, df=df, hideempty=hideempty, query=query, \
-                                page_size=page_size, page=page, pages=pages, results=results, pagination_elements=pagination_elements, \
-                                user_roles=user_roles)
+        return render_template("dataset_inspect.html", dataset=cur_dataset,
+                                df=df, \
+                                hideempty=hideempty, \
+                                query=query, \
+                                page_size=page_size, \
+                                page=page, \
+                                pages=pages, \
+                                results=results, \
+                                pagination_elements=pagination_elements, \
+                                user_roles=cur_dataset.get_roles(dbsession, session_user) \
+                                )
 
 @app.route(BASEURI + "/dataset/<dsid>/download")
 @login_required
-def download(dsid = None):
+def download(dsid=None):
 
     with db.session_scope() as dbsession:
-        my_datasets = db.my_datasets(dbsession, session['user'])
-        access_datasets = db.accessible_datasets(dbsession, session['user'])
+        cur_dataset = get_accessible_dataset(dbsession, dsid)
 
-        dataset = None
-        if not dsid is None and dsid in my_datasets:
-            dataset = my_datasets[dsid]
-        if not dsid is None and dsid in access_datasets:
-            dataset = access_datasets[dsid]
-
-        df, _ = dataset.annotations(dbsession, foruser=session['user'])
+        df, _ = cur_dataset.annotations(dbsession, foruser=session['user'])
 
         s = StringIO()
         df.to_csv(s)
         csvc = s.getvalue()
 
         download_filename = "dataset.csv"
-        dataset_name_sanitized = "".join(filter(lambda c: c in string.ascii_letters or c in string.digits or c in "-_. ", dataset.get_name()))
-        dataset_name_sanitized = dataset_name_sanitized.strip()
-        dataset_name_sanitized = dataset_name_sanitized.replace(' ', '\ ')
+        is_valid_char = lambda c: c in string.ascii_letters or c in string.digits or c in "-_. "
+        dataset_name_sanitized = "".join(filter(is_valid_char, cur_dataset.get_name()))
+        dataset_name_sanitized = dataset_name_sanitized.strip().replace(' ', '\\ ')
 
         if len(dataset_name_sanitized) > 0:
             download_filename = "%s.csv" % dataset_name_sanitized
@@ -191,7 +204,7 @@ def download(dsid = None):
 @app.route(BASEURI + "/dataset")
 @app.route(BASEURI + "/dataset/<dsid>")
 @login_required
-def dataset(dsid=None):
+def show_datasets(dsid=None):
     with db.session_scope() as dbsession:
 
         userobj = db.by_id(dbsession, session['user'])
@@ -216,8 +229,12 @@ def dataset(dsid=None):
                 continue
             ds_errors[ds] = ds.check_dataset()
 
-        return render_template('dataset.html', my_datasets=my_datasets, access_datasets=access_datasets, \
-                                    dataset=dataset, ds_errors=ds_errors, dbsession=dbsession, userobj=userobj)
+        return render_template('dataset.html', my_datasets=my_datasets, \
+                                access_datasets=access_datasets, \
+                                dataset=dataset, \
+                                ds_errors=ds_errors, \
+                                dbsession=dbsession, \
+                                userobj=userobj)
 
 @app.route(BASEURI + "/user/create", methods=["GET", "POST"])
 @login_required
@@ -256,11 +273,14 @@ def annotate(dsid=None, sample_idx=None):
             dataset = access_datasets[dsid]
 
         if dataset is None:
-            return abort(404, description="Forbidden. User does not have access to requested dataset.")
+            return abort(404, \
+                    description="Forbidden. User does not have access to requested dataset.")
 
         user_roles = dataset.get_roles(dbsession, session_user)
         if not 'annotator' in user_roles:
-            raise Exception("Forbidden. Current user roles %s do not allow annotation." % user_roles)
+            return abort(404, \
+                    description="Forbidden. Current user roles %s do not allow annotation." \
+                                % user_roles)
 
         task = {"id": dsid,
                 "name": dataset.dsmetadata.get("name", dataset.dataset_id),
@@ -279,9 +299,11 @@ def annotate(dsid=None, sample_idx=None):
         id_column = dataset.get_id_column()
 
         #df = dataset.as_df()
-        df, annotation_columns = dataset.annotations(dbsession, foruser=session_user, user_column="annotations", \
+        df, annotation_columns = dataset.annotations(dbsession, foruser=session_user, \
+                                                    user_column="annotations", \
                                                     hideempty=False, only_user=True)
-        columns = [id_column, dataset.get_text_column()] + [col for col in df.columns.intersection(annotation_columns)]
+        columns = [id_column, dataset.get_text_column()] + \
+                    list(df.columns.intersection(annotation_columns))
 
         df = df.reset_index()
         df = df.loc[:, columns]
@@ -297,7 +319,7 @@ def annotate(dsid=None, sample_idx=None):
         if sample_idx is None:
             try:
                 sample_idx = int(request.args.get("sample_idx", None))
-            except Exception as ignored:
+            except ValueError as _:
                 pass
 
             if sample_idx is None:
@@ -321,7 +343,7 @@ def annotate(dsid=None, sample_idx=None):
         set_sample_value = None
         try:
             set_sample_idx = str(int(request.args.get("set_sample_idx", None)))
-        except Exception as ignored:
+        except ValueError as _:
             pass
 
         if not set_sample_idx is None:
@@ -331,7 +353,7 @@ def annotate(dsid=None, sample_idx=None):
             set_sample = df.iloc[int(set_sample_idx)][id_column]
             dataset.setanno(dbsession, session['user'], set_sample, set_sample_value)
 
-        random_sample, random_sample_id = get_random_sample(df, id_column)
+        random_sample, _ = get_random_sample(df, id_column)
         sample_content = df[textcol][sample_idx]
         sample_id = df[id_column][sample_idx]
 
@@ -344,13 +366,36 @@ def annotate(dsid=None, sample_idx=None):
 
         anno_votes = None
         if 'curator' in user_roles:
-            anno_votes = dataset.get_anno_votes(dbsession, sample_id=sample_id, exclude_user=session_user)
+            anno_votes = dataset.get_anno_votes(dbsession, sample_id=sample_id, \
+                                                exclude_user=session_user)
             for tag in anno_votes.keys():
                 anno_votes[tag] = [annouser.get_name() for annouser in anno_votes[tag]]
 
-        return render_template("annotate.html", dataset=dataset, task=task, sample_idx=sample_idx, set_sample=set_sample, \
-                                                random_sample=random_sample, sample_content = sample_content, curanno=curanno, \
-                                                next_sample_idx=next_sample_idx, next_sample_id=next_sample_id, votes=anno_votes)
+        return render_template("annotate.html", dataset=dataset, \
+                                task=task, \
+                                sample_idx=sample_idx, \
+                                set_sample=set_sample, \
+                                random_sample=random_sample, \
+                                sample_content=sample_content, \
+                                curanno=curanno, \
+                                next_sample_idx=next_sample_idx, \
+                                next_sample_id=next_sample_id, \
+                                votes=anno_votes)
+
+def dataset_lookup_or_create(dbsession, dsid, editmode):
+    if dsid is None:
+        dataset = db.Dataset()
+    else:
+        dataset = db.dataset_by_id(dbsession, dsid, user_id=session['user'])
+        if not dataset is None:
+            editmode = 'edit'
+        else:
+            dataset = db.Dataset()
+
+    if dataset.dsmetadata is None:
+        dataset.dsmetadata = {}
+
+    return dataset, editmode
 
 @app.route(BASEURI + "/dataset/<dsid>/edit", methods=['GET', 'POST'])
 @app.route(BASEURI + "/dataset/create", methods=['GET', 'POST'])
@@ -360,21 +405,12 @@ def new_dataset(dsid=None):
     editmode = 'create'
 
     with db.session_scope() as dbsession:
-        if dsid is None:
-            dataset = db.Dataset()
-        else:
-            try:
-                dataset = db.dataset_by_id(dbsession, dsid, user_id=session['user'])
-            except Exception as e:
-                flash("Dataset not found or access denied", "error")
-                return abort(404, description="Dataset not found or access denied")
-            if not dataset is None:
-                editmode = 'edit'
-            else:
-                dataset = db.Dataset()
-
-        if dataset.dsmetadata is None:
-            dataset.dsmetadata = {}
+        dataset = None
+        try:
+            dataset, editmode = dataset_lookup_or_create(dbsession, dsid, editmode)
+        except Exception as _:
+            flash("Dataset not found or access denied", "error")
+            return abort(404, description="Dataset not found or access denied")
 
         userobj = db.by_id(dbsession, session['user'])
         if dataset.owner is None:
@@ -400,21 +436,18 @@ def new_dataset(dsid=None):
             #print("files", request.files)
             #print("--- " * 5)
 
-            dsdirty = False
             if not formaction is None and formaction == 'change_name':
                 dsname = request.form.get('dataset_name', None)
                 if not dsname is None:
                     dsname = dsname.strip()
                     if dsname != '':
                         dataset.dsmetadata['name'] = dsname
-                        dsdirty = True
 
             if not formaction is None and formaction == 'change_description':
                 ds_description = request.form.get('setdescription', None)
                 if not ds_description is None:
                     ds_description = ds_description.strip()
                     dataset.dsmetadata['description'] = ds_description
-                    dsdirty = True
 
             if not formaction is None and formaction == 'delete_dataset' and \
                     request.form.get("confirmation", "") == "delete_dataset_confirmed" and \
@@ -429,15 +462,12 @@ def new_dataset(dsid=None):
 
             if not formaction is None and formaction == 'change_textcol' and not request.form.get("textcol", None) is None:
                 dataset.dsmetadata['textcol'] = request.form.get("textcol", None)
-                dsdirty = True
 
             if not formaction is None and formaction == 'change_idcolumn' and not request.form.get("idcolumn", None) is None:
                 dataset.dsmetadata['idcolumn'] = request.form.get("idcolumn", None)
-                dsdirty = True
 
             if not formaction is None and formaction == 'change_annoorder' and not request.form.get("annoorder", None) is None:
                 dataset.dsmetadata['annoorder'] = request.form.get("annoorder", None)
-                dsdirty = True
 
             if not formaction is None and formaction == 'add_role' and \
                     not request.form.get("annouser", None) is None and \
@@ -446,7 +476,6 @@ def new_dataset(dsid=None):
                 annorole = request.form.get("annorole", None)
                 if annorole in db.VALID_ROLES:
                     dataset.set_role(dbsession, annouser, annorole)
-                    dsdirty = True
 
             if not formaction is None and formaction == 'rem_role' and \
                     not request.form.get("annouser", None) is None and \
@@ -455,7 +484,6 @@ def new_dataset(dsid=None):
                 annorole = request.form.get("annorole", None)
                 if annorole in dataset.get_roles(dbsession, annouser):
                     dataset.set_role(dbsession, annouser, None)
-                    dsdirty = True
                 else:
                     db.fprint("failed to remove role %s from user %s: not in active roles" % (annorole, annouser))
 
@@ -465,7 +493,6 @@ def new_dataset(dsid=None):
                 newtags = map(lambda l: l.strip(), newtags)
                 newtags = list(newtags)
                 dataset.dsmetadata['taglist'] = newtags
-                dsdirty = True
 
             new_content = None
             if not formaction is None and formaction == 'upload_file':
@@ -476,7 +503,6 @@ def new_dataset(dsid=None):
                         dataset.dsmetadata['upload_mimetype'] = fileobj.mimetype
                         dataset.dsmetadata['upload_timestamp'] = datetime.now().timestamp()
                         dataset.dsmetadata['hasdata'] = True
-                        dsdirty = True
 
                         with tempfile.TemporaryFile(mode='w+b') as tmpfile:
                             fileobj.save(tmpfile)

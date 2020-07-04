@@ -1,13 +1,17 @@
-import sys
-from flask import Flask, flash, redirect, render_template, request, url_for, session, Response
+"""
+Main entrypoint.
+"""
 
+import sys
 from datetime import datetime
+
+from flask import Flask, redirect, render_template, request, url_for, session
 
 import app.lib.config as config
 
 BASEURI = config.get("base_uri", "/omen") or "/omen"
 flask_app = app = Flask(__name__, static_url_path=BASEURI + "/static")
-app.secret_key = config.get("flask_secret", raise_missing = True)
+app.secret_key = config.get("flask_secret", raise_missing=True)
 
 import app.lib.database as db
 
@@ -17,7 +21,7 @@ try:
     db_init_okay = True
 except Exception as e:
     print("Failed to initialize database: %s" % e, file=sys.stderr)
-    if not 'reset_database' in sys.argv:
+    if 'reset_database' not in sys.argv:
         sys.exit(1)
     else:
         print("continuing to CLI invocation anyway")
@@ -68,8 +72,8 @@ def cli_reset_database():
     print("executing db::drop_all()")
     if not db_init_okay:
         print("reinitializing database")
-        db.init_db(skip_create = True)
-    print( db.flask_db.drop_all() )
+        db.init_db(skip_create=True)
+    print(db.flask_db.drop_all())
     print("all done")
 
 @flask_app.cli.command("createuser")
