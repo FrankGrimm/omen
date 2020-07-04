@@ -311,15 +311,26 @@ class Dataset(Base):
                }
 
     def setanno(self, dbsession, uid, sample, value):
-        user_obj = by_id(dbsession, uid)
+        user_obj = None
+        if type(uid) is User:
+            user_obj = uid
+        else:
+            user_obj = by_id(dbsession, uid)
+
+        if user_obj is None:
+            raise Exception("setanno() requires a user object or id")
+
         anno_data = {"updated": datetime.now().timestamp(), "value": value}
 
         sample=str(sample)
-        newanno = dbsession.query(Annotation).filter_by(owner_id=user_obj.uid, dataset_id=self.dataset_id, sample=sample).one_or_none()
-        if newanno is None:
+        existing_anno = dbsession.query(Annotation).filter_by(owner_id=user_obj.uid, dataset_id=self.dataset_id, sample=sample).one_or_none()
+        if existing_anno is None:
             newanno = Annotation(owner=user_obj, dataset=self, sample=sample, data=anno_data)
-        newanno.data=anno_data
-        dbsession.merge(newanno)
+            dbsession.add(newanno)
+        else:
+            existing_anno.data=anno_data
+            dbsession.merge(existing_anno)
+        dbsession.flush()
 
     def annocount_today(self, dbsession, uid):
         allannos = dbsession.query(Annotation).filter_by(\
