@@ -20,9 +20,9 @@
             <div class="col-2">
                 <div class="btn-group">
                 <a class="btn btn-sm btn-light" href="{{ url_for("new_dataset", dsid=dsid) }}"><i class="fas fa-cog"></i></a> 
-                <a class="btn btn-sm btn-secondary" href="{{ url_for("download", dsid=dsid) }}"><i class="fas fa-download"></i></a> 
 
                 {% if not (ds and ds_errors and ds in ds_errors and ds_errors[ds]) %}
+                <a class="btn btn-sm btn-secondary" href="{{ url_for("download", dsid=dsid) }}"><i class="fas fa-download"></i></a> 
                 <a class="btn btn-sm btn-secondary" href="{{ url_for("inspect_dataset", dsid=dsid) }}"><i class="fas fa-table"></i></a> 
                 {% endif %}
                 </div>
