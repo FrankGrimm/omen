@@ -15,6 +15,11 @@ app.secret_key = config.get("flask_secret", raise_missing=True)
 
 import app.lib.database as db
 
+try:
+    from app.lib.getch import getch
+except ImportError as _:
+    print("failed to import getch implementation supported by current OS", file=sys.stderr)
+
 db_init_okay = False
 try:
     db.init_db()
@@ -58,7 +63,6 @@ import app.views
 
 @flask_app.cli.command("reset_database")
 def cli_reset_database():
-    from app.lib.getch import getch
     print("Warning: Database content will be deleted. Is this okay? [y/N]")
     choice = getch()
     print(choice)
@@ -78,7 +82,8 @@ def cli_reset_database():
 
 @flask_app.cli.command("createuser")
 def cli_createuser():
-    import app.scripts.createuser
+    with db.session_scope() as dbsession:
+        db.create_user(dbsession)
 
 app = flask_app
 

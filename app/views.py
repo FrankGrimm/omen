@@ -239,10 +239,7 @@ def show_datasets(dsid=None):
 @app.route(BASEURI + "/user/create", methods=["GET", "POST"])
 @login_required
 def createuser():
-    dataset = None
-
-    with db.session_scope() as dbsession:
-        return render_template("createuser.html", dataset=dataset)
+    return render_template("createuser.html")
 
 def get_random_sample(df, id_column):
     no_anno = df[~(df.annotations != '')]
@@ -291,10 +288,7 @@ def annotate(dsid=None, sample_idx=None):
                 "annos_today": dataset.annocount_today(dbsession, session['user'])
                 }
 
-        if task['size'] and task['size'] > 0 and task['annos'] and task['annos'] > 0:
-            task['progress'] = round(task['annos'] / task['size'] * 100.0)
-            task['progress_today'] = round(task['annos_today'] / task['size'] * 100.0)
-            task['progress_beforetoday'] = task['progress'] - task['progress_today']
+        db.task_calculate_progress(task)
 
         id_column = dataset.get_id_column()
 

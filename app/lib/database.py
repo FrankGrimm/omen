@@ -608,6 +608,15 @@ def insert_user(dbsession, email, pwhash):
     newobj = by_email(dbsession, email)
     return (True, newobj)
 
+def task_calculate_progress(task):
+    if task is None:
+        return
+
+    if task['size'] and task['size'] > 0 and task['annos'] and task['annos'] > 0:
+        task['progress'] = round(task['annos'] / task['size'] * 100.0)
+        task['progress_today'] = round(task['annos_today'] / task['size'] * 100.0)
+        task['progress_beforetoday'] = task['progress'] - task['progress_today']
+
 def annotation_tasks(dbsession, for_user):
     datasets = accessible_datasets(dbsession, for_user, include_owned=True)
     tasks = []
@@ -627,10 +636,7 @@ def annotation_tasks(dbsession, for_user):
                 "annos_today": dataset.annocount_today(dbsession, for_user)
                 }
 
-        if task['size'] and task['size'] > 0 and task['annos'] and task['annos'] > 0:
-            task['progress'] = round(task['annos'] / task['size'] * 100.0)
-            task['progress_today'] = round(task['annos_today'] / task['size'] * 100.0)
-            task['progress_beforetoday'] = task['progress'] - task['progress_today']
+        task_calculate_progress(task)
 
         tasks.append(task)
 
@@ -707,4 +713,3 @@ def init_db(skip_create=False):
             fprint("[users] system contains %s user accounts" % \
                     dbsession.query(User).count())
             fprint("[users] you can create users with the scripts/createuser script")
-

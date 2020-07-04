@@ -1,4 +1,9 @@
-# https://stackoverflow.com/questions/510357/python-read-a-single-character-from-the-use://stackoverflow.com/questions/510357/python-read-a-single-character-from-the-user
+"""
+Offers OS-specific way to query a single, unbuffered, character from STDIN.
+
+implementation via https://stackoverflow.com/questions/510357/python-read-a-single-character-from-the-use://stackoverflow.com/questions/510357/python-read-a-single-character-from-the-user
+"""
+# pylint: disable=unused-import,import-error,import-outside-toplevel,too-few-public-methods
 
 class _Getch:
     """Gets a single character from standard input.  Does not echo to the
@@ -14,7 +19,8 @@ screen."""
 
 class _GetchUnix:
     def __init__(self):
-        import tty, sys
+        import tty
+        import sys
 
     def __call__(self):
         import sys
