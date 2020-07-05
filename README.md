@@ -1,5 +1,7 @@
 ## Setup
 
+![Docker](https://github.com/FrankGrimm/omen/workflows/Docker/badge.svg)
+
 - Install PostgreSQL v9.4+
 - Create postgres database from `schema.sql` and edit `config.json` for credentials.
 - Create admin user: `./bin/create_user`
