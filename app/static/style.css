@@ -19,11 +19,6 @@ h1, h2, h3, h4 {
 ul.dslist {
     list-style-type: none;
 }
-ul.dslist li {
-    margin: 0.5em 0 0 0;
-    padding: 0.2em;
-}
-
 .seprow {
     min-height: 2.5em;
     margin-top: 1em;
@@ -220,33 +215,20 @@ ul.ds_overview_issues {
 ul.ds_overview_issues li {
     float: left;
     margin: 0 0 0 1em;
-    padding: 0.5em;
+    padding: 0.2em;
     font-size: 10pt;
 }
 
-ul.dslist li.ds_separator {
-    display: none;
-    margin: 0 1em;
-    padding: 0;
-    height: 1px;
-    border-bottom: 1px solid #94c9de;
-}
-
-.ds_overview_label a {
-    display: block;
-    width: 100%;
-    padding: 0.1em;
-}
-
 .ds_overview_label {
-    line-height: 2em;
     font-size: 12pt;
 }
 
-ul.dslist li.ds_meta {
-    background: #f0f0f0;
-    padding: 2px;
+ul.dslist .ds_meta {
+    background: white;
     border-radius: 3px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #cadce8;
 }
 
 div.seprow form {
