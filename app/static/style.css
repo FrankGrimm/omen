@@ -1,4 +1,4 @@
-nav.sidebar {
+.sidebar {
     margin-top: 3em;
 }
 
@@ -48,7 +48,7 @@ ul.dsacl li {
     line-height: 2em;
 }
 
-span.sidemeta {
+.sidemeta {
     font-weight: normal;
     font-size: 0.8em;
     font-style: italic;
@@ -149,8 +149,8 @@ table.dataframe tbody td {
 
 .input-group > .custom-file, .input-group > .custom-select, .input-group > .form-control, .input-group > .form-control-plaintext {
 	position: relative;
-	-ms-flex: 1 1 0%;
-	flex: 1 1 0%;
+	-ms-flex: 1 1 0;
+	flex: 1 1 0;
 	min-width: 0;
 	margin-bottom: 0;
 }
@@ -244,8 +244,8 @@ ul.dslist li.ds_separator {
 }
 
 ul.dslist li.ds_meta {
-    background: #e7f0ff;
-    padding: 0;
+    background: #f0f0f0;
+    padding: 2px;
     border-radius: 3px;
 }
 
@@ -367,15 +367,16 @@ div.df_pagination a:hover {
 }
 
 .nav-active-task {
-    background-color: #ebf1f9;
+    /* background-color: #ebf1f9;*/
+    background-color: #4a4a4d;
     padding-bottom: 0;
 }
 
-a.nav-link.nav-taskinfo.active {
+.nav-link.nav-taskinfo.active {
     margin-bottom: 0;
-    border-top: 1px solid #c3d5f0;
-    border-bottom: 1px solid #c3d5f0;
-    color: #163b64;
+    border-top: 1px solid #163b64;
+    border-bottom: 1px solid #163b64;
+    color: white;
 }
 
 li.nav-active-task div.sideprogress {
@@ -392,11 +393,11 @@ li.nav-active-task div.sideprogress-active {
     font-family: Helvetica, Arial, sans-serif;
     margin: 0;
     padding: 0.2rem 1rem 0.2rem 0.5rem;
-    background: #ebf1f9;
-    color: #4a4a4d;
+    background: #4a4a4d;
+    color: #ebf1f9;
     width: 100%;
     display: block;
-    border-left: 0.5rem solid #c3d5f0;
+    border-left: 0.5rem solid #5c646f;
     height: auto;
 }
 
