@@ -16,6 +16,7 @@ from flask import flash, redirect, render_template, request, url_for, session, R
 import app.lib.config as config
 from app.web import app, BASEURI, db
 
+
 def login_required(func):
     @wraps(func)
     def decorated_function(*args, **kwargs):
@@ -55,11 +56,11 @@ def index():
                 continue
             ds_errors[cur_dataset] = cur_dataset.check_dataset()
 
-        return render_template('index.html', my_datasets=my_datasets, \
-                                    access_datasets=access_datasets, \
-                                    ds_errors=ds_errors, \
-                                    dbsession=dbsession, \
-                                    session_user=session_user, \
+        return render_template('index.html', my_datasets=my_datasets,
+                                    access_datasets=access_datasets,
+                                    ds_errors=ds_errors,
+                                    dbsession=dbsession,
+                                    session_user=session_user,
                                     tasks=annotation_tasks)
 
 @app.before_request
@@ -69,7 +70,7 @@ def before_handler():
         req_count = 0
     req_count += 1
     session['request_counter'] = req_count
-    #print("REQCOUNT", session.get("user", None), req_count)
+    # print("REQCOUNT", session.get("user", None), req_count)
 
 @app.route(BASEURI + "/logout")
 @login_required
@@ -426,11 +427,11 @@ def new_dataset(dsid=None):
         if request.method == 'POST':
 
             formaction = request.form.get("action", None)
-            #print("--- " * 5)
-            #print("action", formaction)
-            #print("form", request.form)
-            #print("files", request.files)
-            #print("--- " * 5)
+            # print("--- " * 5)
+            # print("action", formaction)
+            # print("form", request.form)
+            # print("files", request.files)
+            # print("--- " * 5)
 
             if not formaction is None and formaction == 'change_name':
                 dsname = request.form.get('dataset_name', None)
