@@ -25,11 +25,11 @@
             <input type="hidden" name="action" value="change_name" />
 
     {% if dataset and ds_errors and 'unnamed dataset' in ds_errors %}
-            <div class="col-2 dsnamecol ds_field_error">Dataset name:</div>
+            <div class="col-12 col-md-2 dsnamecol ds_field_error">Dataset name:</div>
     {% else %}
-            <div class="col-2 dsnamecol">Dataset name:</div>
+            <div class="col-12 col-md-2 dsnamecol">Dataset name:</div>
     {% endif %}
-            <div class="custom-file col-10">
+            <div class="custom-file col-12 col-md-10">
                 <input type="text" placeholder="dataset name" class="custom-input" value="{{ dataset.dsmetadata.name }}" id="dataset_name" name="dataset_name" required="required">
             </div>
             <div class="input-group-append">
@@ -117,9 +117,9 @@
     <form method="post">
         <input type="hidden" name="action" value="change_idcolumn">
 
-        <div class="form-group row">
-            <label for="idcolumn" class="col-4 col-form-label"><div class="{% if not dataset.dsmetadata.idcolumn %}ds_new_field_error alert alert-warning{% endif %}">Select unique sample ID column:</div></label> 
-            <div class="col-8">
+        <div class="row">
+            <label for="idcolumn" class="col-12 col-md-4 col-form-label"><div class="{% if not dataset.dsmetadata.idcolumn %}ds_new_field_error alert alert-warning{% endif %}">Select unique sample ID column:</div></label> 
+            <div class="col-12 col-md-8">
 
                 <select class="taskdef_select" id='idcolumn' name='idcolumn' onchange="this.form.submit()">
                     {% if not dataset.dsmetadata.idcolumn %}
@@ -147,8 +147,8 @@
         <input type="hidden" name="action" value="change_textcol">
 
         <div class="form-group row">
-            <label for="textcol" class="col-4 col-form-label"><div class="{% if not dataset.dsmetadata.textcol %}ds_new_field_error alert alert-warning{% endif %}">Select text column:</div></label> 
-            <div class="col-8">
+            <label for="textcol" class="col-12 col-md-4 col-form-label"><div class="{% if not dataset.dsmetadata.textcol %}ds_new_field_error alert alert-warning{% endif %}">Select text column:</div></label> 
+            <div class="col-12 col-md-8">
 
                 <select class="taskdef_select" id='textcol' name='textcol' onchange="this.form.submit()">
                     {% if not dataset.dsmetadata.textcol %}
@@ -176,10 +176,10 @@
         <input type="hidden" name="action" value="change_annoorder">
 
         <div class="form-group row">
-            <label for="annoorder" class="col-4 col-form-label">
+            <label for="annoorder" class="col-12 col-md-4 col-form-label">
                 <div class="">Select annotation order:</div>
             </label> 
-            <div class="col-8">
+            <div class="col-12 col-md-8">
 
                 <select class="taskdef_select" id='annoorder' name='annoorder' onchange="this.form.submit()">
                     {% if not dataset.dsmetadata.annoorder or dataset.dsmetadata.annoorder == 'sequential' %} 
@@ -198,41 +198,48 @@
 </div>
 
 <div class="row seprow">
+    <form method="post" id="tag_editor_container">
+        {% include "tag_editor.html" with context %}
+    </form>
+</div>
+
+<noscript>
+<div class="row seprow">
     <form method="post">
-            <input type="hidden" name="action" value="change_taglist" />
-        <div class="form-group row">
-            <label for="settaglist" class="col-4 col-form-label">
-                <div class="{% if not dataset.dsmetadata.taglist %}ds_new_field_error alert alert-warning{% endif %}">Define a tag list</div>
+        <input type="hidden" name="action" value="change_taglist" />
+        <div class="row">
+            <label for="settaglist" class="col-12 col-md-4 col-form-label">
+                <div class="{% if dataset.get_taglist()|length == 0 %}ds_new_field_error alert alert-warning{% endif %}">Define a tag list</div>
             </label> 
-            <div class="col-8">
-                <textarea id="settaglist" name="settaglist" cols="40" rows="5" class="form-control" aria-describedby="settaglistHelpBlock" required="required">{% if dataset.dsmetadata.taglist %}{{ dataset.dsmetadata.taglist|join('\n') }}{% endif %}</textarea> 
+            <div class="col-12 col-md-8">
+                <textarea id="settaglist" name="settaglist" cols="40" rows="5" class="form-control" aria-describedby="settaglistHelpBlock" required="required">{% if dataset.get_taglist()|length > 0 %}{{ dataset.get_taglist()|join('\n') }}{% endif %}</textarea> 
                 <span id="settaglistHelpBlock" class="form-text text-muted">separate single entries by newlines</span>
             </div>
         </div> 
-        <div class="form-group row">
-            <div class="offset-4 col-8">
+        <div class="row">
+            <div class="col-12 offset-md-4 col-md-8">
                 <button name="submit" type="submit" class="btn btn-primary">Submit</button>
             </div>
         </div>
     </form>
-
 </div>
+</noscript>
 
 <div class="row seprow">
     <form method="post">
         <input type="hidden" name="action" value="change_description" />
-        <div class="form-group row">
-            <label for="setdescription" class="col-4 col-form-label">
+        <div class="row">
+            <label for="setdescription" class="col-12 col-md-4 col-form-label">
                 <div><strong>Description</strong> or annotation guidelines.<br />
                     This is visible to all users, markdown is supported.</div>
             </label> 
-            <div class="col-8">
+            <div class="col-12 col-md-8">
                 <textarea id="setdescription" name="setdescription" cols="40" rows="5" class="form-control" aria-describedby="setdescriptionHelpBlock" required="required">{% if dataset.dsmetadata.description %}{{ dataset.dsmetadata.description }}{% endif %}</textarea> 
                 <span id="setdescriptionHelpBlock" class="form-text text-muted">separate single entries by newlines</span>
             </div>
         </div> 
-        <div class="form-group row">
-            <div class="offset-4 col-8">
+        <div class="row">
+            <div class="col-12 offset-md-4 col-md-8">
                 <button name="submit" type="submit" class="btn btn-primary">Update Description</button>
             </div>
         </div>
@@ -243,8 +250,8 @@
 <h3>Manage Access</h3>
 
 <div class="row">
-    <div class="col-8">Manage users who are allowed to add annotations for this dataset:</div>
-    <div class="col-4"><a href="{{ url_for("createuser") }}" class="btn btn-sm btn-primary">
+    <div class="col-12 col-md-8">Manage users who are allowed to add annotations for this dataset:</div>
+    <div class="col-12 col-md-4"><a href="{{ url_for("createuser") }}" class="btn btn-sm btn-primary">
             <span class="">create new</span> <i class="fa fa-user-plus"></i>
         </a>
         </div>
@@ -338,6 +345,140 @@
 {% block addscript %}
 <script>
     $(document).ready(function() {
+
+        function updateTags(newtags) {
+            newtags = newtags || [];
+
+            console.log("setting new tags", newtags);
+            
+            $("#tag_editor").css("opacity", "0.5");
+            $("#tag_editor").find(".ajax-loading").show();
+
+            jQuery.ajax({
+                url: window.location.href,
+                data: JSON.stringify({"action": "tageditor", "newtags": newtags}),
+                cache: false,
+                contentType: "application/json",
+                method: 'POST',
+                success: function(data){
+                    document.getElementById("tag_editor_container").innerHTML = data;
+                    initializeTagEditor();
+                },
+                error: function(jqXHR, textstatus, err) {
+                    if (!err) { return; }
+                    alert(textstatus + " " + err);
+                }
+            });
+        }
+
+        function getCurrentTags() {
+            const all_tags = [];
+
+            $("div.tageditor_entry").each((idx, elem) => {
+                const $elem = $(elem);
+                const cur_tag = $elem.data("tag").trim();
+                const cur_position = $elem.data("position");
+                const total_tag_count = $elem.data("tagcount");
+
+                all_tags.push( $elem.find("input.tageditor_taginput")[0].value );
+            });
+
+            return all_tags;
+        }
+
+        function initializeTagEditor() {
+            $("div.tageditor_entry").each((idx, elem) => {
+                const $elem = $(elem);
+                const cur_tag = $elem.data("tag");
+                const cur_position = $elem.data("position");
+                const total_tag_count = $elem.data("tagcount");
+                console.log("TAGEDITOR", idx, elem, cur_tag, cur_position, total_tag_count);
+                
+                // enable change action if tag has been renamed
+                $elem.find("input.tageditor_taginput").on("input change", function handleTagEditorChange() {
+                    const $changed_input = $(this);
+                    const $entry = $($changed_input.parents("div.tageditor_entry")[0]);
+                    
+                    const entry_tag = $entry.data("tag").trim();
+                    const input_tag = $changed_input.val().trim();
+
+                    if (entry_tag !== input_tag && input_tag.length > 0) {
+                        $entry.find("button.tageditor_action_rename").removeAttr("disabled");
+                    } else {
+                        $entry.find("button.tageditor_action_rename").attr("disabled", "disabled");
+                    }
+
+                    console.log("CHANGE", entry_tag, "=>", input_tag);
+
+                });
+
+                $elem.find("button.tageditor_action").click((e) => {
+                    e.preventDefault();
+                    if (!e.target) { return false; }
+
+                    let btn = $(e.target)[0];
+                    if (btn.tagName.toLowerCase() !== 'button') {
+                        btn = $(btn).parents("button.tageditor_action")[0];
+                    }
+                    const $btn = $(btn);
+                    const $entry = $btn.parents("div.tageditor_entry")[0];
+                    
+                    const tag_action = $btn.data("action");
+                    const current_tag = $btn.data("tag");
+
+                    const initial_tags = getCurrentTags();
+                    let updated_tags = [...initial_tags];
+
+                    const tag_index = updated_tags.indexOf(current_tag);
+
+                    if (tag_action === "move_tag_down" && (tag_index < total_tag_count)) {    
+                        updated_tags[tag_index] = initial_tags[tag_index + 1];
+                        updated_tags[tag_index + 1] = initial_tags[tag_index];
+                    } else if (tag_action === "move_tag_up" && (tag_index > 0)) {    
+                        updated_tags[tag_index] = initial_tags[tag_index - 1];
+                        updated_tags[tag_index - 1] = initial_tags[tag_index];
+                    } else if (tag_action === "delete_tag" && updated_tags.indexOf(current_tag) > -1) {
+                        updated_tags.splice(updated_tags.indexOf(current_tag), 1);
+                    }
+
+                    console.log("TAGACTION", tag_action, initial_tags, "=>", updated_tags);
+                    updateTags(updated_tags);
+
+                    return false;
+                });
+
+            });
+
+            const createTagInput = $("input#tageditor_add_tag");
+            const createTagButton = $("button#tageditor_add_tag_action");
+
+            createTagInput.on("input change", function handleTagEditorNewTagChange() {
+                const current_tags = getCurrentTags();
+                const new_tag_value = createTagInput.val().trim();
+
+                if (new_tag_value.length && current_tags.indexOf(new_tag_value) === -1) {
+                    createTagButton.removeAttr("disabled");
+                } else {
+                    createTagButton.attr("disabled", "disabled");
+                }
+            });
+            createTagButton.on("click", function createNewTag(e) {
+                e.preventDefault();
+                const new_tag_value = createTagInput.val().trim();
+
+                const current_tags = getCurrentTags();
+                current_tags.push(new_tag_value);
+
+                updateTags(current_tags);
+                return false;
+            });
+            
+            console.log("initializeTagEditor(), current:", getCurrentTags());
+
+        }
+
+        initializeTagEditor();
+
         let $tbl = $("#previewdftable");
         if ($tbl) {
             $("#previewdftable tbody tr").each(function() {
@@ -438,6 +579,7 @@
                 type: "POST",
                 url: $(location).attr("href"),
                 data: {"action": annoaction, "annouser": annouser, "annorole": annorole},
+                dataType: "json",
                 success: function() {
                     $tgt.toggleClass("btn-outline-primary");
                     $tgt.toggleClass("btn-outline-success");

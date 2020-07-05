@@ -28,7 +28,7 @@
 {% set nextsampleidx = next_sample_idx %}
 {% endif %}
 
-{% for tag in dataset.dsmetadata.taglist %}
+{% for tag in dataset.get_taglist() %}
 {% if dataset.dsmetadata.size > 0 and sample_idx < (dataset.dsmetadata.size - 1) %}
 <a data-tagidx="{{loop.index - 1}}" class="btn {% if tag != curanno %}btn-light{% else %}btn-success{% endif %}{% if votes and tag in votes and votes[tag]|length %} with_anno_vote{% endif %}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=nextsampleidx, set_sample_idx=sample_idx, set_value=tag) }}" {% if votes and tag in votes and votes[tag]|length %}title="{{votes[tag]|length}} vote(s) by {{votes[tag]|join(", ")}}"{% endif %}>
 {% endif %}
@@ -38,7 +38,7 @@
 {{ tag }} {% if votes and tag in votes and votes[tag]|length %}<span class="anno_vote badge badge-dark">{{votes[tag]|length}}</span>{% endif %}
 </a>
 {% else %}
-ERROR: no taglist
+ERROR: no tags defined
 {% endfor %}
 
 {% if dataset.dsmetadata.size > 0 and sample_idx < (dataset.dsmetadata.size - 1) %}
@@ -99,7 +99,7 @@ ERROR: no taglist
                 }
                 if (event.keyCode > 48 && event.keyCode <= 57) {
                     let tagoffset = event.keyCode - 48 - 1;
-                    let tagcount = {{ dataset.dsmetadata.taglist|length }};
+                    let tagcount = {{ dataset.get_taglist()|length }};
                     if (tagoffset < tagcount) {
                         $("a.btn").each(function() {
                             let $this = $(this);

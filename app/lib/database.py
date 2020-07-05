@@ -180,8 +180,7 @@ class Dataset(Base):
         if self.dsmetadata.get("hasdata", None) is None:
             errorlist.append("no data")
 
-        if self.dsmetadata.get("taglist", None) is None or \
-                len(self.dsmetadata.get("taglist", [])) == 0:
+        if len(self.get_taglist()) == 0:
             errorlist.append("no tags defined")
 
         dferr = self.as_df(strerrors=True)
@@ -320,8 +319,18 @@ class Dataset(Base):
         df = df.replace(np.nan, '', regex=True)
         return df, annotation_columns
 
+    def set_taglist(self, newtags):
+        if self.dsmetadata is None:
+            self.dsmetadata = {}
+
+        newtags = filter(lambda l: l is not None and l.strip() != '', newtags)
+        newtags = map(lambda l: l.strip(), newtags)
+        newtags = list(newtags)
+        self.dsmetadata['taglist'] = newtags
+
     def get_taglist(self):
-        return self.dsmetadata.get("taglist", [])
+        tags = self.dsmetadata.get("taglist", None)
+        return tags or []
 
     def get_anno_votes(self, dbsession, sample_id, exclude_user=None):
         anno_votes = {}

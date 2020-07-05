@@ -426,6 +426,12 @@ def new_dataset(dsid=None):
 
         if request.method == 'POST':
 
+            if request.json is not None and request.json.get("action", "") == "tageditor":
+                new_tags = request.json.get("newtags", [])
+
+                dataset.set_taglist(new_tags)
+                editmode = "tageditor"
+
             formaction = request.form.get("action", None)
             # print("--- " * 5)
             # print("action", formaction)
@@ -486,10 +492,7 @@ def new_dataset(dsid=None):
 
             if not formaction is None and formaction == 'change_taglist' and not request.form.get("settaglist", None) is None:
                 newtags = request.form.get("settaglist", None).split("\n")
-                newtags = filter(lambda l: not l is None and l.strip() != '', newtags)
-                newtags = map(lambda l: l.strip(), newtags)
-                newtags = list(newtags)
-                dataset.dsmetadata['taglist'] = newtags
+                dataset.set_taglist(newtags)
 
             new_content = None
             if not formaction is None and formaction == 'upload_file':
@@ -529,6 +532,9 @@ def new_dataset(dsid=None):
         if editmode == 'create' and not dataset.dataset_id is None:
             # redirect to edit URI once dataset has been persisted
             return redirect(url_for('new_dataset', dsid=dataset.dataset_id))
+
+        if editmode == "tageditor":
+            return render_template('tag_editor.html', dataset=dataset, editmode=editmode, previewdf=df, db=db, ds_errors=ds_errors, dbsession=dbsession)
 
         return render_template('dataset_new.html', dataset=dataset, editmode=editmode, previewdf=df, db=db, ds_errors=ds_errors, dbsession=dbsession)
 

@@ -1,0 +1,53 @@
+<div id="tag_editor" class="row form-group">
+    <div class="col-12 col-md-4">
+        <div class="{% if dataset.get_taglist()|length == 0 %}ds_new_field_error alert alert-warning{% endif %}">Define a tag list
+
+            <div class="ajax-loading" style="display: none;">
+                <img src="{{ url_for("static", filename="img/loading.gif") }}" alt="updating" />
+            </div>
+
+        </div>
+    </div>
+    <div class="col-12 col-md-8">
+        <ul class="list-group">
+            {% for tag in dataset.get_taglist() %}
+            <li class="list-group-item">
+                <div class="tageditor_entry input-group" data-tag="{{ tag }}" data-position="{{ loop.index }}" data-tagcount="{{ dataset.get_taglist()|length }}">
+                    <input autocomplete="off" name="tageditor_rename_tag" placeholder="rename tag {{ tag }}" type="text" class="form-control tageditor_taginput" value="{{ tag }}"> 
+                    <div class="input-group-append">
+                        <div class="btn-group">
+                            <button data-action="rename_tag" data-tag="{{ tag }}" class="tageditor_action tageditor_action_rename btn btn-outline-primary input-group-text" disabled>
+                                <i class="fas fa-pen"></i>
+                            </button> 
+                        <button data-action="move_tag_down" data-tag="{{ tag }}" class="tageditor_action btn btn-outline-primary input-group-text"{% if loop.index == dataset.get_taglist()|length %} disabled{% endif %}>
+                            <i class="fas fa-arrow-down"></i>
+                        </button> 
+                        <button data-action="move_tag_up" data-tag="{{ tag }}" class="tageditor_action btn btn-outline-primary input-group-text"{% if loop.index == 1 %} disabled{% endif %}>
+                            <i class="fas fa-arrow-up"></i>
+                        </button> 
+                        <button data-action="delete_tag" data-tag="{{ tag }}" class="tageditor_action btn btn-outline-primary input-group-text">
+                            <i class="fas fa-trash-alt"></i>
+                        </button> 
+                        </div>
+                    </div> 
+                </div> 
+            </li>
+            {% endfor %}
+            <li class="list-group-item">
+            
+                <div class="input-group">
+                    <input autocomplete="off" id="tageditor_add_tag" name="tageditor_add_tag" placeholder="add new tag" type="text" class="form-control" value=""> 
+                    <div class="input-group-append">
+                        <div class="btn-group">
+                        <button class="btn btn-outline-primary input-group-text" id="tageditor_add_tag_action" disabled>
+                            <i class="fa fa-plus"></i>
+                        </button>
+                        </div>
+                    </div>
+                </div>
+            
+            </li>
+        </ul>
+    </div>
+</div>
+
