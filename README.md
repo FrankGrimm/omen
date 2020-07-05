@@ -1,6 +1,12 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![OSS Lifecycle](https://img.shields.io/osslifecycle/Netflix/osstracker.svg)]()
+[![Docker](https://github.com/FrankGrimm/omen/workflows/Docker/badge.svg)](https://github.com/FrankGrimm/omen/packages)
+
+# OMEN - A dockerized, collaborative, document annotation platform. 
+
 ## Setup
 
-![Docker](https://github.com/FrankGrimm/omen/workflows/Docker/badge.svg)
+**Note**: This information is outdated, a full setup guide is coming soon.
 
 - Install PostgreSQL v9.4+
 - Create postgres database from `schema.sql` and edit `config.json` for credentials.
