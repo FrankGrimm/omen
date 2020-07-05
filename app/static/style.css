@@ -373,8 +373,8 @@ div.df_pagination a:hover {
 
 a.nav-link.nav-taskinfo.active {
     margin-bottom: 0;
-    padding-bottom: 0;
     border-top: 1px solid #c3d5f0;
+    border-bottom: 1px solid #c3d5f0;
     color: #163b64;
 }
 
