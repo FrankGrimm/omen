@@ -461,7 +461,7 @@ def new_dataset(dsid=None):
                 dbsession.commit()
                 dbsession.flush()
                 flash("Dataset was deleted successfully.", "success")
-                return redirect(url_for("dataset"))
+                return redirect(url_for("show_datasets"))
 
             if not formaction is None and formaction == 'change_textcol' and not request.form.get("textcol", None) is None:
                 dataset.dsmetadata['textcol'] = request.form.get("textcol", None)
