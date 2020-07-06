@@ -396,3 +396,22 @@ li.nav-active-task div.sideprogress-active {
     height: 2em;
 }
 
+.tagcolor_red {
+    background-color: #ff8880;
+}
+.tagcolor_green {
+    background-color: #70E3AF;
+}
+.tagcolor_blue {
+    background-color: #95B5FF;
+}
+.tagcolor_yellow {
+    background-color: #F9F088;
+}
+.tagcolor_gray {
+    background-color: #E0E0E0;
+}
+
+
+
+

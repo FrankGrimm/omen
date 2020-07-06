@@ -27,12 +27,13 @@ from . import config
 flask_db = None
 migrate = None
 
+PW_MINLEN = 5
+VALID_ROLES = set(['annotator', 'curator'])
+
+
 def fprint(*args):
     print(*args, file=sys.stderr)
 
-PW_MINLEN = 5
-
-VALID_ROLES = set(['annotator', 'curator'])
 
 @contextmanager
 def session_scope():
@@ -40,17 +41,20 @@ def session_scope():
     try:
         yield session
         session.commit()
-    except:
+    except Exception as e:
+        fprint("rolling back transaction after error (%s)" % e)
         session.rollback()
         raise
     finally:
         session.close()
+
 
 def shutdown():
     print("DB shutdown")
     engine = flask_db.get_engine()
     if not engine is None:
         engine.dispose()
+
 
 class User(Base):
     __tablename__ = 'users'
@@ -328,9 +332,34 @@ class Dataset(Base):
         newtags = list(newtags)
         self.dsmetadata['taglist'] = newtags
 
-    def get_taglist(self):
+    def update_tag_metadata(self, tag, newvalues):
+        tag_metadata = self.dsmetadata.get("tagdetails", {})
+        if tag not in tag_metadata:
+            tag_metadata[tag] = {}
+
+        for k, v in newvalues.items():
+            tag_metadata[tag][k] = v
+
+        self.dsmetadata['tagdetails'] = tag_metadata
+
+    def get_taglist(self, include_metadata=False):
         tags = self.dsmetadata.get("taglist", None)
-        return tags or []
+        tags = tags or []
+
+        if not include_metadata:
+            return tags
+
+        tagdata = {}
+        tag_metadata = self.dsmetadata.get("tagdetails", {})
+
+        for tag in tags:
+            curtag_metadata = tag_metadata.get(tag, {})
+            tagdata[tag] = {
+                    "icon": curtag_metadata.get("icon", None),
+                    "color": curtag_metadata.get("color", None)
+                    }
+
+        return tagdata
 
     def get_anno_votes(self, dbsession, sample_id, exclude_user=None):
         anno_votes = {}
