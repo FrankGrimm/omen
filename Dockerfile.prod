@@ -20,7 +20,7 @@ COPY ./config.json ./app/app/
 COPY ./gunicorn_conf.py /gunicorn_conf.py
 
 WORKDIR /home/omenuser/app
-ENV FLASK_APP web.py
+ENV FLASK_APP app/web.py
 ENV FLASK_DEBUG 0
 ENV FLASK_SKIP_DOTENV 1
 ENV PORT 5000
