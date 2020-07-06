@@ -1,4 +1,4 @@
-FROM python:3.7-stretch
+FROM python:3.7-stretch AS devenv 
 WORKDIR ./
 
 RUN apt-get -y install wget ca-certificates gcc && pip3 install --upgrade pip
@@ -24,3 +24,4 @@ ENV FLASK_RUN_HOST 0.0.0.0
 ENV FLASK_SKIP_DOTENV 1
 EXPOSE 5000
 CMD ["flask", "run", "-p", "5000"]
+

@@ -3,6 +3,7 @@ database.db
 app/config.json
 testdata/quotes.json
 testdata/quotes-*.csv
+logs/*.log
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
