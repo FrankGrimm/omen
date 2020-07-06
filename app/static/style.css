@@ -407,6 +407,7 @@ li.nav-active-task div.sideprogress-active {
 }
 .tagcolor_yellow {
     background-color: #F9F088;
+    color: black;
 }
 .tagcolor_gray {
     background-color: #E0E0E0;
