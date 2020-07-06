@@ -14,4 +14,19 @@ $(document).ready(function() {
         elem.innerHTML = mdconverted;
     });
 
+    const titled_links = document.querySelectorAll("a[title]");
+
+    titled_links.forEach((elem) => {
+        if (!elem.getAttribute("title")) { return; }
+        const popoverText = elem.getAttribute("title").trim();
+        if (!popoverText) { return; }
+        $(elem).popover({
+            trigger: "hover focus",
+            placement: "auto",
+            content: popoverText,
+            title: "",
+            template: '<div class="popover" role="tooltip"><div class="arrow"></div><div class="popover-body"></div></div>'
+        });
+    });
+
 });
