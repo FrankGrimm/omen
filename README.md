@@ -2,7 +2,9 @@
 [![OSS Lifecycle](https://img.shields.io/osslifecycle/Netflix/osstracker.svg)]()
 [![Docker](https://github.com/FrankGrimm/omen/workflows/Docker/badge.svg)](https://github.com/FrankGrimm/omen/packages)
 
-# OMEN - A dockerized, collaborative, document annotation platform. 
+# OMEN - A dockerized, collaborative, document annotation platform
+
+![screen rec](https://frankgrimm.github.io/omen/img/screen_rec.gif)
 
 ## Setup
 
