@@ -28,13 +28,14 @@
 {% set nextsampleidx = next_sample_idx %}
 {% endif %}
 
-{% for tag in dataset.get_taglist() %}
+{% for tag,tagmetadata in dataset.get_taglist(include_metadata=True).items() %}
 {% if dataset.dsmetadata.size > 0 and sample_idx < (dataset.dsmetadata.size - 1) %}
-<a data-tagidx="{{loop.index - 1}}" class="btn {% if tag != curanno %}btn-light{% else %}btn-success{% endif %}{% if votes and tag in votes and votes[tag]|length %} with_anno_vote{% endif %}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=nextsampleidx, set_sample_idx=sample_idx, set_value=tag) }}" {% if votes and tag in votes and votes[tag]|length %}title="{{votes[tag]|length}} vote(s) by {{votes[tag]|join(", ")}}"{% endif %}>
+<a data-tagidx="{{loop.index - 1}}" class="btn {% if tag != curanno %}btn-light{% else %}btn-success{% endif %}{% if votes and tag in votes and votes[tag]|length %} with_anno_vote{% endif %} {% if tagmetadata.color %} tagcolor_{{ tagmetadata.color }}{% endif %}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=nextsampleidx, set_sample_idx=sample_idx, set_value=tag) }}" {% if votes and tag in votes and votes[tag]|length %}title="{{votes[tag]|length}} vote(s) by {{votes[tag]|join(", ")}}"{% endif %}>
 {% endif %}
 {% if dataset.dsmetadata.size > 0 and sample_idx == (dataset.dsmetadata.size - 1) %}
-<a data-tagidx="{{loop.index - 1}}" class="btn {% if tag != curanno %}btn-light{% else %}btn-success{% endif %}{% if votes and tag in votes and votes[tag]|length %} with_anno_vote{% endif %}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=0, set_sample_idx=sample_idx, set_value=tag) }}" {% if votes and tag in votes and votes[tag]|length %}title="{{votes[tag]|length}} vote(s) by {{votes[tag]|join(", ")}}"{% endif %}>
+<a data-tagidx="{{loop.index - 1}}" class="btn {% if tag != curanno %}btn-light{% else %}btn-success{% endif %}{% if votes and tag in votes and votes[tag]|length %} with_anno_vote{% endif %} {% if tagmetadata.color %} tagcolor_{{ tagmetadata.color }}{% endif %}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=0, set_sample_idx=sample_idx, set_value=tag) }}" {% if votes and tag in votes and votes[tag]|length %}title="{{votes[tag]|length}} vote(s) by {{votes[tag]|join(", ")}}"{% endif %}>
 {% endif %}
+{% if tagmetadata.icon %}<i class="{{ tagmetadata.icon }}"> </i>{% endif %}
 {{ tag }} {% if votes and tag in votes and votes[tag]|length %}<span class="anno_vote badge badge-dark">{{votes[tag]|length}}</span>{% endif %}
 </a>
 {% else %}

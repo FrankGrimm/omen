@@ -118,8 +118,8 @@
         <input type="hidden" name="action" value="change_idcolumn">
 
         <div class="row">
-            <label for="idcolumn" class="col-12 col-md-4 col-form-label"><div class="{% if not dataset.dsmetadata.idcolumn %}ds_new_field_error alert alert-warning{% endif %}">Select unique sample ID column:</div></label> 
-            <div class="col-12 col-md-8">
+            <label for="idcolumn" class="col-12 col-md-3 col-form-label"><div class="{% if not dataset.dsmetadata.idcolumn %}ds_new_field_error alert alert-warning{% endif %}">Select unique sample ID column:</div></label> 
+            <div class="col-12 col-md-9">
 
                 <select class="taskdef_select" id='idcolumn' name='idcolumn' onchange="this.form.submit()">
                     {% if not dataset.dsmetadata.idcolumn %}
@@ -147,8 +147,8 @@
         <input type="hidden" name="action" value="change_textcol">
 
         <div class="form-group row">
-            <label for="textcol" class="col-12 col-md-4 col-form-label"><div class="{% if not dataset.dsmetadata.textcol %}ds_new_field_error alert alert-warning{% endif %}">Select text column:</div></label> 
-            <div class="col-12 col-md-8">
+            <label for="textcol" class="col-12 col-md-3 col-form-label"><div class="{% if not dataset.dsmetadata.textcol %}ds_new_field_error alert alert-warning{% endif %}">Select text column:</div></label> 
+            <div class="col-12 col-md-9">
 
                 <select class="taskdef_select" id='textcol' name='textcol' onchange="this.form.submit()">
                     {% if not dataset.dsmetadata.textcol %}
@@ -176,10 +176,10 @@
         <input type="hidden" name="action" value="change_annoorder">
 
         <div class="form-group row">
-            <label for="annoorder" class="col-12 col-md-4 col-form-label">
+            <label for="annoorder" class="col-12 col-md-3 col-form-label">
                 <div class="">Select annotation order:</div>
             </label> 
-            <div class="col-12 col-md-8">
+            <div class="col-12 col-md-9">
 
                 <select class="taskdef_select" id='annoorder' name='annoorder' onchange="this.form.submit()">
                     {% if not dataset.dsmetadata.annoorder or dataset.dsmetadata.annoorder == 'sequential' %} 
@@ -208,16 +208,16 @@
     <form method="post">
         <input type="hidden" name="action" value="change_taglist" />
         <div class="row">
-            <label for="settaglist" class="col-12 col-md-4 col-form-label">
+            <label for="settaglist" class="col-12 col-md-3 col-form-label">
                 <div class="{% if dataset.get_taglist()|length == 0 %}ds_new_field_error alert alert-warning{% endif %}">Define a tag list</div>
             </label> 
-            <div class="col-12 col-md-8">
+            <div class="col-12 col-md-9">
                 <textarea id="settaglist" name="settaglist" cols="40" rows="5" class="form-control" aria-describedby="settaglistHelpBlock" required="required">{% if dataset.get_taglist()|length > 0 %}{{ dataset.get_taglist()|join('\n') }}{% endif %}</textarea> 
                 <span id="settaglistHelpBlock" class="form-text text-muted">separate single entries by newlines</span>
             </div>
         </div> 
         <div class="row">
-            <div class="col-12 offset-md-4 col-md-8">
+            <div class="col-12 offset-md-4 col-md-9">
                 <button name="submit" type="submit" class="btn btn-primary">Submit</button>
             </div>
         </div>
@@ -229,17 +229,17 @@
     <form method="post">
         <input type="hidden" name="action" value="change_description" />
         <div class="row">
-            <label for="setdescription" class="col-12 col-md-4 col-form-label">
+            <label for="setdescription" class="col-12 col-md-3 col-form-label">
                 <div><strong>Description</strong> or annotation guidelines.<br />
                     This is visible to all users, markdown is supported.</div>
             </label> 
-            <div class="col-12 col-md-8">
+            <div class="col-12 col-md-9">
                 <textarea id="setdescription" name="setdescription" cols="40" rows="5" class="form-control" aria-describedby="setdescriptionHelpBlock" required="required">{% if dataset.dsmetadata.description %}{{ dataset.dsmetadata.description }}{% endif %}</textarea> 
                 <span id="setdescriptionHelpBlock" class="form-text text-muted">separate single entries by newlines</span>
             </div>
         </div> 
         <div class="row">
-            <div class="col-12 offset-md-4 col-md-8">
+            <div class="col-12 offset-md-4 col-md-9">
                 <button name="submit" type="submit" class="btn btn-primary">Update Description</button>
             </div>
         </div>
@@ -356,7 +356,7 @@
 
             jQuery.ajax({
                 url: window.location.href,
-                data: JSON.stringify({"action": "tageditor", "newtags": newtags}),
+                data: JSON.stringify({"action": "tageditor", "tagaction": "update_taglist", "newtags": newtags}),
                 cache: false,
                 contentType: "application/json",
                 method: 'POST',
@@ -370,6 +370,30 @@
                 }
             });
         }
+        
+        function updateTagMetadata(tag_action, current_tag, tag_value) {
+            console.log("updating tag metadata", tag_action, current_tag, tag_value);
+            
+            $("#tag_editor").css("opacity", "0.5");
+            $("#tag_editor").find(".ajax-loading").show();
+
+            jQuery.ajax({
+                url: window.location.href,
+                data: JSON.stringify({"action": "tageditor", "tagaction": tag_action, "tag": current_tag, "value": tag_value}),
+                cache: false,
+                contentType: "application/json",
+                method: 'POST',
+                success: function(data){
+                    document.getElementById("tag_editor_container").innerHTML = data;
+                    initializeTagEditor();
+                },
+                error: function(jqXHR, textstatus, err) {
+                    if (!err) { return; }
+                    alert(textstatus + " " + err);
+                }
+            });
+        }
+
 
         function getCurrentTags() {
             const all_tags = [];
@@ -412,24 +436,26 @@
 
                 });
 
-                $elem.find("button.tageditor_action").click((e) => {
+                $elem.find(".tageditor_action").click((e) => {
                     e.preventDefault();
                     if (!e.target) { return false; }
 
                     let btn = $(e.target)[0];
                     if (btn.tagName.toLowerCase() !== 'button') {
-                        btn = $(btn).parents("button.tageditor_action")[0];
+                        btn = $(btn).parents(".tageditor_action")[0];
                     }
                     const $btn = $(btn);
                     const $entry = $btn.parents("div.tageditor_entry")[0];
                     
                     const tag_action = $btn.data("action");
+                    const tag_value = $btn.data("value") || null;
                     const current_tag = $btn.data("tag");
 
                     const initial_tags = getCurrentTags();
                     let updated_tags = [...initial_tags];
 
                     const tag_index = updated_tags.indexOf(current_tag);
+                    let is_metadata_action = false;
 
                     if (tag_action === "move_tag_down" && (tag_index < total_tag_count)) {    
                         updated_tags[tag_index] = initial_tags[tag_index + 1];
@@ -439,12 +465,18 @@
                         updated_tags[tag_index - 1] = initial_tags[tag_index];
                     } else if (tag_action === "delete_tag" && updated_tags.indexOf(current_tag) > -1) {
                         updated_tags.splice(updated_tags.indexOf(current_tag), 1);
+                    } else {
+                        is_metadata_action = true;
                     }
 
-                    console.log("TAGACTION", tag_action, initial_tags, "=>", updated_tags);
-                    updateTags(updated_tags);
-
-                    return false;
+                    if (!is_metadata_action) {
+                        console.log("TAGACTION", tag_action, initial_tags, "=>", updated_tags);
+                        updateTags(updated_tags);
+                        return false;
+                    } else {
+                        updateTagMetadata(tag_action, current_tag, tag_value);
+                        return true; // required to close the dropdowns
+                    }
                 });
 
             });

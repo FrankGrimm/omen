@@ -427,10 +427,26 @@ def new_dataset(dsid=None):
         if request.method == 'POST':
 
             if request.json is not None and request.json.get("action", "") == "tageditor":
-                new_tags = request.json.get("newtags", [])
 
-                dataset.set_taglist(new_tags)
                 editmode = "tageditor"
+                update_action = request.json.get("tagaction", "")
+                if update_action == "update_taglist":
+                    new_tags = request.json.get("newtags", [])
+                    dataset.set_taglist(new_tags)
+                else:
+                    update_tag = request.json.get("tag", None)
+                    update_value = request.json.get("value", None)
+                    if not update_value is None and update_value == "-":
+                        update_value = None
+
+                    if not update_tag is None:
+                        if update_action == "change_tag_color":
+                            dataset.update_tag_metadata(update_tag, {"color": update_value})
+                        elif update_action == "change_tag_icon":
+                            dataset.update_tag_metadata(update_tag, {"icon": update_value})
+
+                # data: JSON.stringify({"action": "tageditor", "action": tag_action, "tag": current_tag, "value": tag_value}),
+
 
             formaction = request.form.get("action", None)
             # print("--- " * 5)
