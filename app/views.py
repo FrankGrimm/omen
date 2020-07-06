@@ -505,8 +505,6 @@ def new_dataset(dsid=None):
 
             if not formaction is None:
                 if formaction == "change_delimiter":
-                    db.fprint("CHANGE_DELIMITER", request.form)
-
                     newdelim = dataset.dsmetadata.get("sep", ",")
                     if request.form.get("comma", "") != "":
                         newdelim = ","
@@ -518,7 +516,6 @@ def new_dataset(dsid=None):
                     dataset.invalidate()
 
                 if formaction == "change_quotechar":
-                    db.fprint("CHANGE_QUOTECHAR", request.form)
                     # {% set ds_quotechar = dataset.dsmetadata.quotechar or '"' %}
                     newquot = dataset.dsmetadata.get("quotechar", '"')
                     if request.form.get("double-quote", "") != "":
