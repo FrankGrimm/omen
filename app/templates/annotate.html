@@ -32,17 +32,37 @@
 
 <div class="btn-group">
 {% for tag,tagmetadata in dataset.get_taglist(include_metadata=True).items() %}
-{% if dataset.dsmetadata.size > 0 and sample_idx < (dataset.dsmetadata.size - 1) %}
-<a data-tagidx="{{loop.index - 1}}" class="btn {% if tag != curanno %}btn-light{% else %}btn-success{% endif %}{% if votes and tag in votes and votes[tag]|length %} with_anno_vote{% endif %} {% if tagmetadata.color %} tagcolor_{{ tagmetadata.color }}{% endif %}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=nextsampleidx, set_sample_idx=sample_idx, set_value=tag) }}" {% if votes and tag in votes and votes[tag]|length %}title="{{votes[tag]|length}} vote(s) by {{votes[tag]|join(", ")}}"{% endif %}>
-{% endif %}
-{% if dataset.dsmetadata.size > 0 and sample_idx == (dataset.dsmetadata.size - 1) %}
-<a data-tagidx="{{loop.index - 1}}" class="btn {% if tag != curanno %}btn-light{% else %}btn-success{% endif %}{% if votes and tag in votes and votes[tag]|length %} with_anno_vote{% endif %} {% if tagmetadata.color %} tagcolor_{{ tagmetadata.color }}{% endif %}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=0, set_sample_idx=sample_idx, set_value=tag) }}" {% if votes and tag in votes and votes[tag]|length %}title="{{votes[tag]|length}} vote(s) by {{votes[tag]|join(", ")}}"{% endif %}>
-{% endif %}
-{% if tagmetadata.icon %}<i class="{{ tagmetadata.icon }}"> </i>{% endif %}
-{{ tag }} {% if votes and tag in votes and votes[tag]|length %}<span class="anno_vote badge badge-dark">{{votes[tag]|length}}</span>{% endif %}
-</a>
+    {% set css_colortag = "" %}
+    {% if tagmetadata.color and tag == curanno %}
+        {% set css_colortag = "tagcolor_active_" + tagmetadata.color %}
+    {% elif tagmetadata.color %}
+        {% set css_colortag = "tagcolor_" + tagmetadata.color %}
+    {% endif %}
+
+    {% set css_btnclass = "btn-light" %}
+    {% if tag == curanno %}
+        {% set css_btnclass = "btn-success" %}
+        {% if css_colortag == "" %}
+        {% set css_colortag = "tagcolor_active" %}
+        {% endif %}
+    {% endif %}
+
+    {% set css_votetag = "" %}
+    {% if votes and tag in votes and votes[tag]|length %}
+        {% set css_votetag = "with_anno_vote" %}
+    {% endif %}
+
+    {% if dataset.dsmetadata.size > 0 and sample_idx < (dataset.dsmetadata.size - 1) %}
+    <a data-tagidx="{{loop.index - 1}}" class="btn {{ css_btnclass }} {{ css_votetag }} {{ css_colortag }}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=nextsampleidx, set_sample_idx=sample_idx, set_value=tag) }}" {% if votes and tag in votes and votes[tag]|length %}title="{{votes[tag]|length}} vote(s) by {{votes[tag]|join(", ")}}"{% endif %}>
+    {% endif %}
+    {% if dataset.dsmetadata.size > 0 and sample_idx == (dataset.dsmetadata.size - 1) %}
+    <a data-tagidx="{{loop.index - 1}}" class="btn {{ css_btnclass }} {{ css_votetag }} {{ css_colortag }}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=0, set_sample_idx=sample_idx, set_value=tag) }}" {% if votes and tag in votes and votes[tag]|length %}title="{{votes[tag]|length}} vote(s) by {{votes[tag]|join(", ")}}"{% endif %}>
+    {% endif %}
+    {% if tagmetadata.icon %}<i class="{{ tagmetadata.icon }}"> </i>{% endif %}
+    {{ tag }} {% if votes and tag in votes and votes[tag]|length %}<span class="anno_vote badge badge-dark">{{votes[tag]|length}}</span>{% endif %}
+    </a>
 {% else %}
-ERROR: no tags defined
+    ERROR: no tags defined
 {% endfor %}
 </div>
 
@@ -122,7 +142,8 @@ ERROR: no tags defined
                     $($tgtbtn[0]).removeClass("btn-primary");
                     $($tgtbtn[0]).removeClass("btn-success");
                     $($tgtbtn[0]).removeClass("btn-light");
-                    $($tgtbtn[0]).addClass("btn-dark");
+                    $($tgtbtn[0]).addClass("btn-dark tag_current_choice");
+
                     $tgtbtn[0].click();
                 }
             });

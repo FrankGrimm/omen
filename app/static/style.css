@@ -398,12 +398,15 @@ li.nav-active-task div.sideprogress-active {
 
 .tagcolor_red {
     background-color: #ff8880;
+    color: black;
 }
 .tagcolor_green {
     background-color: #70E3AF;
+    color: black;
 }
 .tagcolor_blue {
     background-color: #95B5FF;
+    color: black;
 }
 .tagcolor_yellow {
     background-color: #F9F088;
@@ -411,8 +414,53 @@ li.nav-active-task div.sideprogress-active {
 }
 .tagcolor_gray {
     background-color: #E0E0E0;
+    color: black;
 }
 
-
+.tagcolor_active_red {
+    background-color: #ff8880;
+    color: black;
+    border-style: solid;
+    border-width: 0 0 5px 0;
+    border-color: #e64646;
+}
+.tagcolor_active_green {
+    background-color: #70E3AF;
+    color: black;
+    border-style: solid;
+    border-width: 0 0 5px 0;
+    border-color: #29d329;
+}
+.tagcolor_active_blue {
+    background-color: #95B5FF;
+    color: black;
+    border-style: solid;
+    border-width: 0 0 5px 0;
+    border-color: #2e5fd3;
+}
+.tagcolor_active {
+    background-color: white;
+    color: black;
+    border-style: solid;
+    border-width: 0 0 5px 0;
+    border-color: black;
+}
+.tagcolor_active_yellow {
+    background-color: #F9F088;
+    color: black;
+    border-style: solid;
+    border-width: 0 0 5px 0;
+    border-color: #d79b0f;
+}
+.tagcolor_active_gray {
+    background-color: #E0E0E0;
+    color: black;
+    border-style: solid;
+    border-width: 0 0 5px 0;
+    border-color: gray;
+}
+.tag_current_choice {
+    border-bottom: 5px solid black;
+}
 
 
