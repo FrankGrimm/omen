@@ -62,18 +62,46 @@
     </form>
 </div>
 
-<div class="row" id="upload_meta">
+<div class="row upload_meta">
     <div class="col-12">
         <span class="dsmeta">Original filename:</span> <span class="dsmetaval">{{ dataset.dsmetadata.upload_filename }}</span></div>
     <div class="col-12">
         <span class="dsmeta">MIME type:</span> <span class="dsmetaval">{{ dataset.dsmetadata.upload_mimetype }}</span><br />
     </div>
-    <div class="col-12">
-        <span class="dsmeta">Delimiter:<span> <span class="dsmetaval">{{ dataset.dsmetadata.sep or ',' }}</span>
-    </div>
-    <div class="col-12">
-        <span class="dsmeta">Quote char:<span> <span class="dsmetaval">{{ dataset.dsmetadata.quotechar or '"' }}</span>
-    </div>
+</div>
+
+<div class="row upload_meta">
+    <div class="dsmeta col-2" style="margin-top: 0.7em;">Delimiter:</div>
+    <form class="dropdown col-3" method="post">
+        <input type="hidden" name="action" value="change_delimiter" />
+        {% set ds_sep = dataset.dsmetadata.sep or ',' %}
+        <a class="btn btn-primary dropdown-toggle dataset_edit_action" role="button" data-toggle="dropdown">
+            {% if ds_sep == "\t" %}tab{% else %}{{ ds_sep }}{% endif %}
+        </a>
+
+        <div class="dropdown-menu">
+            <input type="submit" name="comma" class="dropdown-item dataset_edit_action_value" data-action="change_delimiter" value="," />
+            <input type="submit" name="tab" class="dropdown-item dataset_edit_action_value" data-action="change_delimiter" value="\t" />
+            <input type="submit" name="semicolon" class="dropdown-item dataset_edit_action_value" data-action="change_delimiter" value=";" />
+        </div>
+    </form>
+</div>
+
+<div class="row upload_meta">
+    <div class="dsmeta col-2" style="margin-top: 0.7em;">Quote char:</div>
+    <form class="dropdown col-3" method="post">
+        <input type="hidden" name="action" value="change_quotechar" />
+
+        {% set ds_quotechar = dataset.dsmetadata.quotechar or '"' %}
+        <a class="btn btn-primary dropdown-toggle dataset_edit_action" role="button" data-toggle="dropdown">
+            {{ ds_quotechar }}
+        </a>
+
+        <div class="dropdown-menu">
+            <input type="submit" name="double-quote" class="dropdown-item dataset_edit_action_value" data-action="change_quotechar" value="&quot;" />
+            <input type="submit" name="single-quote" class="dropdown-item dataset_edit_action_value" data-action="change_quotechar" value="'" />
+        </div>
+    </form>
 </div>
 
 <div class="row" id="dataset_preview">
@@ -82,7 +110,7 @@
     Preview not available.
     {% else %}
     {% if previewdf is string %}
-    <div class="alert alert-danger">
+    <div class="alert alert-danger col-10 offset-1">
         {{ previewdf }}
     </div>
     {% else %}

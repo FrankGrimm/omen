@@ -394,6 +394,45 @@ def dataset_lookup_or_create(dbsession, dsid, editmode):
 
     return dataset, editmode
 
+
+TAGORDER_ACTIONS = ["update_taglist", "rename_tag", "delete_tag", "move_tag_down", "move_tag_up"]
+
+
+def handle_tag_update(request, dataset):
+    update_action = request.json.get("tagaction", "")
+
+    if update_action in TAGORDER_ACTIONS:
+        new_tags = request.json.get("newtags", [])
+
+        original_tags = dataset.get_taglist(include_metadata=True)
+        dataset.set_taglist(new_tags)
+
+        if update_action == "rename_tag":
+            old_name = list(set(original_tags.keys()) - set(new_tags))
+            new_name = list(set(new_tags) - set(original_tags.keys()))
+            if old_name and new_name and len(old_name) and len(new_name):
+                old_name = old_name[0]
+                new_name = new_name[0]
+            else:
+                old_name = None
+                new_name = None
+            if old_name and new_name and old_name in original_tags:
+                if not original_tags[old_name] is None:
+                    dataset.update_tag_metadata(new_name, original_tags[old_name])
+                db.fprint("RENAME_TAG", old_name, "=>", new_name, original_tags[old_name])
+    else:
+        update_tag = request.json.get("tag", None)
+        update_value = request.json.get("value", None)
+        if not update_value is None and update_value == "-":
+            update_value = None
+
+        if not update_tag is None:
+            if update_action == "change_tag_color":
+                dataset.update_tag_metadata(update_tag, {"color": update_value})
+            elif update_action == "change_tag_icon":
+                dataset.update_tag_metadata(update_tag, {"icon": update_value})
+
+
 @app.route(BASEURI + "/dataset/<dsid>/edit", methods=['GET', 'POST'])
 @app.route(BASEURI + "/dataset/create", methods=['GET', 'POST'])
 @login_required
@@ -429,38 +468,7 @@ def new_dataset(dsid=None):
             if request.json is not None and request.json.get("action", "") == "tageditor":
 
                 editmode = "tageditor"
-                update_action = request.json.get("tagaction", "")
-                if update_action in ["update_taglist", "rename_tag", "delete_tag", "move_tag_down", "move_tag_up"]:
-                    new_tags = request.json.get("newtags", [])
-
-                    original_tags = dataset.get_taglist(include_metadata=True)
-                    dataset.set_taglist(new_tags)
-
-                    if update_action == "rename_tag":
-                        old_name = list(set(original_tags.keys()) - set(new_tags))
-                        new_name = list(set(new_tags) - set(original_tags.keys()))
-                        if old_name and new_name and len(old_name) and len(new_name):
-                            old_name = old_name[0]
-                            new_name = new_name[0]
-                        else:
-                            old_name = None
-                            new_name = None
-                        if old_name and new_name and old_name in original_tags:
-                            if not original_tags[old_name] is None:
-                                dataset.update_tag_metadata(new_name, original_tags[old_name])
-                            db.fprint("RENAME_TAG", old_name, "=>", new_name, original_tags[old_name])
-                else:
-                    update_tag = request.json.get("tag", None)
-                    update_value = request.json.get("value", None)
-                    if not update_value is None and update_value == "-":
-                        update_value = None
-
-                    if not update_tag is None:
-                        if update_action == "change_tag_color":
-                            dataset.update_tag_metadata(update_tag, {"color": update_value})
-                        elif update_action == "change_tag_icon":
-                            dataset.update_tag_metadata(update_tag, {"icon": update_value})
-
+                handle_tag_update(request, dataset)
                 # data: JSON.stringify({"action": "tageditor", "action": tag_action, "tag": current_tag, "value": tag_value}),
 
 
@@ -495,57 +503,82 @@ def new_dataset(dsid=None):
                 flash("Dataset was deleted successfully.", "success")
                 return redirect(url_for("show_datasets"))
 
-            if not formaction is None and formaction == 'change_textcol' and not request.form.get("textcol", None) is None:
-                dataset.dsmetadata['textcol'] = request.form.get("textcol", None)
+            if not formaction is None:
+                if formaction == "change_delimiter":
+                    db.fprint("CHANGE_DELIMITER", request.form)
 
-            if not formaction is None and formaction == 'change_idcolumn' and not request.form.get("idcolumn", None) is None:
-                dataset.dsmetadata['idcolumn'] = request.form.get("idcolumn", None)
+                    newdelim = dataset.dsmetadata.get("sep", ",")
+                    if request.form.get("comma", "") != "":
+                        newdelim = ","
+                    elif request.form.get("tab", "") != "":
+                        newdelim = "\t"
+                    elif request.form.get("semicolon", "") != "":
+                        newdelim = ";"
+                    dataset.dsmetadata["sep"] = newdelim
+                    dataset.invalidate()
 
-            if not formaction is None and formaction == 'change_annoorder' and not request.form.get("annoorder", None) is None:
-                dataset.dsmetadata['annoorder'] = request.form.get("annoorder", None)
+                if formaction == "change_quotechar":
+                    db.fprint("CHANGE_QUOTECHAR", request.form)
+                    # {% set ds_quotechar = dataset.dsmetadata.quotechar or '"' %}
+                    newquot = dataset.dsmetadata.get("quotechar", '"')
+                    if request.form.get("double-quote", "") != "":
+                        newquot = "\""
+                    elif request.form.get("single-quote", "") != "":
+                        newquot = "'"
+                    dataset.dsmetadata["quotechar"] = newquot
+                    dataset.invalidate()
 
-            if not formaction is None and formaction == 'add_role' and \
-                    not request.form.get("annouser", None) is None and \
-                    not request.form.get("annorole", None) is None:
-                annouser = request.form.get("annouser", None)
-                annorole = request.form.get("annorole", None)
-                if annorole in db.VALID_ROLES:
-                    dataset.set_role(dbsession, annouser, annorole)
+                if formaction == 'change_textcol' and not request.form.get("textcol", None) is None:
+                    dataset.dsmetadata['textcol'] = request.form.get("textcol", None)
 
-            if not formaction is None and formaction == 'rem_role' and \
-                    not request.form.get("annouser", None) is None and \
-                    not request.form.get("annorole", None) is None:
-                annouser = request.form.get("annouser", None)
-                annorole = request.form.get("annorole", None)
-                if annorole in dataset.get_roles(dbsession, annouser):
-                    dataset.set_role(dbsession, annouser, None)
-                else:
-                    db.fprint("failed to remove role %s from user %s: not in active roles" % (annorole, annouser))
+                if formaction == 'change_idcolumn' and not request.form.get("idcolumn", None) is None:
+                    dataset.dsmetadata['idcolumn'] = request.form.get("idcolumn", None)
 
-            if not formaction is None and formaction == 'change_taglist' and not request.form.get("settaglist", None) is None:
-                newtags = request.form.get("settaglist", None).split("\n")
-                dataset.set_taglist(newtags)
+                if formaction == 'change_annoorder' and not request.form.get("annoorder", None) is None:
+                    dataset.dsmetadata['annoorder'] = request.form.get("annoorder", None)
 
-            new_content = None
-            if not formaction is None and formaction == 'upload_file':
-                if not request.files is None and 'upload_file' in request.files:
-                    fileobj = request.files['upload_file']
-                    if fileobj and fileobj.filename:
-                        dataset.dsmetadata['upload_filename'] = secure_filename(fileobj.filename)
-                        dataset.dsmetadata['upload_mimetype'] = fileobj.mimetype
-                        dataset.dsmetadata['upload_timestamp'] = datetime.now().timestamp()
-                        dataset.dsmetadata['hasdata'] = True
+                if formaction == 'add_role' and \
+                        not request.form.get("annouser", None) is None and \
+                        not request.form.get("annorole", None) is None:
+                    annouser = request.form.get("annouser", None)
+                    annorole = request.form.get("annorole", None)
+                    if annorole in db.VALID_ROLES:
+                        dataset.set_role(dbsession, annouser, annorole)
 
-                        with tempfile.TemporaryFile(mode='w+b') as tmpfile:
-                            fileobj.save(tmpfile)
-                            tmpfile.seek(0)
-                            new_content = tmpfile.read()
-                            if not new_content is None and not len(new_content) == 0:
-                                new_content = new_content.decode('utf-8')
+                if formaction == 'rem_role' and \
+                        not request.form.get("annouser", None) is None and \
+                        not request.form.get("annorole", None) is None:
+                    annouser = request.form.get("annouser", None)
+                    annorole = request.form.get("annorole", None)
+                    if annorole in dataset.get_roles(dbsession, annouser):
+                        dataset.set_role(dbsession, annouser, None)
+                    else:
+                        db.fprint("failed to remove role %s from user %s: not in active roles" % (annorole, annouser))
 
-            if not new_content is None:
-                dataset.content = new_content
-                dataset.update_size()
+                if formaction == 'change_taglist' and not request.form.get("settaglist", None) is None:
+                    newtags = request.form.get("settaglist", None).split("\n")
+                    dataset.set_taglist(newtags)
+
+                new_content = None
+                if formaction == 'upload_file':
+                    if not request.files is None and 'upload_file' in request.files:
+                        fileobj = request.files['upload_file']
+                        if fileobj and fileobj.filename:
+                            dataset.dsmetadata['upload_filename'] = secure_filename(fileobj.filename)
+                            dataset.dsmetadata['upload_mimetype'] = fileobj.mimetype
+                            dataset.dsmetadata['upload_timestamp'] = datetime.now().timestamp()
+                            dataset.dsmetadata['hasdata'] = True
+
+                            with tempfile.TemporaryFile(mode='w+b') as tmpfile:
+                                fileobj.save(tmpfile)
+                                tmpfile.seek(0)
+                                new_content = tmpfile.read()
+                                if not new_content is None and not len(new_content) == 0:
+                                    new_content = new_content.decode('utf-8')
+
+                if not new_content is None:
+                    dataset.content = new_content
+                    dataset.update_size()
 
             dataset.dirty(dbsession)
             dbsession.commit()
