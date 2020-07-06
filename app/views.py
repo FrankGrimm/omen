@@ -430,9 +430,25 @@ def new_dataset(dsid=None):
 
                 editmode = "tageditor"
                 update_action = request.json.get("tagaction", "")
-                if update_action == "update_taglist":
+                if update_action in ["update_taglist", "rename_tag", "delete_tag", "move_tag_down", "move_tag_up"]:
                     new_tags = request.json.get("newtags", [])
+
+                    original_tags = dataset.get_taglist(include_metadata=True)
                     dataset.set_taglist(new_tags)
+
+                    if update_action == "rename_tag":
+                        old_name = list(set(original_tags.keys()) - set(new_tags))
+                        new_name = list(set(new_tags) - set(original_tags.keys()))
+                        if old_name and new_name and len(old_name) and len(new_name):
+                            old_name = old_name[0]
+                            new_name = new_name[0]
+                        else:
+                            old_name = None
+                            new_name = None
+                        if old_name and new_name and old_name in original_tags:
+                            if not original_tags[old_name] is None:
+                                dataset.update_tag_metadata(new_name, original_tags[old_name])
+                            db.fprint("RENAME_TAG", old_name, "=>", new_name, original_tags[old_name])
                 else:
                     update_tag = request.json.get("tag", None)
                     update_value = request.json.get("value", None)
