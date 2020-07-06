@@ -1,3 +1,6 @@
+// since we insert the CSS locally, prevent Chart.js from injecting it
+Chart.platform.disableCSSInjection = true;
+
 $(document).ready(function() {
 
     document.getElementById("sidebar-brandlink").addEventListener("click", function() {
