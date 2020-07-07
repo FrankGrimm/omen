@@ -262,6 +262,28 @@ class Dataset(Base):
         flag_modified(self, "dsmetadata")
         dbsession.add(self)
 
+    def migrate_annotations(self, dbsession, old_name, new_name):
+        migrated_annotations = 0
+
+        for anno in dbsession.query(Annotation).filter_by( \
+                dataset_id=self.dataset_id).all():
+
+            if anno.data is None:
+                continue
+            anno_tag = anno.data.get("value", None)
+            if anno_tag is None or not anno_tag == old_name:
+                continue
+
+            anno.data["value"] = new_name
+            flag_dirty(anno)
+            flag_modified(anno, "data")
+            dbsession.add(anno)
+            migrated_annotations += 1
+
+        dbsession.flush()
+
+        return migrated_annotations
+
     def annotations(self, dbsession, foruser=None, user_column=None, hideempty=False, only_user=False):
         df = self.as_df()
 

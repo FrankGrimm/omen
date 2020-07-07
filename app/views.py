@@ -398,28 +398,30 @@ def dataset_lookup_or_create(dbsession, dsid, editmode):
 TAGORDER_ACTIONS = ["update_taglist", "rename_tag", "delete_tag", "move_tag_down", "move_tag_up"]
 
 
-def handle_tag_update(request, dataset):
+def handle_tag_update(dbsession, request, dataset):
     update_action = request.json.get("tagaction", "")
 
     if update_action in TAGORDER_ACTIONS:
         new_tags = request.json.get("newtags", [])
 
-        original_tags = dataset.get_taglist(include_metadata=True)
+        original_tagmetadata = dataset.get_taglist(include_metadata=True)
         dataset.set_taglist(new_tags)
 
         if update_action == "rename_tag":
-            old_name = list(set(original_tags.keys()) - set(new_tags))
-            new_name = list(set(new_tags) - set(original_tags.keys()))
+            old_name = list(set(original_tagmetadata.keys()) - set(new_tags))
+            new_name = list(set(new_tags) - set(original_tagmetadata.keys()))
             if old_name and new_name and len(old_name) and len(new_name):
                 old_name = old_name[0]
                 new_name = new_name[0]
             else:
                 old_name = None
                 new_name = None
-            if old_name and new_name and old_name in original_tags:
-                if not original_tags[old_name] is None:
-                    dataset.update_tag_metadata(new_name, original_tags[old_name])
-                db.fprint("RENAME_TAG", old_name, "=>", new_name, original_tags[old_name])
+            if old_name and new_name and old_name in original_tagmetadata:
+                if not original_tagmetadata[old_name] is None:
+                    dataset.update_tag_metadata(new_name, original_tagmetadata[old_name])
+                db.fprint("RENAME_TAG", old_name, "=>", new_name, original_tagmetadata[old_name])
+                migrated_annotations = dataset.migrate_annotations(dbsession, old_name, new_name)
+                db.fprint("RENAME_TAG", migrated_annotations, "migrated from %s to %s" % (old_name, new_name))
     else:
         update_tag = request.json.get("tag", None)
         update_value = request.json.get("value", None)
@@ -518,7 +520,7 @@ def new_dataset(dsid=None):
             if request.json is not None and request.json.get("action", "") == "tageditor":
 
                 editmode = "tageditor"
-                handle_tag_update(request, dataset)
+                handle_tag_update(dbsession, request, dataset)
                 # data: JSON.stringify({"action": "tageditor", "action": tag_action, "tag": current_tag, "value": tag_value}),
 
 
