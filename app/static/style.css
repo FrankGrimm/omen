@@ -426,28 +426,28 @@ li.nav-active-task div.sideprogress-active {
     color: black;
     border-style: solid;
     border-width: 0 0 5px 0;
-    border-color: #e64646;
+    border-color: white;
 }
 .tagcolor_active_red {
     background-color: rgb(255, 99, 132);
     color: black;
     border-style: solid;
     border-width: 0 0 5px 0;
-    border-color: #e64646;
+    border-color: white;
 }
 .tagcolor_active_green {
     background-color: rgb(75, 192, 192);
     color: black;
     border-style: solid;
     border-width: 0 0 5px 0;
-    border-color: #1fae1f;
+    border-color: white;
 }
 .tagcolor_active_blue {
     background-color: rgb(54, 162, 235);
     color: black;
     border-style: solid;
     border-width: 0 0 5px 0;
-    border-color: #2e5fd3;
+    border-color: white;
 }
 .tagcolor_active {
     background-color: white;
@@ -461,14 +461,14 @@ li.nav-active-task div.sideprogress-active {
     color: black;
     border-style: solid;
     border-width: 0 0 5px 0;
-    border-color: #d79b0f;
+    border-color: white;
 }
 .tagcolor_active_gray {
     background-color: rgb(201, 203, 207);
     color: black;
     border-style: solid;
     border-width: 0 0 5px 0;
-    border-color: gray;
+    border-color: white;
 }
 .tag_current_choice {
     border-bottom: 5px solid black;
