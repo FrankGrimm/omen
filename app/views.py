@@ -80,15 +80,26 @@ def logout():
 
     return redirect(url_for('index'))
 
-def get_accessible_dataset(dbsession, dsid):
-    my_datasets = db.my_datasets(dbsession, session['user'])
-    access_datasets = db.accessible_datasets(dbsession, session['user'])
+def get_accessible_dataset(dbsession, dsid, check_role=None):
+    session_user = db.by_id(dbsession, session['user'])
+
+    my_datasets = db.my_datasets(dbsession, session_user)
+    access_datasets = db.accessible_datasets(dbsession, session_user)
 
     cur_dataset = None
     if not dsid is None and dsid in my_datasets:
         cur_dataset = my_datasets[dsid]
     if not dsid is None and dsid in access_datasets:
         cur_dataset = access_datasets[dsid]
+
+    if check_role is None:
+        return cur_dataset
+
+    if not cur_dataset is None:
+        user_roles = cur_dataset.get_roles(dbsession, session_user)
+        if not check_role in user_roles:
+            return None
+
     return cur_dataset
 
 def reorder_dataframe(df, cur_dataset, annotation_columns):
@@ -271,6 +282,56 @@ def handle_set_annotation(dbsession, request, dataset, df, id_column):
         set_sample = df.iloc[int(set_sample_idx)][id_column]
         dataset.setanno(dbsession, session['user'], set_sample, set_sample_value)
 
+def get_votes(dbsession, dataset, user_roles, session_user, sample_id):
+    anno_votes = None
+    if 'curator' in user_roles:
+        anno_votes = dataset.get_anno_votes(dbsession, sample_id=sample_id,
+                                            exclude_user=session_user)
+        for tag in anno_votes.keys():
+            anno_votes[tag] = [annouser.get_name() for annouser in anno_votes[tag]]
+    return anno_votes
+
+def get_next_sample(request, dataset, df, sample_idx, id_column):
+    next_sample_idx = None
+    next_sample_id = None
+    sample_id = None
+
+    if sample_idx is None:
+        try:
+            if not request.args.get("sample_idx", None) is None:
+                sample_idx = int(request.args.get("sample_idx", None))
+        except ValueError:
+            pass
+
+        if sample_idx is None:
+            if dataset.dsmetadata.get("annoorder", "sequential") == 'random':
+                sample_idx, sample_id = get_random_sample(df, id_column)
+            else:
+                no_anno = df[~(df.annotations != '')]
+                # make sure to select a sample that has not been annotated yet
+                # (if any are left)
+                if no_anno.empty:
+                    no_anno = df
+
+                first_row = no_anno.iloc[no_anno.index[0]]
+                sample_idx = first_row['index']
+                sample_id = first_row[id_column]
+
+                next_row = no_anno.iloc[no_anno.index[1]]
+                next_sample_idx = next_row['index']
+                next_sample_id = next_row[id_column]
+
+    return next_sample_idx, next_sample_id, sample_idx, sample_id
+
+def reorder_dataframe_noindex(df, dataset, annotation_columns):
+    columns = [dataset.get_id_column(), dataset.get_text_column()] + \
+                list(df.columns.intersection(annotation_columns))
+
+    df = df.reset_index()
+    df = df.loc[:, columns]
+    df = df[columns]
+    df = df.reset_index()
+    return df
 
 @app.route(BASEURI + "/dataset/<dsid>/annotate", methods=["GET", "POST"])
 @login_required
@@ -279,77 +340,30 @@ def annotate(dsid=None, sample_idx=None):
 
     with db.session_scope() as dbsession:
         session_user = db.by_id(dbsession, session['user'])
-        my_datasets = db.my_datasets(dbsession, session['user'])
-        access_datasets = db.accessible_datasets(dbsession, session['user'])
-
-        if not dsid is None and dsid in my_datasets:
-            dataset = my_datasets[dsid]
-        if not dsid is None and dsid in access_datasets:
-            dataset = access_datasets[dsid]
+        dataset = get_accessible_dataset(dbsession, dsid, "annotator")
 
         if dataset is None:
-            return abort(404, \
-                    description="Forbidden. User does not have access to requested dataset.")
+            return abort(404, description="Forbidden. User does not have annotation access to the requested dataset.")
 
         user_roles = dataset.get_roles(dbsession, session_user)
-        if not 'annotator' in user_roles:
-            return abort(404, \
-                    description="Forbidden. Current user roles %s do not allow annotation." \
-                                % user_roles)
 
-        task = {"id": dsid,
-                "name": dataset.dsmetadata.get("name", dataset.dataset_id),
-                "dataset": dataset,
-                "progress": 0,
-                "size": dataset.dsmetadata.get("size", -1) or -1,
-                "annos": dataset.annocount(dbsession, session['user']),
-                "annos_today": dataset.annocount_today(dbsession, session['user'])
-                }
+        task = dataset.get_task(dbsession, session_user)
 
         db.task_calculate_progress(task)
 
         id_column = dataset.get_id_column()
 
-        df, annotation_columns = dataset.annotations(dbsession, foruser=session_user, \
-                                                    user_column="annotations", \
+        df, annotation_columns = dataset.annotations(dbsession, foruser=session_user,
+                                                    user_column="annotations",
                                                     hideempty=False, only_user=True)
-        columns = [id_column, dataset.get_text_column()] + \
-                    list(df.columns.intersection(annotation_columns))
 
-        df = df.reset_index()
-        df = df.loc[:, columns]
-        df = df[columns]
-        df = df.reset_index()
+        df = reorder_dataframe_noindex(df, dataset, annotation_columns)
 
         sample_content = None
         textcol = dataset.dsmetadata.get("textcol", None)
 
-        next_sample_idx = None
-        next_sample_id = None
-
-        if sample_idx is None:
-            try:
-                if not request.args.get("sample_idx", None) is None:
-                    sample_idx = int(request.args.get("sample_idx", None))
-            except ValueError as _:
-                pass
-
-            if sample_idx is None:
-                if dataset.dsmetadata.get("annoorder", "sequential") == 'random':
-                    sample_idx, sample_id = get_random_sample(df, id_column)
-                else:
-                    no_anno = df[~(df.annotations != '')]
-                    # make sure to select a sample that has not been annotated yet (if any are left)
-                    if no_anno.empty:
-                        no_anno = df
-
-                    first_row = no_anno.iloc[no_anno.index[0]]
-                    sample_idx = first_row['index']
-                    sample_id = first_row[id_column]
-
-                    next_row = no_anno.iloc[no_anno.index[1]]
-                    next_sample_idx = next_row['index']
-                    next_sample_id = next_row[id_column]
+        next_sample_idx, next_sample_id, sample_idx, sample_id = \
+                get_next_sample(request, dataset, df, sample_idx, id_column)
 
         handle_set_annotation(dbsession, request, dataset, df, id_column)
 
@@ -364,22 +378,17 @@ def annotate(dsid=None, sample_idx=None):
                 'value' in curanno_data['data']:
             curanno = curanno_data['data']['value']
 
-        anno_votes = None
-        if 'curator' in user_roles:
-            anno_votes = dataset.get_anno_votes(dbsession, sample_id=sample_id, \
-                                                exclude_user=session_user)
-            for tag in anno_votes.keys():
-                anno_votes[tag] = [annouser.get_name() for annouser in anno_votes[tag]]
+        anno_votes = get_votes(dbsession, dataset, user_roles, session_user, sample_id)
 
-        return render_template("annotate.html", dataset=dataset, \
-                                task=task, \
-                                sample_idx=sample_idx, \
-                                set_sample=set_sample, \
-                                random_sample=random_sample, \
-                                sample_content=sample_content, \
-                                curanno=curanno, \
-                                next_sample_idx=next_sample_idx, \
-                                next_sample_id=next_sample_id, \
+        return render_template("annotate.html", dataset=dataset,
+                                task=task,
+                                sample_idx=sample_idx,
+                                set_sample=set_sample,
+                                random_sample=random_sample,
+                                sample_content=sample_content,
+                                curanno=curanno,
+                                next_sample_idx=next_sample_idx,
+                                next_sample_id=next_sample_id,
                                 votes=anno_votes)
 
 def dataset_lookup_or_create(dbsession, dsid, editmode):
@@ -458,7 +467,7 @@ def dataset_overview_json(dsid):
         tag_metadata = dataset.get_taglist(include_metadata=True)
         annotations_by_user = {}
         all_annotations = {}
-        ds_total = dataset.dsmetadata.get("size", -1)
+        ds_total = dataset.get_size()
         for anno_column in annotation_columns:
             value_counts = df[anno_column].value_counts()
             column_title = anno_column.split("-", 2)[-1]

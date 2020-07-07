@@ -137,11 +137,25 @@ class Dataset(Base):
             return None
         return textcol
 
+    def get_size(self):
+        return self.dsmetadata.get("size", -1) or -1
+
     def get_id_column(self):
         idcolumn = self.dsmetadata.get("idcolumn", None)
         if idcolumn is None:
             return None
         return idcolumn
+
+    def get_task(self, dbsession, foruser):
+        task = {"id": self.dataset_id,
+                "name": self.get_name(),
+                "dataset": self,
+                "progress": 0,
+                "size": self.get_size(),
+                "annos": self.annocount(dbsession, foruser),
+                "annos_today": self.annocount_today(dbsession, foruser)
+                }
+        return task
 
     def get_roles(self, dbsession, user_obj):
         if isinstance(user_obj, str):
