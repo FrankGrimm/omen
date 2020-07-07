@@ -396,43 +396,54 @@ li.nav-active-task div.sideprogress-active {
     height: 2em;
 }
 
+.tagcolor_orange {
+    background-color: rgb(255, 159, 64);
+    color: black;
+}
 .tagcolor_red {
-    background-color: #ff8880;
+    background-color: rgb(255, 99, 132);
     color: black;
 }
 .tagcolor_green {
-    background-color: #70E3AF;
+    background-color: rgb(75, 192, 192);
     color: black;
 }
 .tagcolor_blue {
-    background-color: #95B5FF;
+    background-color: rgb(54, 162, 235);
     color: black;
 }
 .tagcolor_yellow {
-    background-color: #F9F088;
+    background-color: rgb(255, 205, 86);
     color: black;
 }
 .tagcolor_gray {
-    background-color: #E0E0E0;
+    background-color: rgb(201, 203, 207);
     color: black;
 }
 
+.tagcolor_active_orange {
+    background-color: rgb(255, 159, 64);
+    color: black;
+    border-style: solid;
+    border-width: 0 0 5px 0;
+    border-color: #e64646;
+}
 .tagcolor_active_red {
-    background-color: #ff8880;
+    background-color: rgb(255, 99, 132);
     color: black;
     border-style: solid;
     border-width: 0 0 5px 0;
     border-color: #e64646;
 }
 .tagcolor_active_green {
-    background-color: #70E3AF;
+    background-color: rgb(75, 192, 192);
     color: black;
     border-style: solid;
     border-width: 0 0 5px 0;
-    border-color: #29d329;
+    border-color: #1fae1f;
 }
 .tagcolor_active_blue {
-    background-color: #95B5FF;
+    background-color: rgb(54, 162, 235);
     color: black;
     border-style: solid;
     border-width: 0 0 5px 0;
@@ -446,14 +457,14 @@ li.nav-active-task div.sideprogress-active {
     border-color: black;
 }
 .tagcolor_active_yellow {
-    background-color: #F9F088;
+    background-color: rgb(255, 205, 86);
     color: black;
     border-style: solid;
     border-width: 0 0 5px 0;
     border-color: #d79b0f;
 }
 .tagcolor_active_gray {
-    background-color: #E0E0E0;
+    background-color: rgb(201, 203, 207);
     color: black;
     border-style: solid;
     border-width: 0 0 5px 0;
