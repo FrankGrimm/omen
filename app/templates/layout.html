@@ -61,7 +61,9 @@
 <script src="{{ url_for("static", filename="chartjs/2.9.3/Chart.bundle.min.js") }}"></script>
 
 <script src="{{ url_for("static", filename="main.js") }}"></script>
-
+    <script>
+        window.OMEN_BASE = "{{ url_for("index") }}";
+    </script>
                 {% block addscript %}{% endblock %}
 </body>
 </html>

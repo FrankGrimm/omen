@@ -5,6 +5,37 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
 {% endblock %}
 
 {% block pagebody %}
+
+<div class="row df_inspect_overview">
+    <div class="accordion col-12" id="df_overview_collapse">
+        <div class="card">
+            <div class="card-header slim-card-header">
+                <h5 class="mb-0">
+                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#df_overview_collapse_a"> 
+                        <i class="fas fa-angle-down"></i> Overview
+                    </button>
+                </h5>
+            </div>
+
+            <div id="df_overview_collapse_a" class="collapse hide" data-parent="#df_overview_collapse">
+                <div class="card-body">
+
+                    <div id="overview-chart-holder" style="">
+                        <canvas id="overview-chart" style="position: relative; height: 40vh; width: 80vw;"></canvas>
+                    </div>
+                    <div class="overview-chart-controls">
+                    <span>Annotators: </span>
+                    <div class="btn-group">
+                        <button id="show_all_annotators" class="btn btn-light">All</button>
+                        <button id="show_individual_annotators" class="btn btn-light">Individual</button>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row dataset_inspect_metadata">
     <div class="dataset_inspect_meta col-6">
         <span class="dataset_inspect_meta_label">Owner:</span> <span class="dataset_inspect_meta_value">{{ dataset.owner.get_name() }}</span><br />
@@ -84,6 +115,148 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
 
 {% block addscript %}
 <script>
+    const ACTIVE_DATASET_ID = {{ dataset.dataset_id }};
+
+    window.chartColors = {
+        red: 'rgb(255, 99, 132)',
+        orange: 'rgb(255, 159, 64)',
+        yellow: 'rgb(255, 205, 86)',
+        green: 'rgb(75, 192, 192)',
+        blue: 'rgb(54, 162, 235)',
+        purple: 'rgb(153, 102, 255)',
+        grey: 'rgb(201, 203, 207)'
+    };
+
+    function initOverviewChart(target) {
+        const ctx = document.getElementById(target);
+        const config = {
+            type: 'doughnut',
+            data: {
+                datasets: [],
+                labels: []
+            },
+            options: {
+                tooltips: {
+                    callbacks: {
+                        label: function(tooltipItem, data) {
+                            const datasetLabel = data.datasets[tooltipItem.datasetIndex].label || '';
+                            const lbl = data.labels[tooltipItem.index];
+                            const value = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index] || 0;
+                            return datasetLabel + ': ' + lbl + " " + value;
+                        }
+                    }
+                },
+                responsive: true,
+                legend: {
+                    position: "top",
+                },
+                animation: {
+					animateScale: true,
+					animateRotate: true
+				},
+                title: {
+                    display: true,
+                    text: "Annotations"
+                },
+                circumference: Math.PI,
+                rotation: -Math.PI
+            }
+        };
+
+        const overviewChart = new Chart(ctx, config);
+
+        fetch(window.OMEN_BASE + "dataset/" + ACTIVE_DATASET_ID + "/overview.json")
+          .then(response => response.json())
+          .then(overviewData => updateOverviewChart(overviewChart, overviewData, config));
+
+        return overviewChart;
+    }
+
+    const overviewChart = initOverviewChart("overview-chart");
+    let overviewDataCache = null;
+    let overviewChartConfig = null;
+
+    document.getElementById("show_all_annotators").addEventListener("click", () => {
+        updateOverviewChart(overviewChart, overviewDataCache, overviewChartConfig, "all");
+    });
+    document.getElementById("show_individual_annotators").addEventListener("click", () => {
+        updateOverviewChart(overviewChart, overviewDataCache, overviewChartConfig, "single");
+    });
+
+    function updateOverviewChart(overviewChart, overviewData, config, mode)  {
+        if (!overviewData) { 
+            return;
+        }
+        overviewDataCache = overviewData;
+        overviewChartConfig = config;
+       
+        // mode = mode || 'all';
+        mode = mode || 'single';
+        config.data.labels = [...overviewData.tags];
+
+        if (mode === 'single') {
+            // config.data.labels.push("N/A");
+        }
+            
+        overviewChart.data.datasets = [];
+        overviewChart.options.title.text = "Annotations";
+
+        if (mode === 'all') {
+            const allAnnosDS = {data: [], backgroundColor: []};
+            const default_colors = [...Object.keys(window.chartColors)];
+            config.data.labels.forEach((tag) => {
+                const tag_count = overviewData.all_annotations[tag] || 0;
+                const tag_meta = overviewData.tag_metadata[tag] || {}
+
+                let tag_color = null;
+                if (tag_meta.color && window.chartColors[tag_meta]) {
+                    tag_color = window.chartColors[tag_meta];
+                }
+                    
+                if (!tag_color) { 
+                    tag_color = default_colors.pop();
+                } else {
+                    default_colors.remove(tag_color);
+                }
+
+                allAnnosDS.data.push(tag_count);
+                allAnnosDS.backgroundColor.push(tag_color);
+            });
+            allAnnosDS.label = "All Annotations";
+            overviewChart.data.datasets.push(allAnnosDS);
+        } else {
+            overviewChart.data.datasets = [];
+            for (const [annotator, annotations] of Object.entries(overviewData.annotations)) {
+                const annoDS = {data: [], backgroundColor: []};
+                const default_colors = [...Object.keys(window.chartColors)];
+                config.data.labels.forEach((tag) => {
+                    const tag_count = annotations[tag] || 0;
+                    const tag_meta = overviewData.tag_metadata[tag] || {}
+
+                    let tag_color = null;
+                    if (tag_meta.color && window.chartColors[tag_meta]) {
+                        tag_color = window.chartColors[tag_meta];
+                    }
+                        
+                    if (!tag_color) { 
+                        tag_color = default_colors.pop();
+                    } else {
+                        default_colors.remove(tag_color);
+                    }
+
+                    annoDS.data.push(tag_count);
+                    annoDS.backgroundColor.push(tag_color);
+                });
+                
+                annoDS.label = annotator; 
+                console.log(annoDS);
+                overviewChart.data.datasets.push(annoDS);
+            }
+        }
+        
+        overviewChart.update();
+    }
+
     /**
     * https://stackoverflow.com/questions/1090948/change-url-parameters
      * http://stackoverflow.com/a/10997390/11236

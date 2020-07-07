@@ -463,4 +463,18 @@ li.nav-active-task div.sideprogress-active {
     border-bottom: 5px solid black;
 }
 
+.df_inspect_overview {
+    margin-bottom: 1em;
+}
+
+.df_overview_collapse {
+    margin: 0;
+    padding: 0;
+}
+
+.slim-card-header {
+    margin: 0;
+    padding: 0;
+}
+
 
