@@ -1,8 +1,11 @@
-{% extends "layout.html" %}
-{% block body %}
+{% extends "dataset_layout.html" %}
+
+{% block page_title %}
+{% if editmode == 'create' %}Create Dataset{% else %}Edit Dataset{% endif %}
+{% endblock %}
+
+{% block pagebody %}
 <div class="row">
-    <h1 class="col-12">{% if editmode == 'create' %}Create Dataset{% else %}Edit Dataset{% endif %}</h1>
-   
     {% if dataset and ds_errors %}
     <div class="row">
         <h5 class="dfissues col-12">Open issues with this dataset:</h5>
@@ -115,7 +118,7 @@
     </div>
     {% else %}
     <div class="col-12">
-        {{ render_dataframe(previewdf, "previewdftable", "dataframe", 20) }}
+        {{ macros.render_dataframe(previewdf, "previewdftable", "dataframe", 20) }}
     </div>
     {% endif %}
     {% endif %}
@@ -333,7 +336,7 @@
 
         <li>
             {% set task = dataset.gettask(dbsession, userobj) %}
-        {{ render_progress(task, addclass="singleprocess") }}
+        {{ macros.render_progress(task, addclass="singleprocess") }}
         </li>
 
         {% endif %}

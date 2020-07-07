@@ -19,13 +19,13 @@
 <body>
 {% include "navbar.html" with context %}
 
-{% include "macros.html" with context %}
+{% import "macros.html" as macros with context %}
 
 <div class="container-fluid">
 <div class="row">
 
     {% if is_authenticated %}
-        {% include "sidebar.html" %}
+        {% include "sidebar.html" with context %}
         {% endif %}
 
         <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">

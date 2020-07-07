@@ -1,8 +1,10 @@
-{% extends "layout.html" %}
+{% extends "dataset_layout.html" %}
 
-{% block body %}
-<h1>Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot; </h1>
+{% block page_title %}
+Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
+{% endblock %}
 
+{% block pagebody %}
 <div class="row dataset_inspect_metadata">
     <div class="dataset_inspect_meta col-6">
         <span class="dataset_inspect_meta_label">Owner:</span> <span class="dataset_inspect_meta_value">{{ dataset.owner.get_name() }}</span><br />
@@ -75,7 +77,7 @@
     </div>
 </div>
 <div class="row">
-    {{ render_dataframe(df, "dfid", "dfclasses", query=query, maxrows=page_size) }}
+    {{ macros.render_dataframe(df, "dfid", "dfclasses", query=query, maxrows=page_size) }}
 </div>
 
 {% endblock %}

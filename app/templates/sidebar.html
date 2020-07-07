@@ -1,3 +1,4 @@
+
 {% macro sideitem(cssclass, target, title) -%}
 <li class="nav-item">
     {% if request.url_rule.endpoint == target %}
@@ -51,9 +52,9 @@
                     <span>{{ task.annos_today }}</span>
                     </p>
                     {% endif %}
-                    {{ render_progress(sbtask, addclass="sideprogress-active") }}
+                    {{ macros.render_progress(sbtask, addclass="sideprogress-active") }}
                 {% else %}
-                    {{ render_progress(sbtask, addclass="sideprogress") }}
+                    {{ macros.render_progress(sbtask, addclass="sideprogress") }}
                 {% endif %}
             </li>
             {% else %}

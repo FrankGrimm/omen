@@ -1,14 +1,11 @@
-{% extends "layout.html" %}
-{% block body %}
-<div class="row">
-<h1 class="col-12">Annotate &quot;<span class="annometa">{{ task.name }}</span>&quot; 
-    {% if dataset.get_description() != "" %}<button class="btn btn-light btn-ds-description" data-toggle="modal" data-target="#dsDescriptionModal">
-        <i class="fas fa-info"></i> info
-    </button>{% endif %}
-</h1>
-</div>
+{% extends "dataset_layout.html" %}
+{% block page_title %}
+Annotate &quot;<span class="annometa">{{ task.name }}</span>&quot; 
+{% endblock %}
 
-{{ render_progress(task, addclass="annoprogress") }}
+{% block pagebody %}
+
+{{ macros.render_progress(task, addclass="annoprogress") }}
 
 <div class="row">
 <div id="anno_actions">
@@ -34,7 +31,7 @@
     {% set nextsampleidx = 0 %}
 {% endif %}
 
-{{ render_tag_buttons(dataset, nextsampleidx, votes) }}
+{{ macros.render_tag_buttons(dataset, nextsampleidx, votes) }}
 
     <div class="btn-group">
     {% if dataset.dsmetadata.size > 0 and sample_idx < (dataset.dsmetadata.size - 1) %}
@@ -66,7 +63,7 @@
 <br />
 <br />
 
-{{ render_description_modal("dsDescriptionModal", dataset.get_description()) }}
+{{ macros.render_description_modal("dsDescriptionModal", dataset.get_description()) }}
 
 {% endblock %}
 

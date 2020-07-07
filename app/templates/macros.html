@@ -1,4 +1,3 @@
-
 {% macro render_tag_buttons(dataset, nextsampleidx, votes={}, data_sample='', group_id='', add_classes='') -%}
 <div class="btn-group{% if add_classes != ''%} {{ add_classes }}{% endif %}"{% if group_id != '' %} id="{{ group_id }}"{% endif %}{% if data_sample !='' %} data-sample="{{ data_sample }}"{% endif %}>
 {% for tag,tagmetadata in dataset.get_taglist(include_metadata=True).items() %}
