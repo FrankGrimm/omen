@@ -266,7 +266,7 @@ div.dataset_inspect_metadata {
 
 span.dataset_inspect_meta_label {
     font-style: italic;
-    min-width: 4rem;
+    min-width: 6rem;
     display: inline-block;
 }
 
@@ -488,4 +488,46 @@ li.nav-active-task div.sideprogress-active {
     padding: 0;
 }
 
+.df_inspect_changebtn {
+    min-width: 4rem !important;
+    width: 80%;
+}
 
+.df_inspect_table_entrynum {
+    width: 5rem;
+    padding-left: 1em;
+}
+
+
+.df_inspect_col_content {
+    margin-bottom: 1em;
+}
+
+
+.inspect_tageditor_actions {
+    display: flex;
+    margin-bottom: 0.5em;
+}
+
+.inspect_tageditor_actions .btn {
+    flex-grow: 1;
+}
+
+.inspect_tageditor_actions .dropdown-toggle-split {
+    flex-grow: 1;
+    min-width: 2em;
+}
+
+.df_inspect_table_row {
+    padding: 0.5em 0 0.3em 0;
+    margin-bottom: 0.2em;
+    min-height: 2.5em;
+    border-bottom: 1px solid black;
+}
+.df_inspect_table_row:nth-child(even) {
+    background: #edf5ff;
+}
+
+.df_inspect_header.df_inspect_textcol {
+    font-weight: bold;
+}

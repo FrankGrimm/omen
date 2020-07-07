@@ -121,7 +121,7 @@ def query_dataframe(df, textcol, query):
         df = df[df[textcol].str.contains(query, na=False, regex=False, case=False)]
     return df
 
-@app.route(BASEURI + "/dataset/<dsid>/inspect")
+@app.route(BASEURI + "/dataset/<dsid>/inspect", methods=["GET", "POST"])
 @login_required
 def inspect_dataset(dsid=None):
     with db.session_scope() as dbsession:
@@ -134,8 +134,20 @@ def inspect_dataset(dsid=None):
         query = request.args.get("query", "").strip()
 
         cur_dataset = get_accessible_dataset(dbsession, dsid)
-
         session_user = db.by_id(dbsession, session['user'])
+
+        template_name = "dataset_inspect.html"
+        ctx_args = {}
+        req_sample = request.args.get("single_row", "")
+        if request.method == "POST":
+            request.get_json(force=True)
+        if not request.json is None:
+            req_sample = request.json.get("single_row", "")
+
+        if not req_sample is None and not req_sample == "":
+            if not request.json is None and "set_tag" in request.json:
+                cur_dataset.setanno(dbsession, session_user, req_sample, request.json.get("set_tag", None))
+
         df, annotation_columns = cur_dataset.annotations(dbsession, \
                                                 foruser=session_user, \
                                                 user_column="annotations", \
@@ -171,20 +183,36 @@ def inspect_dataset(dsid=None):
             df = df[onset:offset]
 
         pagination_size = 5
-        pagination_elements = list(range(max(1, page - pagination_size), \
+        pagination_elements = list(range(max(1, page - pagination_size),
                                          min(page + pagination_size + 1, pages + 1)))
         pagination_elements.sort()
 
-        return render_template("dataset_inspect.html", dataset=cur_dataset,
-                                df=df, \
-                                hideempty=hideempty, \
-                                query=query, \
-                                page_size=page_size, \
-                                page=page, \
-                                pages=pages, \
-                                results=results, \
-                                pagination_elements=pagination_elements, \
-                                user_roles=cur_dataset.get_roles(dbsession, session_user) \
+        if req_sample != "":
+            id_column = cur_dataset.get_id_column()
+
+            template_name = "dataset_inspect_row.html"
+            ctx_args['hide_nan'] = True
+            ctx_args['id_column'] = id_column
+            ctx_args['text_column'] = cur_dataset.get_text_column()
+
+            for index, row in df.iterrows():
+                if str(row[id_column]) != str(req_sample):
+                    continue
+                ctx_args['index'] = index
+                ctx_args['row'] = row
+
+
+        return render_template(template_name, dataset=cur_dataset,
+                                df=df,
+                                hideempty=hideempty,
+                                query=query,
+                                page_size=page_size,
+                                page=page,
+                                pages=pages,
+                                results=results,
+                                pagination_elements=pagination_elements,
+                                user_roles=cur_dataset.get_roles(dbsession, session_user),
+                                **ctx_args
                                 )
 
 @app.route(BASEURI + "/dataset/<dsid>/download")

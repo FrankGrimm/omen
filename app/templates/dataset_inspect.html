@@ -8,11 +8,33 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
 
 <div class="row df_inspect_overview">
     <div class="accordion col-12" id="df_overview_collapse">
+
+        <div class="card">
+            <div class="card-header slim-card-header">
+                <h5 class="mb-0">
+                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#df_overview_collapse_b"> 
+                        <i class="fas fa-angle-down"></i> Metadata
+                    </button>
+                </h5>
+            </div>
+
+            <div id="df_overview_collapse_b" class="collapse hide" data-parent="#df_overview_collapse">
+                <div class="card-body">
+    
+                    <div class="dataset_inspect_meta">
+                        <span class="dataset_inspect_meta_label">Owner:</span> <span class="dataset_inspect_meta_value">{{ dataset.owner.get_name() }}</span><br />
+                        <span class="dataset_inspect_meta_label">Fields:</span> <span class="dataset_inspect_meta_value">{{ ", ".join(df.columns) }}</span><br />
+                        <span class="dataset_inspect_meta_label">Access Roles:</span> <span class="dataset_inspect_meta_value">{{ user_roles|join(", ") }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-header slim-card-header">
                 <h5 class="mb-0">
                     <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#df_overview_collapse_a"> 
-                        <i class="fas fa-angle-down"></i> Overview
+                        <i class="fas fa-angle-down"></i> Annotation Overview
                     </button>
                 </h5>
             </div>
@@ -33,52 +55,13 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
                 </div>
             </div>
         </div>
-    </div>
-</div>
-
-<div class="row dataset_inspect_metadata">
-    <div class="dataset_inspect_meta col-6">
-        <span class="dataset_inspect_meta_label">Owner:</span> <span class="dataset_inspect_meta_value">{{ dataset.owner.get_name() }}</span><br />
-        <span class="dataset_inspect_meta_label">Fields:</span> <span class="dataset_inspect_meta_value">{{ ", ".join(df.columns) }}</span><br />
-        <span class="dataset_inspect_meta_label">Access Roles:</span> <span class="dataset_inspect_meta_value">{{ user_roles|join(", ") }}</span>
-    </div>
-    <div class="dataset_inspect_meta col-6">
-        <form action="{{ url_for("inspect_dataset", dsid=dataset.dataset_id) }}" method="get" id="form_doquery">
-        <div class="form-group row">
-            <div class="col-12">
-                <div class="input-group">
-                    <input id="query" name="query" placeholder="search" type="text" class="form-control" value="{{ query }}"> 
-                    <div class="input-group-append">
-                        <button class="btn btn-outline-primary input-group-text" onclick="return $('#form_doquery').submit();">
-                            <i class="fa fa-arrow-circle-right"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div> 
-
-        <div class="form-group row">
-            <div class="col-12">
-                <div class="custom-control custom-checkbox custom-control-inline">
-                    {% if hideempty %}
-                    <input name="hideempty" id="hideempty" type="hidden" value="true" />
-                    <input name="cb_hideempty" id="cb_hideempty" type="checkbox" class="custom-control-input" value="true" checked="checked"> 
-                    {% else %}
-                    <input name="hideempty" id="hideempty" type="hidden" value="false" />
-                    <input name="cb_hideempty" id="cb_hideempty" type="checkbox" class="custom-control-input" value="false"> 
-                    {% endif %}
-                    <label for="cb_hideempty" class="custom-control-label">Hide rows without annotations</label>
-                </div>
-            </div>
-        </div> 
-        </form>
 
     </div>
 </div>
 
 <div class="row df_pagination">
-    <div class="col-12">
-        Results: {{results}}<br />
+    <div class="col-sm-12 col-md-7">
+        Entries: {{results}}<br />
     <div class="btn-group">
         {% set addclass="" %}
         {% if page == 1 %}{% set addclass="active" %}{% endif %}
@@ -106,9 +89,62 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
     </div>
 
     </div>
+
+    <div class="col-sm-12 col-md-5">
+
+        <form action="{{ url_for("inspect_dataset", dsid=dataset.dataset_id) }}" method="get" id="form_doquery">
+        <div class="form-group row">
+            <div class="col-12">
+                <div class="input-group">
+                    <input id="query" name="query" placeholder="search" type="text" class="form-control" value="{{ query }}"> 
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-primary input-group-text" onclick="return $('#form_doquery').submit();">
+                            <i class="fa fa-arrow-circle-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div> 
+
+        <div class="form-group row">
+            <div class="col-12">
+                <div class="custom-control custom-checkbox custom-control-inline">
+                    {% if hideempty %}
+                    <input name="hideempty" id="hideempty" type="hidden" value="true" />
+                    <input name="cb_hideempty" id="cb_hideempty" type="checkbox" class="custom-control-input" value="true" checked="checked"> 
+                    {% else %}
+                    <input name="hideempty" id="hideempty" type="hidden" value="false" />
+                    <input name="cb_hideempty" id="cb_hideempty" type="checkbox" class="custom-control-input" value="false"> 
+                    {% endif %}
+                    <label for="cb_hideempty" class="custom-control-label">Hide rows without any tags</label>
+                </div>
+            </div>
+        </div> 
+        </form>
+    </div>
 </div>
 <div class="row">
-    {{ macros.render_dataframe(df, "dfid", "dfclasses", query=query, maxrows=page_size) }}
+
+{% set df_editor_id = "dfid" %}
+{% set df_class = "dfclasses" %}
+{% set maxrows = page_size %}
+{% set hide_nan = True %}
+
+{% if df.shape[0] > 0 %}
+<div id="{{df_editor_id}}" class="df_inspect_table alert alert-{% if df_class=='error' %}danger{%else%}{{df_class}}{% endif %}">
+    {% set id_column = df.columns[0] %}
+    {% set text_column = df.columns[1] %}
+    <div class="df_inspect_table_header row">
+        <div class="df_inspect_header df_inspect_table_entrynum d-none d-md-block">Entry #</div>
+        <div class="df_inspect_header df_inspect_idcol col-1 d-none d-md-block">{{ id_column }}</div>
+        <div class="df_inspect_header df_inspect_textcol col-sm col-md">{{ text_column }}</div>
+    </div>
+    {% for index, row in df.iterrows() %}
+    {% include "dataset_inspect_row.html" with context %}
+    {% endfor %}
+</div>
+{% endif %}
+
 </div>
 
 {% endblock %}
@@ -310,10 +346,58 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
         return baseURL + "?" + newAdditionalURL + rows_txt;
     }
 
-        const hideEmptyCB = document.getElementById("cb_hideempty");
-        hideEmptyCB.addEventListener("click", function() {
-            document.getElementById("hideempty").value = hideEmptyCB.checked;
-            return $('#form_doquery').submit();
+    const hideEmptyCB = document.getElementById("cb_hideempty");
+    hideEmptyCB.addEventListener("click", function() {
+        document.getElementById("hideempty").value = hideEmptyCB.checked;
+        return $('#form_doquery').submit();
+    });
+
+
+function initEditorButton(btn) {
+    btn.addEventListener("click", function(evt) {
+        const evt_tag = btn.dataset.tag;
+        const evt_sample = btn.dataset.sample;
+        evt.preventDefault();
+        console.log("set-sample", evt_sample, evt_tag);
+        const btn_row = btn.closest(".df_inspect_table_row");
+        btn_row.style.opacity = 0.5;
+        console.log(btn_row);
+        console.log(window.location.href);
+
+        const target_uri = window.location.href;
+        const req_data = {
+            "single_row": evt_sample,
+            "set_tag": evt_tag
+        }
+
+        fetch(target_uri, {
+            method: 'post',
+            body: JSON.stringify(req_data)
+        }).then(response => {
+            return response.text()
+        }).then(response => {
+            console.log("response", response);
+            btn_row.outerHTML = response;
+
+            // make sure events for the new row are bound
+
+            document.querySelectorAll("a.df_inspect_changeaction").forEach(btn => {
+                if (evt_sample == btn.dataset.sample) {
+                    initEditorButton(btn);
+                }
+            });
         });
+
+        return false;
+    });
+}
+
+     function initEditorButtons() {
+         document.querySelectorAll("a.df_inspect_changeaction").forEach(initEditorButton);
+     }
+
+    initEditorButtons();
+
+
     </script>
 {% endblock %}

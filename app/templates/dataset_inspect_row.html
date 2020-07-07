@@ -1,0 +1,64 @@
+{% import "macros.html" as macros with context %}
+<div class="row df_inspect_table_row" data-sample-idx="{{ index }}" data-sample-id="{{ row[id_column] }}">
+    <div class="df_inspect_table_entrynum d-none d-md-block">{{index}}</div>
+    {% set row_sample = row[id_column] %}
+    {% set all_tags = dataset.get_taglist(include_metadata=True) %}
+    {% set tag = row['annotations'] %}
+    {% set tagmetadata = all_tags.get(tag, None) %}
+
+    <div class="df_inspect_idcol col-1 d-none d-md-block">
+        {% if not (hide_nans and not row[id_column].is_na()) %}<div class="df_col_content df_inspect_col_content">{{ macros.render_cell(row, id_column, query) }}</div>{% endif %}
+    </div>
+    <div class="df_inspect_textcol col-sm col-md">
+        {% if not (hide_nans and not row[text_column].is_na()) %}<div class="df_col_content df_inspect_col_content">{{ macros.render_cell(row, text_column, query) }}</div>{% endif %}
+    </div>
+    <div class="col-lg-3 col-md-4 col-sm-12">
+
+        <div class="btn-group inspect_tageditor_actions">
+            {% set css_colortag = "" %}
+            {% if tagmetadata.color and tag == curanno %}
+            {% set css_colortag = "tagcolor_active_" + tagmetadata.color %}
+            {% elif tagmetadata.color %}
+            {% set css_colortag = "tagcolor_" + tagmetadata.color %}
+            {% endif %}
+
+            {% set css_btnclass = "btn-light" %}
+            {% if tag == curanno %}
+            {% set css_btnclass = "btn-success" %}
+            {% if css_colortag == "" %}
+            {% set css_colortag = "tagcolor_active" %}
+            {% endif %}
+            {% endif %}
+            <button class="btn btn-light btn-sm df_inspect_changebtn {{ css_colortag }} {{ css_btnclass }}" type="button">
+                {% if tag %}{{ tag }}{% else %}untagged{% endif %}
+            </button>
+            <button type="button" class="btn btn-sm btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="sr-only">Toggle Tag Visibility</span>
+            </button>
+            <div class="dropdown-menu">
+                {% for tag,tagmetadata in all_tags.items() %}
+                {% set css_colortag = "" %}
+                {% if tagmetadata.color and tag == curanno %}
+                {% set css_colortag = "tagcolor_active_" + tagmetadata.color %}
+                {% elif tagmetadata.color %}
+                {% set css_colortag = "tagcolor_" + tagmetadata.color %}
+                {% endif %}
+
+                {% set css_btnclass = "btn-light" %}
+                {% if tag == curanno %}
+                {% set css_btnclass = "btn-success" %}
+                {% if css_colortag == "" %}
+                {% set css_colortag = "tagcolor_active" %}
+                {% endif %}
+                {% endif %}
+
+                <a data-sample="{{ row_sample }}" data-tag="{{ tag }}" class="df_inspect_changeaction dropdown-item {{ css_btnclass }} {{ css_colortag }}">
+                    {% if tagmetadata.icon %}<i class="{{ tagmetadata.icon }}"> </i>{% endif %}
+                    {{ tag }} 
+                </a>
+                {% endfor %}
+            </div><!-- dropdown-menu -->
+        </div><!-- btn-group -->
+
+    </div><!-- col-2 -->
+</div><!-- row -->
