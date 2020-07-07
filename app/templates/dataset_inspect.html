@@ -124,6 +124,7 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
         green: 'rgb(75, 192, 192)',
         blue: 'rgb(54, 162, 235)',
         purple: 'rgb(153, 102, 255)',
+        gray: 'rgb(201, 203, 207)',
         grey: 'rgb(201, 203, 207)'
     };
 
@@ -209,14 +210,16 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
                 const tag_meta = overviewData.tag_metadata[tag] || {}
 
                 let tag_color = null;
-                if (tag_meta.color && window.chartColors[tag_meta]) {
-                    tag_color = window.chartColors[tag_meta];
+                if (tag_meta.color && window.chartColors[tag_meta.color]) {
+                    tag_color = window.chartColors[tag_meta.color];
                 }
                     
                 if (!tag_color) { 
-                    tag_color = default_colors.pop();
+                    tag_color = default_colors.pop(0);
                 } else {
-                    default_colors.remove(tag_color);
+                    if (default_colors.indexOf(tag_color) > -1) {
+                        default_colors.splice(default_colors.indexOf(tag_color), 1);
+                    }
                 }
 
                 allAnnosDS.data.push(tag_count);
@@ -234,14 +237,16 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
                     const tag_meta = overviewData.tag_metadata[tag] || {}
 
                     let tag_color = null;
-                    if (tag_meta.color && window.chartColors[tag_meta]) {
-                        tag_color = window.chartColors[tag_meta];
+                    if (tag_meta.color && window.chartColors[tag_meta.color]) {
+                        tag_color = window.chartColors[tag_meta.color];
                     }
                         
                     if (!tag_color) { 
-                        tag_color = default_colors.pop();
+                        tag_color = default_colors.pop(0);
                     } else {
-                        default_colors.remove(tag_color);
+                        if (default_colors.indexOf(tag_color) > -1) {
+                            default_colors.splice(default_colors.indexOf(tag_color), 1);
+                        }
                     }
 
                     annoDS.data.push(tag_count);
