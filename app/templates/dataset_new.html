@@ -456,11 +456,26 @@
                     const entry_tag = $entry.data("tag").trim();
                     const input_tag = $changed_input.val().trim();
 
+                    // enable action button if a rename was detected
+                    let has_change = false;
                     if (entry_tag !== input_tag && input_tag.length > 0) {
                         $entry.find("button.tageditor_action_rename").removeAttr("disabled");
+                        has_change = true;
                     } else {
                         $entry.find("button.tageditor_action_rename").attr("disabled", "disabled");
                     }
+
+                    // disable changing other tag names while this one has not been applied
+                    // (this prevents the user from simultaneously changing multiple tags)
+                    document.querySelectorAll("input.tageditor_taginput").forEach( (other_input) => {
+                        if (has_change) {
+                            if (other_input === $changed_input[0]) { return; }
+
+                            other_input.disabled = true;
+                        } else {
+                            other_input.disabled = false;
+                        }
+                    }); 
 
                     console.log("CHANGE", entry_tag, "=>", input_tag);
 
