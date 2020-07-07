@@ -25,7 +25,7 @@
                     </span>
                     {% if task.progress >= 100.0 %}<span class="index_task_done badge badge-sm badge-info">all done!</span>{% endif %}
                 </a>
-                {{ render_progress(task, addclass="indexprogress") }}
+                {{ macros.render_progress(task, addclass="indexprogress") }}
             {% else %}
             <a href="#" class="list-group-item">
             You don't seem to have any tasks yet.
