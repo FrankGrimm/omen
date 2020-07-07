@@ -136,11 +136,11 @@ def inspect_dataset(dsid=None):
 
         # pagination
         results = df.shape[0]
-        page_size = 100
+        page_size = 50
         page = 1
         pages = 1
         try:
-            page_size = int(config.get("inspect_page_size", "100"))
+            page_size = int(config.get("inspect_page_size", "50"))
         except ValueError as e:
             flash("Invalid config value for 'inspect_page_size': %s" % e, "error")
 
@@ -432,6 +432,56 @@ def handle_tag_update(request, dataset):
             elif update_action == "change_tag_icon":
                 dataset.update_tag_metadata(update_tag, {"icon": update_value})
 
+
+@app.route(BASEURI + "/dataset/<dsid>/overview.json", methods=["GET"])
+def dataset_overview_json(dsid):
+    dataset = None
+
+    with db.session_scope() as dbsession:
+        session_user = db.by_id(dbsession, session['user'])
+        dataset = get_accessible_dataset(dbsession, dsid)
+        user_roles = list(dataset.get_roles(dbsession, session_user))
+
+        user_column = "anno-%s-You" % (session_user.uid)
+        df, annotation_columns = dataset.annotations(dbsession,
+                                                foruser=session_user,
+                                                user_column=user_column,
+                                                hideempty=True)
+        df = reorder_dataframe(df, dataset, annotation_columns)
+
+        tags = dataset.get_taglist()
+        tag_metadata = dataset.get_taglist(include_metadata=True)
+        annotations_by_user = {}
+        all_annotations = {}
+        ds_total = dataset.dsmetadata.get("size", -1)
+        for anno_column in annotation_columns:
+            value_counts = df[anno_column].value_counts()
+            column_title = anno_column.split("-", 2)[-1]
+
+            annotations_by_user[column_title] = {}
+            anno_count = 0
+            for tag in tags:
+                tag_count = int(value_counts[tag]) if tag in value_counts else 0
+                annotations_by_user[column_title][tag] = tag_count
+                anno_count += tag_count
+
+                if not tag in all_annotations:
+                    all_annotations[tag] = 0
+                all_annotations[tag] += tag_count
+
+            annotations_by_user[column_title]["N/A"] = ds_total - anno_count
+
+        dsoverview = {
+                "dataset": dataset.dataset_id,
+                "user_roles": user_roles,
+                "annotations": annotations_by_user,
+                "all_annotations": all_annotations,
+                "total": ds_total,
+                "tags": tags,
+                "tag_metadata": tag_metadata
+                }
+
+        return dsoverview
 
 @app.route(BASEURI + "/dataset/<dsid>/edit", methods=['GET', 'POST'])
 @app.route(BASEURI + "/dataset/create", methods=['GET', 'POST'])
