@@ -9,18 +9,6 @@ Annotate &quot;<span class="annometa">{{ task.name }}</span>&quot;
 
 <div class="row">
 <div id="anno_actions">
-    <div class="btn-group">
-    {% if dataset.dsmetadata.size > 0 and sample_idx > 0 %}
-    <a id="anno_nav_prev"class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_idx - 1) }}" title="previous sample">
-        <i class="fas fa-2x fa-arrow-left"></i>
-    </a>
-    {% endif %}
-    {% if dataset.dsmetadata.size > 0 and sample_idx == 0 %}
-    <a id="anno_nav_prev" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=dataset.dsmetadata.size - 1) }}" title="previous sample">
-        <i class="fas fa-2x fa-arrow-left"></i>
-    </a>
-    {% endif %}
-    </div>
 
 {% set nextsampleidx = sample_idx + 1 %}
 {% if not next_sample_idx is none %}
@@ -34,6 +22,16 @@ Annotate &quot;<span class="annometa">{{ task.name }}</span>&quot;
 {{ macros.render_tag_buttons(dataset, nextsampleidx, votes) }}
 
     <div class="btn-group">
+    {% if dataset.dsmetadata.size > 0 and sample_idx > 0 %}
+    <a id="anno_nav_prev"class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_idx - 1) }}" title="previous sample">
+        <i class="fas fa-2x fa-arrow-left"></i>
+    </a>
+    {% endif %}
+    {% if dataset.dsmetadata.size > 0 and sample_idx == 0 %}
+    <a id="anno_nav_prev" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=dataset.dsmetadata.size - 1) }}" title="previous sample">
+        <i class="fas fa-2x fa-arrow-left"></i>
+    </a>
+    {% endif %}
     {% if dataset.dsmetadata.size > 0 and sample_idx < (dataset.dsmetadata.size - 1) %}
     <a id="anno_nav_next" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=nextsampleidx) }}" title="next sample">
         <i class="fas fa-2x fa-arrow-right"></i>
