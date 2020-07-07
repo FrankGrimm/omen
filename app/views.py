@@ -255,6 +255,23 @@ def get_random_sample(df, id_column):
     sample_id = sample_row[id_column].values[0]
     return sample_idx, sample_id
 
+def handle_set_annotation(dbsession, request, dataset, df, id_column):
+    set_sample_idx = None
+    set_sample_value = None
+    try:
+        if not request.args.get("set_sample_idx", None) is None:
+            set_sample_idx = str(int(request.args.get("set_sample_idx", None)))
+    except ValueError:
+        pass
+
+    if not set_sample_idx is None:
+        set_sample_value = request.args.get("set_value", "")[:500]
+
+    if not set_sample_idx is None and not set_sample_value is None:
+        set_sample = df.iloc[int(set_sample_idx)][id_column]
+        dataset.setanno(dbsession, session['user'], set_sample, set_sample_value)
+
+
 @app.route(BASEURI + "/dataset/<dsid>/annotate", methods=["GET", "POST"])
 @login_required
 def annotate(dsid=None, sample_idx=None):
@@ -293,7 +310,6 @@ def annotate(dsid=None, sample_idx=None):
 
         id_column = dataset.get_id_column()
 
-        #df = dataset.as_df()
         df, annotation_columns = dataset.annotations(dbsession, foruser=session_user, \
                                                     user_column="annotations", \
                                                     hideempty=False, only_user=True)
@@ -335,20 +351,7 @@ def annotate(dsid=None, sample_idx=None):
                     next_sample_idx = next_row['index']
                     next_sample_id = next_row[id_column]
 
-        set_sample_idx = None
-        set_sample_value = None
-        try:
-            if not request.args.get("set_sample_idx", None) is None:
-                set_sample_idx = str(int(request.args.get("set_sample_idx", None)))
-        except ValueError as _:
-            pass
-
-        if not set_sample_idx is None:
-            set_sample_value = request.args.get("set_value", "")[:500]
-
-        if not set_sample_idx is None and not set_sample_value is None:
-            set_sample = df.iloc[int(set_sample_idx)][id_column]
-            dataset.setanno(dbsession, session['user'], set_sample, set_sample_value)
+        handle_set_annotation(dbsession, request, dataset, df, id_column)
 
         random_sample, _ = get_random_sample(df, id_column)
         sample_content = df[textcol][sample_idx]
