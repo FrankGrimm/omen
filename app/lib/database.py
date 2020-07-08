@@ -298,7 +298,7 @@ class Dataset(Base):
 
         return migrated_annotations
 
-    def annotations(self, dbsession, foruser=None, user_column=None, hideempty=False, only_user=False):
+    def annotations(self, dbsession, foruser=None, user_column=None, hideempty=False, only_user=False, with_content=True):
         df = self.as_df()
 
         foruser = by_id(dbsession, foruser)
@@ -353,6 +353,9 @@ class Dataset(Base):
             annotation_columns.remove(target_user_column)
             if not user_column in annotation_columns:
                 annotation_columns.append(user_column)
+
+        if not with_content:
+            df = df.drop(columns=[self.get_text_column()])
 
         if hideempty:
             df = df.dropna(axis=0, how="all", subset=annotation_columns)
@@ -571,7 +574,6 @@ class Dataset(Base):
 
             df = df.reset_index()
             df = df[columns]
-            print(df, columns, df.columns, file=sys.stderr)
 
         return df
 
