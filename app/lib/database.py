@@ -102,6 +102,26 @@ class User(Base):
 
 DATASET_CONTENT_CACHE = {}
 
+class DatasetContent(Base):
+    __tablename__ = "datasetcontent"
+
+    sample_index = Column(Integer, autoincrement=True, primary_key=True)
+
+    dataset_id = Column(Integer, ForeignKey("datasets.dataset_id"), primary_key=True)
+    dataset = relationship("Dataset", back_populates="dscontent")
+
+    sample = Column(String, primary_key=True)
+    content = Column(String, nullable=False)
+
+    data = Column(JSON)
+
+    def __repr__(self):
+        return "<DatasetContent %s/%s (%s)>" % (
+                self.dataset.get_name(),
+                self.sample_index,
+                self.sample
+                )
+
 class Dataset(Base):
     __tablename__ = 'datasets'
 
@@ -111,12 +131,15 @@ class Dataset(Base):
     owner = relationship("User", back_populates="datasets", lazy="joined")
 
     dsannotations = relationship("Annotation")
+    dscontent = relationship("DatasetContent")
 
     dsmetadata = Column(JSON, nullable=False)
-    content = Column(String, nullable=True)
 
     persisted = False
     _cached_df = None
+
+    def content_query(self, dbsession):
+        return dbsession.query(DatasetContent).filter_by(dataset_id=self.dataset_id)
 
     def __repr__(self):
         return "<Dataset (%s)>" % self.get_name()
@@ -799,10 +822,14 @@ def init_db(skip_create=False):
     with web.app.app_context():
         with session_scope() as dbsession:
             if not skip_create:
-                fprint("[schema update]")
-                Base.metadata.create_all(bind=flask_db.get_engine())
-                fprint("[schema update] completed")
+                fprint("[schema update] skipped, use ./bin/flaskdb upgrade")
+                #Base.metadata.create_all(bind=flask_db.get_engine())
+                #fprint("[schema update] completed")
 
-            fprint("[users] system contains %s user accounts" % \
-                    dbsession.query(User).count())
-            fprint("[users] you can create users with the scripts/createuser script")
+            try:
+                fprint("[users] system contains %s user accounts" % \
+                        dbsession.query(User).count())
+                fprint("[users] you can create users with the scripts/createuser script")
+            except:
+                fprint("[error] could not enumerate users, make sure database is initialized and up to date")
+

@@ -21,6 +21,7 @@ logger = logging.getLogger('alembic.env')
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
+
 from flask import current_app
 config.set_main_option(
     'sqlalchemy.url',
@@ -29,7 +30,6 @@ target_metadata = current_app.extensions['migrate'].db.metadata
 
 import app.lib.database as db
 target_metadata = db.Base.metadata
-
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
