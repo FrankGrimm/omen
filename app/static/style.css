@@ -483,6 +483,11 @@ li.nav-active-task div.sideprogress-active {
     padding: 0;
 }
 
+.df_inspect_col_content {
+    display: flex;
+    flex-grow: 1;
+}
+
 .slim-card-header {
     margin: 0;
     padding: 0;
@@ -494,8 +499,10 @@ li.nav-active-task div.sideprogress-active {
 }
 
 .df_inspect_table_entrynum {
-    width: 5rem;
+    min-width: 2rem;
     padding-left: 1em;
+    flex-shrink: 1;
+    flex-grow: 0;
 }
 
 
@@ -507,6 +514,12 @@ li.nav-active-task div.sideprogress-active {
 .inspect_tageditor_actions {
     display: flex;
     margin-bottom: 0.5em;
+
+    flex-grow: 1;
+    flex-shrink: 0;
+    align-items: flex-start;
+    align-content: flex-start;
+    align-self: flex-start;
 }
 
 .inspect_tageditor_actions .btn {
@@ -523,6 +536,7 @@ li.nav-active-task div.sideprogress-active {
     margin-bottom: 0.2em;
     min-height: 2.5em;
     border-bottom: 1px solid black;
+    display: flex;
 }
 .df_inspect_table_row:nth-child(even) {
     background: #edf5ff;
@@ -530,4 +544,10 @@ li.nav-active-task div.sideprogress-active {
 
 .df_inspect_header.df_inspect_textcol {
     font-weight: bold;
+    flex-grow: 10;
+    flex-shrink: 0;
+}
+.df_inspect_table_row > .df_inspect_textcol {
+    flex-grow: 10;
+    flex-shrink: 0;
 }

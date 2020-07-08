@@ -1,18 +1,18 @@
 {% import "macros.html" as macros with context %}
 <div class="row df_inspect_table_row" data-sample-idx="{{ index }}" data-sample-id="{{ row[id_column] }}">
-    <div class="df_inspect_table_entrynum d-none d-md-block">{{index}}</div>
+    <div class="df_inspect_table_entrynum d-none d-md-flex">{{index}}</div>
     {% set row_sample = row[id_column] %}
     {% set all_tags = dataset.get_taglist(include_metadata=True) %}
     {% set tag = row['annotations'] %}
     {% set tagmetadata = all_tags.get(tag, None) %}
 
-    <div class="df_inspect_idcol col-1 d-none d-md-block">
+    <div class="df_inspect_idcol df_inspect_col_content col-sm col-md d-none d-md-flex">
         {% if not (hide_nans and not row[id_column].is_na()) %}<div class="df_col_content df_inspect_col_content">{{ macros.render_cell(row, id_column, query) }}</div>{% endif %}
     </div>
-    <div class="df_inspect_textcol col-sm col-md">
+    <div class="df_inspect_textcol df_inspect_col_content col-sm col-md d-md-flex">
         {% if not (hide_nans and not row[text_column].is_na()) %}<div class="df_col_content df_inspect_col_content">{{ macros.render_cell(row, text_column, query) }}</div>{% endif %}
     </div>
-    <div class="col-lg-3 col-md-4 col-sm-12">
+    <div class="col-lg-3 col-md-4 col-sm-12 d-md-flex">
 
         <div class="btn-group inspect_tageditor_actions">
             {% set css_colortag = "" %}
