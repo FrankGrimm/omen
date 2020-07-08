@@ -78,7 +78,7 @@ def cli_reset_database():
     print("executing db::drop_all()")
     if not db_init_okay:
         print("reinitializing database")
-        db.init_db(skip_create=True)
+        db.init_db()
     print(db.flask_db.drop_all())
     print("all done")
 

@@ -815,21 +815,33 @@ def connect():
     atexit.register(shutdown)
     print("[database] connected")
 
-def init_db(skip_create=False):
+def init_db():
     global flask_db
     connect()
 
     with web.app.app_context():
         with session_scope() as dbsession:
-            if not skip_create:
-                fprint("[schema update] skipped, use ./bin/flaskdb upgrade")
-                #Base.metadata.create_all(bind=flask_db.get_engine())
-                #fprint("[schema update] completed")
-
             try:
                 fprint("[users] system contains %s user accounts" % \
                         dbsession.query(User).count())
                 fprint("[users] you can create users with the scripts/createuser script")
             except:
-                fprint("[error] could not enumerate users, make sure database is initialized and up to date")
+                fprint("[error] could not enumerate users, make sure database is initialized and up to date (./bin/flaskdb upgrade)")
 
+            if False:
+                tmpsample = DatasetContent()
+                tmpds = dataset_by_id(dbsession, 1)
+                fprint(tmpds)
+                tmpsample.dataset = tmpds
+                tmpsample.sample = "12345"
+                tmpsample.content = "DELETETHIS"
+                fprint("-----------------------------")
+                dbsession.add(tmpsample)
+                fprint("-----------------------------")
+                fprint("-----------------------------")
+                fprint("smaple", tmpsample)
+                dbsession.flush()
+
+                tmpdel = tmpds.content_query(dbsession)
+                fprint(tmpdel.all())
+                fprint("-----------------------------")
