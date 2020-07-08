@@ -210,7 +210,7 @@ class Dataset(Base):
         textcol = self.dsmetadata.get("textcol", None)
         if textcol is None:
             errorlist.append("no text column")
-        if not dferr is None and \
+        elif not dferr is None and \
                 not isinstance(dferr, str) and \
                 not textcol in dferr.columns:
             errorlist.append("text column '%s' not found in data" % textcol)
