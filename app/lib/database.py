@@ -330,8 +330,8 @@ class Dataset(Base):
             uannos = uannos.drop(["uid"], axis=1)
             uannos = uannos.set_index("sample")
 
-            df = pd.merge(df, uannos, \
-                            left_on='idxmerge', right_index=True, how='left', \
+            df = pd.merge(df, uannos,
+                            left_on='idxmerge', right_index=True, how='left',
                             indicator=False)
             # df = df.drop(["idxmerge"], axis=1)
 
@@ -530,11 +530,21 @@ class Dataset(Base):
             curacl = {}
         return curacl
 
-    def as_df(self, strerrors=False):
+    """
+    Returns the content of the dataset as a `pandas.DataFrame`.
+
+    If strerrors is set to True, any errors while loading are returned instead of raised.
+
+    If extended is set to True, full rows will be returned. Otherwise, and by default,
+    the DataFrame will only contain sample identifiers and textual content.
+    """
+    def as_df(self, strerrors=False, extended=False):
         # TODO convert id_column and text_colum to string?
+        df = None
+
         if strerrors:
             try:
-                return self.as_df(strerrors=False)
+                df = self.as_df(strerrors=False)
             except Exception as e:
                 return str(e)
         else:
@@ -544,7 +554,6 @@ class Dataset(Base):
 
             if self.dataset_id in DATASET_CONTENT_CACHE and \
                     not DATASET_CONTENT_CACHE[self.dataset_id] is None:
-                # print("CACHE HIT(2)", self, DATASET_CONTENT_CACHE[self.dataset_id].shape, file=sys.stderr)
                 return DATASET_CONTENT_CACHE[self.dataset_id].copy()
 
             # print("CACHE MISS", self, file=sys.stderr)
@@ -556,7 +565,15 @@ class Dataset(Base):
             df = pd.read_csv(content, sep=sep, header='infer', quotechar=quotechar, escapechar="\\")
             self._cached_df = df.copy()
             DATASET_CONTENT_CACHE[self.dataset_id] = self._cached_df
-            return df
+
+        if not extended:
+            columns = list([self.get_id_column(), self.get_text_column()])
+
+            df = df.reset_index()
+            df = df[columns]
+            print(df, columns, df.columns, file=sys.stderr)
+
+        return df
 
     def invalidate(self):
         self._cached_df = None

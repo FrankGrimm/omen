@@ -677,7 +677,7 @@ def new_dataset(dsid=None):
         df = None
 
         if dataset and dataset.content:
-            df = dataset.as_df(strerrors=True)
+            df = dataset.as_df(strerrors=True, extended=True)
 
         ds_errors = None
         if not dataset is None:
