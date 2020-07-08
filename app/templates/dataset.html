@@ -18,7 +18,7 @@
     {% for dsid, ds in my_datasets.items() %}
         <li class="ds_meta list-group-item">
             <div class="row">
-                <div class="col-2">
+                <div class="col-sm-4 col-md-3 col-lg-3">
                     <div class="btn-group">
                     <a class="btn btn-sm btn-light" href="{{ url_for("new_dataset", dsid=dsid) }}" title="Edit Dataset"><i class="fas fa-cog"></i></a> 
 
@@ -28,7 +28,7 @@
                     {% endif %}
                     </div>
                 </div>
-                <div class="col-10 ds_overview_label">
+                <div class="col-sm col-md col-lg ds_overview_label">
                 <a href="{{ url_for('new_dataset', dsid=dsid) }}" title="Edit Dataset">
                     {{ ds.get_name() }}
                 </a>
@@ -57,7 +57,7 @@
         {% set dsroles = ds.get_roles(dbsession, userobj) %}
         <li class="ds_meta list-group-item">
             <div class="row">
-            <div class="col-2">
+            <div class="col-sm-4 col-md-3 col-lg-3">
                 <div class="btn-group">
                     {% if 'curator' in dsroles %}
                     <a class="btn btn-sm btn-secondary" href="{{ url_for("download", dsid=dsid) }}" title="Download"><i class="fas fa-download"></i></a> 
@@ -67,7 +67,7 @@
                     {% endif %}
                 </div>
             </div>
-            <div class="col-10 ds_overview_label">
+            <div class="col-sm col-md col-lg ds_overview_label">
                 <i class="fas fa-users"></i> <strong>{{ ds.get_name() }}</strong>, owned by {{ ds.owner.get_name() }} (access: {{ dsroles|join(", ") }})
             </div>
             </div>
