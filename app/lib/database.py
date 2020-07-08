@@ -553,7 +553,7 @@ class Dataset(Base):
             content = StringIO(content)
             sep = self.dsmetadata.get("sep", ",")
             quotechar = self.dsmetadata.get("quotechar", '"')
-            df = pd.read_csv(content, sep=sep, header='infer', quotechar=quotechar)
+            df = pd.read_csv(content, sep=sep, header='infer', quotechar=quotechar, escapechar="\\")
             self._cached_df = df.copy()
             DATASET_CONTENT_CACHE[self.dataset_id] = self._cached_df
             return df
