@@ -4,6 +4,7 @@ Database model and utilities
 from contextlib import contextmanager
 
 from datetime import datetime
+import json
 import os
 import os.path
 from io import StringIO
@@ -624,9 +625,19 @@ class Dataset(Base):
                             skip_count += 1
                             continue
 
+                        sample_data = df.loc[index].replace(np.nan, "", regex=True).to_dict()
+                        sample_data = json.dumps(sample_data)
+                        sample_data = json.loads(sample_data)
+                        if sample_data is not None:
+                            if id_column in sample_data:
+                                del sample_data[id_column]
+                            if text_column in sample_data:
+                                del sample_data[text_column]
+
                         existing = self.content_query(dbsession).filter_by(sample=sample_id).one_or_none()
                         if existing is not None:
                             existing.content = sample_text
+                            existing.data = sample_data
                             merge_count += 1
                         else:
                             new_sample = DatasetContent()
@@ -634,6 +645,7 @@ class Dataset(Base):
                             new_sample.dataset_id = self.dataset_id
                             new_sample.sample = sample_id
                             new_sample.content = sample_text
+                            new_sample.data = sample_data
                             import_count += 1
 
                     dbsession.flush()
