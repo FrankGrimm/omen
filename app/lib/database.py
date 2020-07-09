@@ -397,6 +397,7 @@ class Dataset(Base):
             # curator, also implied by owner role
             target_users = list(set(userlist(dbsession)) - set([foruser]))
 
+        additional_user_columns = []
         if not only_user:
             for user_obj in target_users:
                 if user_obj is foruser:
@@ -408,6 +409,7 @@ class Dataset(Base):
                 params["foruser_{uid}".format(uid=user_obj.uid)] = user_obj.uid
                 field_list.append("\"anno-{uid}\".data->'value' AS \"anno-{uid}\"".format(uid=user_obj.uid))
                 annotation_columns.append("anno-{uid}-{uname}".format(uid=user_obj.uid, uname=user_obj.email))
+                additional_user_columns.append("anno-{uid}-{uname}".format(uid=user_obj.uid, uname=user_obj.email))
                 col_renames["anno-{uid}".format(uid=user_obj.uid)] = "anno-{uid}-{uname}".format(uid=user_obj.uid, uname=user_obj.email)
 
         sql_where = """
@@ -451,6 +453,14 @@ class Dataset(Base):
         df_count = df_count.loc[0, "cnt"]
 
         df = df.rename(columns=col_renames)
+
+        # remove additional user columns that do not have annotations yet
+        drop_columns = []
+        for check_column in df.columns.intersection(additional_user_columns):
+            if df[check_column].dropna().empty:
+                drop_columns.append(check_column)
+        if len(drop_columns) > 0:
+            df = df.drop(columns=drop_columns)
 
         return df, annotation_columns, df_count
 
