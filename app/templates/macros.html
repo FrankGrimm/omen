@@ -76,7 +76,7 @@
 
 {% macro render_dataframe(df, id=None, class=None, maxrows=50, hide_nan=True, query=None) -%}
 
-<table id="{{id}}" class="alert alert-{% if class=='error' %}danger{%else%}{{class}}{% endif %}" border="1">
+<table id="{{id}}" class="alert {% if class=='error' %}alert-danger{%else%}{{class}}{% endif %}" border="1">
     <thead>
         <th></th>
         {% for column in df.columns %}

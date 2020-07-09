@@ -2,6 +2,8 @@
 Route definitions and business logic.
 """
 from datetime import datetime
+import os
+import os.path
 import tempfile
 import re
 import string
@@ -533,6 +535,10 @@ def new_dataset(dsid=None):
     editmode = 'create'
 
     with db.session_scope() as dbsession:
+
+        preview_df = None
+        import_alerts = None
+
         dataset = None
         try:
             dataset, editmode = dataset_lookup_or_create(dbsession, dsid, editmode)
@@ -648,7 +654,7 @@ def new_dataset(dsid=None):
                     newtags = request.form.get("settaglist", None).split("\n")
                     dataset.set_taglist(newtags)
 
-                new_content = None
+                # move uploaded file content to temporary file and store details in the dataset metadata
                 if formaction == 'upload_file':
                     if not request.files is None and 'upload_file' in request.files:
                         fileobj = request.files['upload_file']
@@ -658,26 +664,75 @@ def new_dataset(dsid=None):
                             dataset.dsmetadata['upload_timestamp'] = datetime.now().timestamp()
                             dataset.dsmetadata['hasdata'] = True
 
-                            with tempfile.TemporaryFile(mode='w+b') as tmpfile:
+                            tmp_handle, tmp_filename = tempfile.mkstemp(".csv")
+                            with os.fdopen(tmp_handle, 'wb') as tmpfile:
                                 fileobj.save(tmpfile)
-                                tmpfile.seek(0)
-                                new_content = tmpfile.read()
-                                if not new_content is None and not len(new_content) == 0:
-                                    new_content = new_content.decode('utf-8')
+                            dataset.dsmetadata["upload_tempfile"] = tmp_filename
 
-                if not new_content is None:
-                    dataset.content = new_content
-                    dataset.update_size()
 
+            dataset.update_size()
             dataset.dirty(dbsession)
             dbsession.commit()
 
             dbsession.flush()
 
-        df = None
+        # if uploaded content exists that has not been imported, load the content
+        new_content = None
+        can_import = False
+        if dataset.dsmetadata.get("upload_tempfile") is not None and \
+            request.method == "POST" and request.form is not None and \
+            request.form.get("action", "") == "do_discard_import":
 
-        if dataset and dataset.content:
-            df = dataset.as_df(strerrors=True, extended=True)
+            tmp_filename = dataset.dsmetadata.get("upload_tempfile")
+            # remove temporary file after successful import
+            if os.path.exists(tmp_filename):
+                db.fprint("[info] removing import file for dataset %s: %s" % (dataset, tmp_filename))
+                os.unlink(tmp_filename)
+                del dataset.dsmetadata["upload_tempfile"]
+
+        has_upload_content = False
+        if dataset.dsmetadata.get("upload_tempfile") is not None:
+
+            tmp_filename = dataset.dsmetadata.get("upload_tempfile")
+            if not os.path.exists(tmp_filename):
+                del dataset.dsmetadata["upload_tempfile"]
+            else:
+                db.fprint("[info] import dry run, dataset: %s, tempfile: %s" % (dataset, tmp_filename))
+                has_upload_content = True
+
+                import_dry_run = True
+                if request.method == "POST" and request.form is not None and \
+                        request.form.get("action", "") == "do_import":
+                    import_dry_run = False
+
+                import_success, import_errors, preview_df = dataset.import_content(dbsession, tmp_filename, dry_run=import_dry_run)
+                db.fprint("[info] import dry run status, dataset: %s, tempfile: %s, success: %s" % \
+                        (dataset, tmp_filename, import_success))
+
+                if os.path.exists(tmp_filename) and not import_dry_run:
+                    db.fprint("[info] removing import file for dataset %s after import: %s" % (dataset, tmp_filename))
+                    os.unlink(tmp_filename)
+                    del dataset.dsmetadata["upload_tempfile"]
+
+                can_import = import_success and import_dry_run
+                if not import_success:
+                    db.fprint("[error] import for dataset %s failed: %s" % (dataset, ", ".join(import_errors)))
+                if not can_import:
+                    preview_df = None
+
+                # forward import errors to the frontend
+                if import_errors is not None and import_alerts is None:
+                    import_alerts = import_errors
+
+            dataset.update_size()
+            dataset.dirty(dbsession)
+            dbsession.commit()
+
+            dbsession.flush()
+
+        if preview_df is None and dataset and dataset.has_content():
+            # TODO preview_df = dataset.as_df(strerrors=False, extended=True)
+            preview_df = None
 
         ds_errors = None
         if not dataset is None:
@@ -688,9 +743,9 @@ def new_dataset(dsid=None):
             return redirect(url_for('new_dataset', dsid=dataset.dataset_id))
 
         if editmode == "tageditor":
-            return render_template('tag_editor.html', dataset=dataset, editmode=editmode, previewdf=df, db=db, ds_errors=ds_errors, dbsession=dbsession)
+            return render_template('tag_editor.html', dataset=dataset, editmode=editmode, previewdf_alerts=import_alerts, previewdf=preview_df, db=db, ds_errors=ds_errors, dbsession=dbsession, can_import=can_import, has_upload_content=has_upload_content)
 
-        return render_template('dataset_new.html', dataset=dataset, editmode=editmode, previewdf=df, db=db, ds_errors=ds_errors, dbsession=dbsession)
+        return render_template('dataset_new.html', dataset=dataset, editmode=editmode, previewdf_alerts=import_alerts, previewdf=preview_df, db=db, ds_errors=ds_errors, dbsession=dbsession, can_import=can_import, has_upload_content=has_upload_content)
 
 @app.route(BASEURI + '/settings', methods=['GET', 'POST'])
 @login_required

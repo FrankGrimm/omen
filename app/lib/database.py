@@ -4,6 +4,8 @@ Database model and utilities
 from contextlib import contextmanager
 
 from datetime import datetime
+import os
+import os.path
 from io import StringIO
 import sys
 import getpass
@@ -15,6 +17,7 @@ Base = declarative_base()
 from sqlalchemy import Column, Integer, String, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.attributes import flag_dirty, flag_modified
+from flask import flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
@@ -138,6 +141,14 @@ class Dataset(Base):
     persisted = False
     _cached_df = None
 
+    def empty(self):
+        return not self.has_content()
+
+    def has_content(self):
+        if self.dscontent is None:
+            return False
+        return len(self.dscontent) > 0
+
     def content_query(self, dbsession):
         return dbsession.query(DatasetContent).filter_by(dataset_id=self.dataset_id)
 
@@ -224,32 +235,16 @@ class Dataset(Base):
         if len(self.get_taglist()) == 0:
             errorlist.append("no tags defined")
 
-        dferr = self.as_df(strerrors=True)
-        if dferr is None:
+        if self.empty():
             errorlist.append("no data")
-        if isinstance(dferr, str):
-            errorlist.append("data error: %s" % dferr)
 
         textcol = self.dsmetadata.get("textcol", None)
         if textcol is None:
-            errorlist.append("no text column")
-        elif not dferr is None and \
-                not isinstance(dferr, str) and \
-                not textcol in dferr.columns:
-            errorlist.append("text column '%s' not found in data" % textcol)
+            errorlist.append("no text column defined")
 
         idcolumn = self.dsmetadata.get("idcolumn", None)
         if idcolumn is None:
-            errorlist.append("no ID column")
-        elif not dferr is None and \
-                not isinstance(dferr, str) and \
-                not idcolumn in dferr.columns:
-            errorlist.append("ID column '%s' not found in data" % idcolumn)
-
-        # disabled. would annoy owners of private datasets
-        #acl = self.dsmetadata.get("acl", [])
-        #if acl is None or len(acl) == 0:
-        #    errorlist.append("no annotators")
+            errorlist.append("no ID column defined")
 
         if len(errorlist) == 0:
             return None
@@ -556,6 +551,121 @@ class Dataset(Base):
             curacl = {}
         return curacl
 
+    def import_content(self, dbsession, filename, dry_run):
+        success = False
+        errors = []
+        preview_df = None
+
+        sep = self.dsmetadata.get("sep", ",")
+        quotechar = self.dsmetadata.get("quotechar", '"')
+
+        if os.path.exists(filename):
+            df = None
+            try:
+                df = pd.read_csv(filename, sep=sep, header='infer', quotechar=quotechar, escapechar="\\")
+                if df is not None:
+                    preview_df = df.head()
+                    success = True
+                else:
+                    errors.append("could not load data")
+            except Exception as pd_error:
+                errors.append(str(pd_error))
+                success = False
+
+            if df is not None:
+                if df.shape[0] < 1:
+                    errors.append("did not recognize any content (no rows)")
+                    success = False
+                elif len(df.shape) <= 1:
+                    errors.append("did not recognize any content (invalid shape)")
+                    success = False
+                elif df.shape[1] <= 2:
+                    errors.append("sample file needs at least two columns, found: %s" % df.shape[1])
+                    success = False
+
+            if self.get_id_column() is None:
+                errors.append("ID column not defined.")
+                success = False
+            elif not self.get_id_column() in df.columns:
+                errors.append("ID column '%s' not found in dataset columns (%s)." % \
+                        (self.get_id_column(), ", ".join(map(str, df.columns))))
+            if self.get_text_column() is None:
+                errors.append("Text column not defined.")
+                success = False
+            elif not self.get_text_column() in df.columns:
+                errors.append("Text column '%s' not found in dataset columns (%s)." % \
+                        (self.get_text_column(), ", ".join(map(str, df.columns))))
+
+            import_count = 0
+            merge_count = 0
+            skip_count = 0
+            if len(errors) == 0:
+                if not dry_run:
+                    id_column = self.get_id_column()
+                    text_column = self.get_text_column()
+
+                    fprint("[import] %s, sample count before: %s" % (self, len(self.dscontent)))
+                    for index, row in df.iterrows():
+                        sample_id = row[id_column]
+                        if sample_id is None:
+                            skip_count += 1
+                            continue
+                        sample_id = str(sample_id).strip()
+                        if sample_id == "":
+                            skip_count += 1
+                            continue
+
+                        sample_text = row[text_column]
+                        if sample_text is None:
+                            skip_count += 1
+                            continue
+                        sample_text = str(sample_text).strip()
+                        if sample_text == "":
+                            skip_count += 1
+                            continue
+
+                        existing = self.content_query(dbsession).filter_by(sample=sample_id).one_or_none()
+                        if existing is not None:
+                            existing.content = sample_text
+                            merge_count += 1
+                        else:
+                            new_sample = DatasetContent()
+                            new_sample.dataset = self
+                            new_sample.dataset_id = self.dataset_id
+                            new_sample.sample = sample_id
+                            new_sample.content = sample_text
+                            import_count += 1
+
+                    dbsession.flush()
+                    fprint("[import] %s, sample count after: %s" % (self, len(self.dscontent)))
+                    # tmpsample = DatasetContent()
+                    # tmpds = dataset_by_id(dbsession, 1)
+                    # fprint(tmpds)
+                    # tmpsample.dataset = tmpds
+                    # tmpsample.sample = "12345"
+                    # tmpsample.content = "DELETETHIS"
+                    # fprint("-----------------------------")
+                    # dbsession.add(tmpsample)
+                    # fprint("-----------------------------")
+                    # fprint("-----------------------------")
+                    # fprint("smaple", tmpsample)
+                    # dbsession.flush()
+
+                else:
+                    success = True
+                    if len(errors) == 0:
+                        errors.append("Preview only. Confirm below to import this data with current settings.")
+
+            if import_count > 0 or merge_count > 0:
+                flash("Imported %s samples (%s merged)" % (import_count, merge_count), "success")
+            if skip_count > 0:
+                flash("Skipped %s samples with empty ID or text" % skip_count, "warning")
+
+        else:
+            errors.append("temporary file %s does not exist anymore" % filename)
+
+        return success, errors, preview_df
+
     """
     Returns the content of the dataset as a `pandas.DataFrame`.
 
@@ -564,8 +674,8 @@ class Dataset(Base):
     If extended is set to True, full rows will be returned. Otherwise, and by default,
     the DataFrame will only contain sample identifiers and textual content.
     """
-    def as_df(self, strerrors=False, extended=False):
-        # TODO convert id_column and text_colum to string?
+    def as_df_deprecated(self, strerrors=False, extended=False):
+        # TODO convert id_column and text_column to string?
         df = None
 
         if strerrors:
@@ -586,9 +696,6 @@ class Dataset(Base):
 
             content = self.content
             content = StringIO(content)
-            sep = self.dsmetadata.get("sep", ",")
-            quotechar = self.dsmetadata.get("quotechar", '"')
-            df = pd.read_csv(content, sep=sep, header='infer', quotechar=quotechar, escapechar="\\")
             self._cached_df = df.copy()
             DATASET_CONTENT_CACHE[self.dataset_id] = self._cached_df
 
@@ -611,14 +718,7 @@ class Dataset(Base):
         if self.dsmetadata is None:
             self.dsmetadata = {}
 
-        df = None
-        try:
-            df = self.as_df()
-        except Exception as _:
-            pass
-
-        if not df is None:
-            self.dsmetadata['size'] = df.shape[0]
+        self.dsmetadata['size'] = len(self.dscontent) if self.has_content() else 0
 
 class Annotation(Base):
     __tablename__ = 'annotations'
