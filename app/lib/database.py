@@ -567,8 +567,8 @@ class Dataset(Base):
         anno_data = {"updated": datetime.now().timestamp(), "value": value}
 
         sample_obj = self.content_query(dbsession).filter_by(
-                dataset_id = self.dataset_id,
-                sample = sample,
+                dataset_id=self.dataset_id,
+                sample=sample,
                 ).one()
 
         sample = str(sample)
@@ -589,7 +589,10 @@ class Dataset(Base):
         else:
             existing_anno.data = anno_data
             dbsession.merge(existing_anno)
+
+        # ensure this change is reflected in subsequent dataset loads
         dbsession.flush()
+        dbsession.commit()
 
     def annocount_today(self, dbsession, uid):
         if isinstance(uid, User):
