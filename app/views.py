@@ -717,7 +717,7 @@ def new_dataset(dsid=None):
                 can_import = import_success and import_dry_run
                 if not import_success:
                     db.fprint("[error] import for dataset %s failed: %s" % (dataset, ", ".join(import_errors)))
-                if not can_import:
+                if not import_dry_run:
                     preview_df = None
 
                 # forward import errors to the frontend
