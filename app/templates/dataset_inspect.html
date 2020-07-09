@@ -241,6 +241,7 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
         if (mode === 'all') {
             const allAnnosDS = {data: [], backgroundColor: []};
             const default_colors = [...Object.keys(window.chartColors)];
+            default_colors.splice(default_colors.indexOf("gray"), 1)
             config.data.labels.forEach((tag) => {
                 const tag_count = overviewData.all_annotations[tag] || 0;
                 const tag_meta = overviewData.tag_metadata[tag] || {}
@@ -250,8 +251,8 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
                     tag_color = window.chartColors[tag_meta.color];
                 }
                     
-                if (!tag_color) { 
-                    tag_color = default_colors.pop(0);
+                if (!tag_color) {
+                    tag_color = default_colors.shift();
                 } else {
                     if (default_colors.indexOf(tag_color) > -1) {
                         default_colors.splice(default_colors.indexOf(tag_color), 1);
@@ -268,6 +269,7 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
             for (const [annotator, annotations] of Object.entries(overviewData.annotations)) {
                 const annoDS = {data: [], backgroundColor: []};
                 const default_colors = [...Object.keys(window.chartColors)];
+                default_colors.splice(default_colors.indexOf("gray"), 1)
                 config.data.labels.forEach((tag) => {
                     const tag_count = annotations[tag] || 0;
                     const tag_meta = overviewData.tag_metadata[tag] || {}
@@ -276,9 +278,10 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
                     if (tag_meta.color && window.chartColors[tag_meta.color]) {
                         tag_color = window.chartColors[tag_meta.color];
                     }
-                        
+                    
+                    console.log(tag_color, default_colors)
                     if (!tag_color) { 
-                        tag_color = default_colors.pop(0);
+                        tag_color = default_colors.shift();
                     } else {
                         if (default_colors.indexOf(tag_color) > -1) {
                             default_colors.splice(default_colors.indexOf(tag_color), 1);
