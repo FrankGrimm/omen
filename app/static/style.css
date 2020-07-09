@@ -483,11 +483,6 @@ li.nav-active-task div.sideprogress-active {
     padding: 0;
 }
 
-.df_inspect_col_content {
-    display: flex;
-    flex-grow: 1;
-}
-
 .slim-card-header {
     margin: 0;
     padding: 0;
@@ -507,6 +502,8 @@ li.nav-active-task div.sideprogress-active {
 
 
 .df_inspect_col_content {
+    display: block;
+    flex-grow: 1;
     margin-bottom: 1em;
 }
 
