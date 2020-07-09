@@ -681,6 +681,63 @@ class Dataset(Base):
     """
     Returns the content of the dataset as a `pandas.DataFrame`.
 
+    `page`: int, page onset
+
+    `page_size`: int
+
+    `extended`: If true, full rows will be returned (including the full original sample).
+        Otherwise, and by default, the DataFrame will only contain sample identifiers,
+        indices, and textual content.
+    """
+    def page(self, dbsession, page=1, page_size=10, extended=False):
+
+        if page > 0:
+            page -= 1
+
+        samples = self.content_query(dbsession)
+
+        if page_size > 0:
+            samples = samples.limit(page_size)
+        if page > 0 and page_size > 0:
+            samples = samples.offset(page*page_size)
+
+        id_column = self.get_id_column()
+        text_column = self.get_text_column()
+        frame_data = {
+                "index": []
+                }
+        frame_data[id_column] = []
+        frame_data[text_column] = []
+
+        sample_count = 0
+        for sample in samples.all():
+            sample_count += 1
+
+            frame_data["index"].append(sample.sample_index)
+            frame_data[id_column].append(sample.sample)
+            frame_data[text_column].append(sample.content)
+
+            if extended:
+                if sample.data is None:
+                    for key in frame_data:
+                        if key in ["index", id_column, text_column]:
+                            continue
+                        frame_data[key].append(None)
+                else:
+                    for key, value in sample.data.items():
+                        if not key in frame_data:
+                            frame_data[key] = []
+                            if len(frame_data["index"]) > 0:
+                                frame_data[key] = [None] * (len(frame_data["index"]) - 1)
+                        frame_data[key].append(value)
+
+        df = pd.DataFrame.from_dict(frame_data)
+        df.set_index("index")
+        return df
+
+    """
+    Returns the content of the dataset as a `pandas.DataFrame`.
+
     If strerrors is set to True, any errors while loading are returned instead of raised.
 
     If extended is set to True, full rows will be returned. Otherwise, and by default,

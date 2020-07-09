@@ -731,8 +731,7 @@ def new_dataset(dsid=None):
             dbsession.flush()
 
         if preview_df is None and dataset and dataset.has_content():
-            # TODO preview_df = dataset.as_df(strerrors=False, extended=True)
-            preview_df = None
+            preview_df = dataset.page(dbsession, page_size=10, extended=True)
 
         ds_errors = None
         if not dataset is None:
