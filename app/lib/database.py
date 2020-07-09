@@ -15,7 +15,7 @@ import atexit
 from passlib.hash import scrypt
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
-from sqlalchemy import Column, Integer, String, JSON, ForeignKey
+from sqlalchemy import Column, Integer, String, JSON, ForeignKey, and_, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.attributes import flag_dirty, flag_modified
 from flask import flash
@@ -106,6 +106,10 @@ class User(Base):
 
 DATASET_CONTENT_CACHE = {}
 
+def prep_sql(sql):
+    sql = "\n".join( filter(lambda line: line != "", map(str.strip, sql.strip().split("\n") )))
+    return sql.strip()
+
 class DatasetContent(Base):
     __tablename__ = "datasetcontent"
 
@@ -117,6 +121,8 @@ class DatasetContent(Base):
     sample = Column(String, primary_key=True)
     content = Column(String, nullable=False)
 
+    annotations = relationship("Annotation")
+
     data = Column(JSON)
 
     def __repr__(self):
@@ -125,6 +131,23 @@ class DatasetContent(Base):
                 self.sample_index,
                 self.sample
                 )
+
+"""
+numpy safe JSON converter
+adapted from https://stackoverflow.com/a/57915246
+"""
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, np.bool_):
+            return bool(obj)
+        else:
+            return super(NpEncoder, self).default(obj)
 
 class Dataset(Base):
     __tablename__ = 'datasets'
@@ -317,11 +340,13 @@ class Dataset(Base):
 
         return migrated_annotations
 
-    def annotations(self, dbsession, foruser=None, user_column=None, hideempty=False, only_user=False, with_content=True):
-        df = self.as_df()
+    def annotations(self, dbsession, page=1, page_size=50, foruser=None,
+            user_column=None, hideempty=False, only_user=False, with_content=True,
+            query=None):
+
+        # TODO query support
 
         foruser = by_id(dbsession, foruser)
-
         user_roles = self.get_roles(dbsession, foruser)
 
         if not 'annotator' in user_roles and \
@@ -329,57 +354,105 @@ class Dataset(Base):
             raise Exception("Unauthorized, user %s does not have role 'curator'. Active roles: %s" \
                                 % (foruser, user_roles))
 
+        if user_column is None:
+            user_column = "annotation"
+
+        sql_select = ""
+        sql_where = ""
+        field_list = ["dc.sample_index AS sample_index", "dc.sample AS sample_id"]
+        if with_content:
+            field_list.append("dc.content AS sample_content")
+
+        params = {
+                "dataset_id": self.dataset_id
+                }
+
+        if not query is None:
+            sql_where += "\nAND dc.content LIKE %(query_pattern)s"
+            if not query.startswith("%") and not query.endswith("%"):
+                query = "%" + query + "%"
+            params['query_pattern'] = query
+
+        join_type = "LEFT " if hideempty else "LEFT OUTER"
+
         id_column = self.get_id_column()
-        df = df.set_index(id_column)
-        df['idxmerge'] = df.index.astype(str)
 
         annotation_columns = []
-        target_user_column = None
+        col_renames = {
+                "sample_id": id_column,
+                "sample_content": self.get_text_column()
+                }
+
+        if not foruser is None:
+            sql_select += """
+            {join_type} JOIN annotations AS usercol ON usercol.dataset_id = dc.dataset_id AND usercol.sample_index = dc.sample_index AND usercol.owner_id = %(foruser_join)s
+            """.format(join_type=join_type, usercol=user_column)
+            col_renames["usercol"] = user_column
+            params['foruser_join'] = foruser.uid
+            field_list.append("usercol.data->'value' AS usercol")
+            annotation_columns.append(user_column)
 
         target_users = [foruser] # if user is annotator, only export and show their own annotations
         if 'curator' in user_roles and not only_user:
             # curator, also implied by owner role
-            target_users = userlist(dbsession)
+            target_users = list(set(userlist(dbsession)) - set([foruser]))
 
-        for userobj in target_users:
-            uannos = self.getannos(dbsession, userobj.uid, asdict=True)
-            if uannos is None or len(uannos) == 0:
-                continue
-            uannos = pd.DataFrame.from_dict(uannos)
-            uannos = uannos.drop(["uid"], axis=1)
-            uannos = uannos.set_index("sample")
+        if not only_user:
+            for user_obj in target_users:
+                if user_obj is foruser:
+                    continue
 
-            df = pd.merge(df, uannos,
-                            left_on='idxmerge', right_index=True, how='left',
-                            indicator=False)
-            # df = df.drop(["idxmerge"], axis=1)
+                sql_select += """
+                {join_type} JOIN annotations AS "anno-{uid}" ON "anno-{uid}".dataset_id = dc.dataset_id AND "anno-{uid}".sample_index = dc.sample_index AND "anno-{uid}".owner_id = %(foruser_{uid})s
+                """.format(join_type=join_type, uid=user_obj.uid)
+                params["foruser_{uid}".format(uid=user_obj.uid)] = user_obj.uid
+                field_list.append("\"anno-{uid}\".data->'value' AS \"anno-{uid}\"".format(uid=user_obj.uid))
+                annotation_columns.append("anno-{uid}-{uname}".format(uid=user_obj.uid, uname=user_obj.email))
+                col_renames["anno-{uid}".format(uid=user_obj.uid)] = "anno-{uid}-{uname}".format(uid=user_obj.uid, uname=user_obj.email)
 
-            cur_user_column = "anno-%s-%s" % \
-                    (userobj.uid, userobj.get_name())
-            df = df.rename(columns={"annotation": cur_user_column})
+        sql_where = """
+        WHERE dc.dataset_id = %(dataset_id)s
+        """ + sql_where
 
-            if not cur_user_column in annotation_columns:
-                annotation_columns.append(cur_user_column)
+        sql = """
+        SELECT {field_list} FROM datasetcontent AS dc
+        {sql_select}
+        {sql_where}
+        """.format(field_list=", ".join(field_list),
+                sql_select="\n" + sql_select.strip(),
+                sql_where="\n" + sql_where.strip())
 
-            if not user_column is None and not foruser is None \
-                    and userobj is foruser:
-                target_user_column = cur_user_column
+        sql_count = """
+        SELECT COUNT(*) AS cnt FROM datasetcontent AS dc
+        {sql_select}
+        {sql_where}
+        """.format(field_list=", ".join(field_list),
+                sql_select="\n" + sql_select.strip(),
+                sql_where="\n" + sql_where.strip())
 
-        if not target_user_column is None and not user_column is None and \
-                target_user_column != user_column:
+        if page_size > 0:
+            sql += "\nLIMIT %(page_size)s"
+            params["page_size"] = page_size
 
-            df = df.rename(columns={target_user_column: user_column})
-            annotation_columns.remove(target_user_column)
-            if not user_column in annotation_columns:
-                annotation_columns.append(user_column)
+        if page > 0 and page_size > 0:
+            sql += "\nOFFSET %(page_onset)s"
+            params["page_onset"] = (page - 1) * page_size
 
-        if not with_content:
-            df = df.drop(columns=[self.get_text_column()])
+        sql = prep_sql(sql)
+        fprint("DB_SQL_LOG", sql)
 
-        if hideempty:
-            df = df.dropna(axis=0, how="all", subset=annotation_columns)
-        df = df.replace(np.nan, '', regex=True)
-        return df, annotation_columns
+        df = pd.read_sql(sql,
+                dbsession.bind,
+                params=params)
+        df_count = pd.read_sql(sql_count,
+                dbsession.bind,
+                params=params)
+
+        df_count = df_count.loc[0, "cnt"]
+
+        df = df.rename(columns=col_renames)
+
+        return df, annotation_columns, df_count
 
     def set_taglist(self, newtags):
         if self.dsmetadata is None:
@@ -480,12 +553,25 @@ class Dataset(Base):
 
         anno_data = {"updated": datetime.now().timestamp(), "value": value}
 
+        sample_obj = self.content_query(dbsession).filter_by(
+                dataset_id = self.dataset_id,
+                sample = sample,
+                ).one()
+
         sample = str(sample)
         existing_anno = dbsession.query(Annotation).filter_by( \
-                owner_id=user_obj.uid, dataset_id=self.dataset_id, sample=sample).one_or_none()
+                owner_id=user_obj.uid,
+                dataset_id=self.dataset_id,
+                sample=sample_obj.sample,
+                sample_index=sample_obj.sample_index
+                ).one_or_none()
 
         if existing_anno is None:
-            newanno = Annotation(owner=user_obj, dataset=self, sample=sample, data=anno_data)
+            newanno = Annotation(owner=user_obj,
+                    dataset=self,
+                    sample=sample_obj.sample,
+                    sample_index=sample_obj.sample_index,
+                    data=anno_data)
             dbsession.add(newanno)
         else:
             existing_anno.data = anno_data
@@ -626,7 +712,7 @@ class Dataset(Base):
                             continue
 
                         sample_data = df.loc[index].replace(np.nan, "", regex=True).to_dict()
-                        sample_data = json.dumps(sample_data)
+                        sample_data = json.dumps(sample_data, cls=NpEncoder)
                         sample_data = json.loads(sample_data)
                         if sample_data is not None:
                             if id_column in sample_data:
@@ -689,12 +775,14 @@ class Dataset(Base):
         Otherwise, and by default, the DataFrame will only contain sample identifiers,
         indices, and textual content.
     """
-    def page(self, dbsession, page=1, page_size=10, extended=False):
+    def page(self, dbsession, page=1, page_size=10, extended=False, query=None):
 
         if page > 0:
             page -= 1
 
-        samples = self.content_query(dbsession)
+        samples = query
+        if samples is None:
+            samples = self.content_query(dbsession)
 
         if page_size > 0:
             samples = samples.limit(page_size)
@@ -711,6 +799,7 @@ class Dataset(Base):
 
         sample_count = 0
         for sample in samples.all():
+            fprint(sample, type(sample))
             sample_count += 1
 
             frame_data["index"].append(sample.sample_index)
@@ -799,7 +888,12 @@ class Annotation(Base):
     dataset = relationship("Dataset", back_populates="dsannotations")
 
     sample = Column(String, primary_key=True)
+    sample_index = Column(Integer, primary_key=True)
+
     data = Column(JSON)
+    __table_args__ = (ForeignKeyConstraint([dataset_id, sample, sample_index],
+                                           [DatasetContent.dataset_id, DatasetContent.sample, DatasetContent.sample_index]),
+                      {})
 
     def __repr__(self):
         return "<Annotation (dataset: %s, owner: %s, sample: %s, data: %s)>" % \

@@ -105,22 +105,15 @@ def get_accessible_dataset(dbsession, dsid, check_role=None):
     return cur_dataset
 
 def reorder_dataframe(df, cur_dataset, annotation_columns):
-    columns = [cur_dataset.get_id_column(), cur_dataset.get_text_column()] + \
+    columns = list(df.columns.intersection([cur_dataset.get_id_column(), cur_dataset.get_text_column()])) + \
                 list(df.columns.intersection(annotation_columns))
 
     # drop other columns
     df = df.reset_index()
-    df = df.loc[:, columns]
+    df = df[columns]
     df.set_index(cur_dataset.get_id_column())
     # reorder
     df = df[columns]
-    return df
-
-def query_dataframe(df, textcol, query):
-    # text query filter
-    if not query is None and query != '':
-        df[textcol] = df[textcol].astype(str)
-        df = df[df[textcol].str.contains(query, na=False, regex=False, case=False)]
     return df
 
 @app.route(BASEURI + "/dataset/<dsid>/inspect", methods=["GET", "POST"])
@@ -150,17 +143,7 @@ def inspect_dataset(dsid=None):
             if not request.json is None and "set_tag" in request.json:
                 cur_dataset.setanno(dbsession, session_user, req_sample, request.json.get("set_tag", None))
 
-        df, annotation_columns = cur_dataset.annotations(dbsession, \
-                                                foruser=session_user, \
-                                                user_column="annotations", \
-                                                hideempty=hideempty)
-
-        df = reorder_dataframe(df, cur_dataset, annotation_columns)
-
-        df = query_dataframe(df, textcol=cur_dataset.get_text_column(), query=query)
-
         # pagination
-        results = df.shape[0]
         page_size = 50
         page = 1
         pages = 1
@@ -174,15 +157,20 @@ def inspect_dataset(dsid=None):
         except ValueError as e:
             flash("Invalid value for param 'page': %s" % e, "error")
 
-        pages = math.ceil(df.shape[0] / page_size)
-        if df.shape[0] > page_size:
-            if page > pages:
-                page = pages
 
-            onset = max(0, page - 1) * page_size
-            offset = onset + page_size
+        df, annotation_columns, results = cur_dataset.annotations(dbsession,
+                                                foruser=session_user,
+                                                page=page,
+                                                page_size=page_size,
+                                                user_column="annotations",
+                                                query=query,
+                                                hideempty=hideempty)
 
-            df = df[onset:offset]
+        df = reorder_dataframe(df, cur_dataset, annotation_columns)
+
+        pages = math.ceil(results / page_size)
+        if page > pages:
+            page = pages
 
         pagination_size = 5
         pagination_elements = list(range(max(1, page - pagination_size),
@@ -224,7 +212,7 @@ def download(dsid=None):
     with db.session_scope() as dbsession:
         cur_dataset = get_accessible_dataset(dbsession, dsid)
 
-        df, _ = cur_dataset.annotations(dbsession, foruser=session['user'])
+        df, _, _ = cur_dataset.annotations(dbsession, foruser=session['user'])
 
         s = StringIO()
         df.to_csv(s)
@@ -358,7 +346,6 @@ def reorder_dataframe_noindex(df, dataset, annotation_columns):
                 list(df.columns.intersection(annotation_columns))
 
     df = df.reset_index()
-    df = df.loc[:, columns]
     df = df[columns]
     df = df.reset_index()
     return df
@@ -383,7 +370,7 @@ def annotate(dsid=None, sample_idx=None):
 
         id_column = dataset.get_id_column()
 
-        df, annotation_columns = dataset.annotations(dbsession, foruser=session_user,
+        df, annotation_columns, _ = dataset.annotations(dbsession, foruser=session_user,
                                                     user_column="annotations",
                                                     hideempty=False, only_user=True)
 
@@ -487,9 +474,12 @@ def dataset_overview_json(dsid):
         user_roles = list(dataset.get_roles(dbsession, session_user))
 
         user_column = "anno-%s-You" % (session_user.uid)
-        df, annotation_columns = dataset.annotations(dbsession,
+        df, annotation_columns, total = dataset.annotations(dbsession,
                                                 foruser=session_user,
+                                                page=-1,
+                                                page_size=-1,
                                                 user_column=user_column,
+                                                with_content=False,
                                                 hideempty=True)
         df = reorder_dataframe(df, dataset, annotation_columns)
 
