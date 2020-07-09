@@ -700,7 +700,7 @@
                 type: "POST",
                 url: $(location).attr("href"),
                 data: {"action": annoaction, "annouser": annouser, "annorole": annorole},
-                dataType: "json",
+                dataType: "html",
                 success: function() {
                     $tgt.toggleClass("btn-outline-primary");
                     $tgt.toggleClass("btn-outline-success");
