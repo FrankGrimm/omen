@@ -17,9 +17,7 @@ $(document).ready(function() {
         elem.innerHTML = mdconverted;
     });
 
-    const titled_links = document.querySelectorAll("a[title]");
-
-    titled_links.forEach((elem) => {
+    const addPopOvers = (elem) => {
         if (!elem.getAttribute("title")) { return; }
         const popoverText = elem.getAttribute("title").trim();
         if (!popoverText) { return; }
@@ -30,7 +28,12 @@ $(document).ready(function() {
             title: "",
             template: '<div class="popover" role="tooltip"><div class="arrow"></div><div class="popover-body"></div></div>'
         });
-    });
+    };
+    
+    const titled_links = document.querySelectorAll("a[title]");
+    const titled_buttons = document.querySelectorAll("a[title]");
+    titled_links.forEach(addPopOvers)
+    titled_buttons.forEach(addPopOvers)
 
     $('select').selectpicker();
 });

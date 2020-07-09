@@ -135,8 +135,8 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
     {% set id_column = df.columns[0] %}
     {% set text_column = df.columns[1] %}
     <div class="df_inspect_table_header row">
-        <div class="df_inspect_header df_inspect_idcol col-1 d-none d-md-block">{{ id_column }}</div>
-        <div class="df_inspect_header df_inspect_textcol col-sm col-md">{{ text_column }}</div>
+        <div class="df_inspect_header df_inspect_idcol d-none d-md-flex">{{ id_column }}</div>
+        <div class="df_inspect_header df_inspect_textcol col-sm col-md d-flex">{{ text_column }}</div>
     </div>
     {% for index, row in df.iterrows() %}
     {% include "dataset_inspect_row.html" with context %}
@@ -388,6 +388,11 @@ function initEditorButton(btn) {
                     initEditorButton(btn);
                 }
             });
+            document.querySelectorAll("button.df_inspect_changeaction").forEach(btn => {
+                if (evt_sample == btn.dataset.sample) {
+                    initEditorButton(btn);
+                }
+            });
         });
 
         return false;
@@ -396,6 +401,7 @@ function initEditorButton(btn) {
 
      function initEditorButtons() {
          document.querySelectorAll("a.df_inspect_changeaction").forEach(initEditorButton);
+         document.querySelectorAll("button.df_inspect_changeaction").forEach(initEditorButton);
      }
 
     initEditorButtons();

@@ -502,11 +502,11 @@ li.nav-active-task div.sideprogress-active {
 
 
 .df_inspect_col_content {
-    display: block;
+    display: flex;
     flex-grow: 1;
     margin-bottom: 1em;
+    flex-direction: column;
 }
-
 
 .inspect_tageditor_actions {
     display: flex;
@@ -549,3 +549,28 @@ li.nav-active-task div.sideprogress-active {
     flex-shrink: 0;
 }
 
+.df_inspect_userannos {
+    display: flex;
+    flex-shrink: 1;
+    flex-grow: 1;
+    justify-content: start;
+}
+
+.df_inspect_userannos > .btn {
+    display: flex;
+    flex-shrink: 1;
+    flex-grow: 1;
+}
+
+.df_inspect_useranno_title {
+    font-weight: bold;
+}
+
+.df_inspect_idcol {
+    width: 10%;
+    padding: 0 1em;
+}
+
+.df_inspect_votebtn {
+    padding: 0.3em;
+}

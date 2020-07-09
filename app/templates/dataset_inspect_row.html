@@ -1,24 +1,62 @@
 {% import "macros.html" as macros with context %}
+
+{% macro render_vote_button(tagmetadata, sample, votes, tag) -%}
+    {% set css_colortag = "" %}
+    {% if tagmetadata.color %}
+        {% set css_colortag = "tagcolor_" + tagmetadata.color %}
+    {% endif %}
+
+    {% set css_btnclass = "btn-light" %}
+    {% if tag == curanno %}
+        {% set css_btnclass = "btn-success" %}
+        {% if css_colortag == "" %}
+        {% set css_colortag = "tagcolor_active" %}
+        {% endif %}
+    {% endif %}
+
+    {% set css_votetag = "" %}
+    {% if votes and tag in votes and votes[tag]|length %}
+        {% set css_votetag = "with_anno_vote" %}
+    {% endif %}
+
+    <button class="btn df_inspect_changeaction df_inspect_votebtn {{ css_btnclass }} {{ css_votetag }} {{ css_colortag }}" {% if votes and tag in votes and votes[tag]|length %}title="{{votes[tag]|length}} vote(s) by {{votes[tag]|join(", ")}}"{% endif %} data-sample="{{sample}}" data-tag="{{tag}}">
+
+    {% if tagmetadata.icon %}<i class="{{ tagmetadata.icon }}"> </i>{% endif %}
+    {{ tag }} {% if votes and tag in votes and votes[tag]|length %}<span class="anno_vote badge badge-dark">{{votes[tag]|length}}</span>{% endif %}
+    </button>
+{%- endmacro %}
+
 <div class="row df_inspect_table_row" data-sample-idx="{{ index }}" data-sample-id="{{ row[id_column] }}">
     {% set row_sample = row[id_column] %}
     {% set all_tags = dataset.get_taglist(include_metadata=True) %}
     {% set tag = row['annotations'] %}
     {% set tagmetadata = all_tags.get(tag, None) %}
 
-    <div class="df_inspect_idcol df_inspect_col_content col-sm col-md d-none d-md-flex">
+    <div class="df_inspect_idcol df_inspect_col_content d-none d-md-flex">
         {% if not (hide_nans and not row[id_column].is_na()) %}<div class="df_col_content df_inspect_col_content">{{ macros.render_cell(row, id_column, query) }}</div>{% endif %}
     </div>
     <div class="df_inspect_textcol df_inspect_col_content col-sm col-md d-md-flex">
         {% if not (hide_nans and not row[text_column].is_na()) %}<div class="df_col_content df_inspect_col_content">{{ macros.render_cell(row, text_column, query) }}</div>{% endif %}
 
-        <div class="userannos">
-        {% set votes = {} %}
-        {% for annocol in annotation_columns %}
-            {% if annocol != 'annotations' and annocol in row %}
-            {{annocol}} {{row[annocol]}}
-            {% endif %}
-        {% endfor %}
+        {% set votes = calculate_votes(row, annotation_columns) %}
+        {% if votes|length %}
+        <div class="row">
+            <div class="col-12 df_inspect_useranno_title">
+                Other annotators tagged this as:
+            </div>
         </div>
+        <div class="row">
+            <div class="col-8">
+            <div class="df_inspect_userannos btn-group">
+            {% for tag in all_tags %}
+                {% if tag in votes and votes[tag]|length %}
+                    {{ render_vote_button(all_tags.get(tag, {}), row_sample, votes, tag) }}
+                {% endif %}
+            {% endfor %}
+            </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
     <div class="col-lg-3 col-md-4 col-sm-12 d-md-flex">
 
