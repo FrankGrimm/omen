@@ -20,32 +20,30 @@ Annotate &quot;<span class="annometa">{{ task.name }}</span>&quot;
 {% endif %}
 
 {{ macros.render_tag_buttons(dataset, nextsampleidx, votes) }}
-
+<pre>
+TODO remove
+current sample {{ sample_idx }}
+prev sample {{ sample_prev }}
+next sample {{ sample_next }}
+random sample {{ random_sample }}
+</pre>
     <div class="btn-group">
-    {% if dataset.dsmetadata.size > 0 and sample_idx > 0 %}
-    <a id="anno_nav_prev"class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_idx - 1) }}" title="previous sample">
+    {% if sample_prev %}
+    <a id="anno_nav_prev"class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_prev) }}" title="previous sample">
         <i class="fas fa-2x fa-arrow-left"></i>
     </a>
     {% endif %}
-    {% if dataset.dsmetadata.size > 0 and sample_idx == 0 %}
-    <a id="anno_nav_prev" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=dataset.dsmetadata.size - 1) }}" title="previous sample">
-        <i class="fas fa-2x fa-arrow-left"></i>
-    </a>
-    {% endif %}
-    {% if dataset.dsmetadata.size > 0 and sample_idx < (dataset.dsmetadata.size - 1) %}
-    <a id="anno_nav_next" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=nextsampleidx) }}" title="next sample">
-        <i class="fas fa-2x fa-arrow-right"></i>
-    </a>
-    {% endif %}
-    {% if dataset.dsmetadata.size > 0 and sample_idx == (dataset.dsmetadata.size - 1) %}
-    <a id="anno_nav_next" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=0) }}" title="next sample">
+    {% if sample_next %}
+    <a id="anno_nav_next" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_next) }}" title="next sample">
         <i class="fas fa-2x fa-arrow-right"></i>
     </a>
     {% endif %}
 
+    {% if random_sample %}
     <a id="anno_nav_random" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=random_sample) }}" title="random sample">
         <i class="fas fa-2x fa-random"></i>
     </a>
+    {% endif %}
     </div>
 
 </div>

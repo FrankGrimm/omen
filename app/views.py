@@ -121,10 +121,10 @@ def reorder_dataframe(df, cur_dataset, annotation_columns):
 def inspect_dataset(dsid=None):
     with db.session_scope() as dbsession:
 
-        hideempty = True
-        if not request.args.get("hideempty", None) is None and \
-                request.args.get("hideempty", None).lower() == "false":
-            hideempty = False
+        restrict_view = None
+        if not request.args.get("restrict_view", None) is None and \
+                request.args.get("restrict_view", None).lower() in ['tagged', 'untagged']:
+            restrict_view = request.args.get("restrict_view", None).lower()
 
         query = request.args.get("query", "").strip()
 
@@ -136,11 +136,11 @@ def inspect_dataset(dsid=None):
         req_sample = request.args.get("single_row", "")
         if request.method == "POST":
             request.get_json(force=True)
-        if not request.json is None:
+        if request.json is not None:
             req_sample = request.json.get("single_row", "")
 
-        if not req_sample is None and not req_sample == "":
-            if not request.json is None and "set_tag" in request.json:
+        if req_sample is not None and not req_sample == "":
+            if request.json is not None and "set_tag" in request.json:
                 cur_dataset.setanno(dbsession, session_user, req_sample, request.json.get("set_tag", None))
 
         # pagination
@@ -164,7 +164,7 @@ def inspect_dataset(dsid=None):
                                                 page_size=page_size,
                                                 user_column="annotations",
                                                 query=query,
-                                                hideempty=hideempty)
+                                                restrict_view=restrict_view)
 
         df = reorder_dataframe(df, cur_dataset, annotation_columns)
 
@@ -194,12 +194,13 @@ def inspect_dataset(dsid=None):
 
         return render_template(template_name, dataset=cur_dataset,
                                 df=df,
-                                hideempty=hideempty,
+                                restrict_view=restrict_view,
                                 query=query,
                                 page_size=page_size,
                                 page=page,
                                 pages=pages,
                                 results=results,
+                                annotation_columns=annotation_columns,
                                 pagination_elements=pagination_elements,
                                 user_roles=cur_dataset.get_roles(dbsession, session_user),
                                 **ctx_args
@@ -372,7 +373,7 @@ def annotate(dsid=None, sample_idx=None):
 
         df, annotation_columns, _ = dataset.annotations(dbsession, foruser=session_user,
                                                     user_column="annotations",
-                                                    hideempty=False, only_user=True)
+                                                    restrict_view=None, only_user=True)
 
         df = reorder_dataframe_noindex(df, dataset, annotation_columns)
 
@@ -480,7 +481,7 @@ def dataset_overview_json(dsid):
                                                 page_size=-1,
                                                 user_column=user_column,
                                                 with_content=False,
-                                                hideempty=True)
+                                                restrict_view='tagged')
         df = reorder_dataframe(df, dataset, annotation_columns)
 
         tags = dataset.get_taglist()

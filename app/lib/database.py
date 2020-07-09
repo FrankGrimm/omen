@@ -341,10 +341,8 @@ class Dataset(Base):
         return migrated_annotations
 
     def annotations(self, dbsession, page=1, page_size=50, foruser=None,
-            user_column=None, hideempty=False, only_user=False, with_content=True,
+            user_column=None, restrict_view=None, only_user=False, with_content=True,
             query=None):
-
-        # TODO query support
 
         foruser = by_id(dbsession, foruser)
         user_roles = self.get_roles(dbsession, foruser)
@@ -373,7 +371,7 @@ class Dataset(Base):
                 query = "%" + query + "%"
             params['query_pattern'] = query
 
-        join_type = "LEFT " if hideempty else "LEFT OUTER"
+        join_type = "LEFT" if restrict_view is not None and restrict_view == 'tagged' else "LEFT OUTER"
 
         id_column = self.get_id_column()
 
@@ -415,6 +413,11 @@ class Dataset(Base):
         sql_where = """
         WHERE dc.dataset_id = %(dataset_id)s
         """ + sql_where
+
+        if restrict_view is not None and restrict_view == "tagged":
+            sql_where += "\nAND usercol IS NOT NULL"
+        elif restrict_view is not None and restrict_view == "untagged":
+            sql_where += "\nAND usercol IS NULL"
 
         sql = """
         SELECT {field_list} FROM datasetcontent AS dc
@@ -843,7 +846,6 @@ class Dataset(Base):
     the DataFrame will only contain sample identifiers and textual content.
     """
     def as_df_deprecated(self, strerrors=False, extended=False):
-        # TODO convert id_column and text_column to string?
         df = None
 
         if strerrors:
