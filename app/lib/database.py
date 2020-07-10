@@ -1170,7 +1170,7 @@ def annotation_tasks(dbsession, for_user):
             continue
 
         dsname = dataset.get_name()
-        task = {"id": dsid, "name": dsname,
+        task = {"id": int(dsid), "name": dsname,
                 "dataset": dataset,
                 "progress": 0,
                 "size": dataset.dsmetadata.get("size", -1) or -1,
