@@ -561,7 +561,7 @@ li.nav-active-task div.sideprogress-active {
     display: flex;
 }
 .df_inspect_table_row:nth-child(even) {
-    background: #edf5ff;
+    background: rgb(249, 249, 249);
 }
 
 .df_inspect_header.df_inspect_textcol {
