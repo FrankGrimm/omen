@@ -530,7 +530,7 @@ class Dataset(Base):
             curtag_metadata = tag_metadata.get(tag, {})
             tagdata[tag] = {
                     "icon": curtag_metadata.get("icon", None),
-                    "color": curtag_metadata.get("color", None)
+                    "color": curtag_metadata.get("color", "")
                     }
 
         return tagdata

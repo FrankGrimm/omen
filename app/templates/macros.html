@@ -2,19 +2,14 @@
 <div class="btn-group{% if add_classes != ''%} {{ add_classes }}{% endif %}"{% if group_id != '' %} id="{{ group_id }}"{% endif %}{% if data_sample !='' %} data-sample="{{ data_sample }}"{% endif %}>
 {% for tag,tagmetadata in dataset.get_taglist(include_metadata=True).items() %}
     {% set css_colortag = "" %}
-    {% if tagmetadata.color and tag == curanno %}
-        {% set css_colortag = "tagcolor_active_" + tagmetadata.color %}
-    {% elif tagmetadata.color %}
-        {% set css_colortag = "tagcolor_" + tagmetadata.color %}
+    {% set tag_col = tagmetadata.color or "white" %}
+    {% if tag_col and tag == curanno %}
+        {% set css_colortag = "tagcolor_active_" + tag_col %}
+    {% elif tag_col %}
+        {% set css_colortag = "tagcolor_" + tag_col %}
     {% endif %}
 
-    {% set css_btnclass = "btn-light" %}
-    {% if tag == curanno %}
-        {% set css_btnclass = "btn-success" %}
-        {% if css_colortag == "" %}
-        {% set css_colortag = "tagcolor_active" %}
-        {% endif %}
-    {% endif %}
+    {% set css_btnclass = "" %}
 
     {% set css_votetag = "" %}
     {% if votes and tag in votes and votes[tag]|length %}
