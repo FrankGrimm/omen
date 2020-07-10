@@ -342,7 +342,8 @@ class Dataset(Base):
 
     def annotations(self, dbsession, page=1, page_size=50, foruser=None,
             user_column=None, restrict_view=None, only_user=False, with_content=True,
-            query=None, order_by=None, min_sample_index=None):
+            query=None, order_by=None, min_sample_index=None,
+            tags_include=None, tags_exclude=None):
 
         foruser = by_id(dbsession, foruser)
         user_roles = self.get_roles(dbsession, foruser)
@@ -389,6 +390,28 @@ class Dataset(Base):
             params['foruser_join'] = foruser.uid
             field_list.append("usercol.data->'value' #>> '{}' AS usercol_value")
             annotation_columns.append(user_column)
+
+            if tags_include is None:
+                tags_include = []
+            if tags_exclude is None:
+                tags_exclude = []
+            condition_include = []
+            condition_exclude = []
+
+            for tag_idx, tag in enumerate(self.get_taglist()):
+                if tag not in tags_include and tag not in tags_exclude:
+                    continue
+
+                params["tag_%s" % tag_idx] = tag
+                if tag in tags_include:
+                    condition_include.append("tag_%s" % tag_idx)
+                if tag in tags_exclude:
+                    condition_exclude.append("tag_%s" % tag_idx)
+
+            if len(condition_include) > 0:
+                sql_where += "\nAND usercol.data->'value' #>> '{}' IN (%s)" % ", ".join(map(lambda p: "%(" + p + ")s", condition_include))
+            if len(condition_exclude) > 0:
+                sql_where += "\nAND NOT usercol.data->'value' #>> '{}' IN (%s)" % ", ".join(map(lambda p: "%(" + p + ")s", condition_exclude))
 
         target_users = [foruser] # if user is annotator, only export and show their own annotations
         if 'curator' in user_roles and not only_user:

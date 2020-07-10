@@ -59,6 +59,8 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
     </div>
 </div>
 
+<form action="{{ url_for("inspect_dataset", dsid=dataset.dataset_id) }}" method="get" id="form_doquery">
+
 <div class="row df_pagination">
     <div class="col-sm-12 col-md-7">
         Entries: {{results}}<br />
@@ -91,8 +93,6 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
     </div>
 
     <div class="col-sm-12 col-md-5">
-
-        <form action="{{ url_for("inspect_dataset", dsid=dataset.dataset_id) }}" method="get" id="form_doquery">
         <div class="form-group row">
             <div class="col-12">
                 <div class="input-group">
@@ -107,7 +107,7 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
         </div> 
 
         <div class="form-group row">
-            <div class="col-12">
+            <div class="col-12 d-flex" style="justify-content: end">
                 <div class="custom-control custom-checkbox custom-control-inline">
                     {% if restrict_view and restrict_view == 'tagged' %}
                     <input name="restrict_view" id="restrict_view" type="hidden" value="tagged" />
@@ -120,9 +120,29 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
                 </div>
             </div>
         </div> 
-        </form>
     </div>
 </div>
+<div class="row df_pagination">
+    {% set taglist = dataset.get_taglist() %}
+    {% if taglist|length <= 2 %}
+    <div class="col-12 col-md-6 offset-md-6 d-none d-md-flex df_inspect_tagselect">
+        <input type="hidden" name="restrict_taglist_include" id="restrict_taglist_include" value="" />
+        <input type="hidden" name="restrict_taglist_exclude" id="restrict_taglist_exclude" value="" />
+        {% else %}
+        <div class="col-12 d-none d-md-flex df_inspect_tagselect">
+            {% endif %}
+            {% for tag in taglist %}
+            <div class="custom-control custom-checkbox custom-control-inline">
+                <input name="cb_show_tag" autocomplete="off" id="cb_show_tag_{{loop.index}}" type="checkbox" class="custom-control-input cb_show_tag_elem" value="{{ tag }}" data-tristate="{{ tagstates[tag] or 0 }}" data-tag="{{ tag }}"> 
+                <label for="cb_show_tag_{{loop.index}}" class="custom-control-label">show {{ tag }}</label>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+</form>
+
 <div class="row">
 
 {% set df_editor_id = "dfid" %}
@@ -132,15 +152,15 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
 
 {% if df.shape[0] > 0 %}
 <div id="{{df_editor_id}}" class="df_inspect_table alert alert-{% if df_class=='error' %}danger{%else%}{{df_class}}{% endif %}">
-    {% set id_column = df.columns[0] %}
-    {% set text_column = df.columns[1] %}
-    <div class="df_inspect_table_header row">
-        <div class="df_inspect_header df_inspect_idcol d-none d-md-flex">{{ id_column }}</div>
-        <div class="df_inspect_header df_inspect_textcol col-sm col-md d-flex">{{ text_column }}</div>
-    </div>
-    {% for index, row in df.iterrows() %}
-    {% include "dataset_inspect_row.html" with context %}
-    {% endfor %}
+{% set id_column = df.columns[0] %}
+{% set text_column = df.columns[1] %}
+<div class="df_inspect_table_header row">
+    <div class="df_inspect_header df_inspect_idcol d-none d-md-flex">{{ id_column }}</div>
+    <div class="df_inspect_header df_inspect_textcol col-sm col-md d-flex">{{ text_column }}</div>
+</div>
+{% for index, row in df.iterrows() %}
+{% include "dataset_inspect_row.html" with context %}
+{% endfor %}
 </div>
 {% endif %}
 
@@ -150,107 +170,136 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
 
 {% block addscript %}
 <script>
-    const ACTIVE_DATASET_ID = {{ dataset.dataset_id }};
+const ACTIVE_DATASET_ID = {{ dataset.dataset_id }};
 
-    window.chartColors = {
-        red: 'rgb(255, 99, 132)',
-        orange: 'rgb(255, 159, 64)',
-        yellow: 'rgb(255, 205, 86)',
-        green: 'rgb(75, 192, 192)',
-        blue: 'rgb(54, 162, 235)',
-        purple: 'rgb(153, 102, 255)',
-        gray: 'rgb(201, 203, 207)',
-        grey: 'rgb(201, 203, 207)'
+window.chartColors = {
+    red: 'rgb(255, 99, 132)',
+    orange: 'rgb(255, 159, 64)',
+    yellow: 'rgb(255, 205, 86)',
+    green: 'rgb(75, 192, 192)',
+    blue: 'rgb(54, 162, 235)',
+    purple: 'rgb(153, 102, 255)',
+    gray: 'rgb(201, 203, 207)',
+    grey: 'rgb(201, 203, 207)'
+};
+
+function initOverviewChart(target) {
+    const ctx = document.getElementById(target);
+    const config = {
+        type: 'doughnut',
+        data: {
+            datasets: [],
+            labels: []
+        },
+        options: {
+            tooltips: {
+                callbacks: {
+                    label: function(tooltipItem, data) {
+                        const datasetLabel = data.datasets[tooltipItem.datasetIndex].label || '';
+                        const lbl = data.labels[tooltipItem.index];
+                        const value = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index] || 0;
+                        return datasetLabel + ': ' + lbl + " " + value;
+                    }
+                }
+            },
+            responsive: true,
+            legend: {
+                position: "top",
+            },
+            animation: {
+                animateScale: true,
+                animateRotate: true
+            },
+            title: {
+                display: true,
+                text: "Annotations"
+            },
+            circumference: Math.PI,
+            rotation: -Math.PI
+        }
     };
 
-    function initOverviewChart(target) {
-        const ctx = document.getElementById(target);
-        const config = {
-            type: 'doughnut',
-            data: {
-                datasets: [],
-                labels: []
-            },
-            options: {
-                tooltips: {
-                    callbacks: {
-                        label: function(tooltipItem, data) {
-                            const datasetLabel = data.datasets[tooltipItem.datasetIndex].label || '';
-                            const lbl = data.labels[tooltipItem.index];
-                            const value = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index] || 0;
-                            return datasetLabel + ': ' + lbl + " " + value;
-                        }
-                    }
-                },
-                responsive: true,
-                legend: {
-                    position: "top",
-                },
-                animation: {
-					animateScale: true,
-					animateRotate: true
-				},
-                title: {
-                    display: true,
-                    text: "Annotations"
-                },
-                circumference: Math.PI,
-                rotation: -Math.PI
-            }
-        };
+    const overviewChart = new Chart(ctx, config);
 
-        const overviewChart = new Chart(ctx, config);
+    fetch(window.OMEN_BASE + "dataset/" + ACTIVE_DATASET_ID + "/overview.json")
+      .then(response => response.json())
+      .then(overviewData => updateOverviewChart(overviewChart, overviewData, config));
 
-        fetch(window.OMEN_BASE + "dataset/" + ACTIVE_DATASET_ID + "/overview.json")
-          .then(response => response.json())
-          .then(overviewData => updateOverviewChart(overviewChart, overviewData, config));
+    return overviewChart;
+}
 
-        return overviewChart;
+const overviewChart = initOverviewChart("overview-chart");
+let overviewDataCache = null;
+let overviewChartConfig = null;
+
+document.getElementById("show_all_annotators").addEventListener("click", () => {
+    updateOverviewChart(overviewChart, overviewDataCache, overviewChartConfig, "all");
+});
+document.getElementById("show_individual_annotators").addEventListener("click", () => {
+    updateOverviewChart(overviewChart, overviewDataCache, overviewChartConfig, "single");
+});
+
+function updateOverviewChart(overviewChart, overviewData, config, mode)  {
+    if (!overviewData) { 
+        return;
     }
+    overviewDataCache = overviewData;
+    overviewChartConfig = config;
+   
+    // mode = mode || 'all';
+    mode = mode || 'single';
+    config.data.labels = [...overviewData.tags];
 
-    const overviewChart = initOverviewChart("overview-chart");
-    let overviewDataCache = null;
-    let overviewChartConfig = null;
+    if (mode === 'single') {
+        // config.data.labels.push("N/A");
+    }
+        
+    overviewChart.data.datasets = [];
+    overviewChart.options.title.text = "Annotations";
 
-    document.getElementById("show_all_annotators").addEventListener("click", () => {
-        updateOverviewChart(overviewChart, overviewDataCache, overviewChartConfig, "all");
-    });
-    document.getElementById("show_individual_annotators").addEventListener("click", () => {
-        updateOverviewChart(overviewChart, overviewDataCache, overviewChartConfig, "single");
-    });
+    if (mode === 'all') {
+        const allAnnosDS = {data: [], backgroundColor: []};
+        const default_colors = [...Object.keys(window.chartColors)];
+        default_colors.splice(default_colors.indexOf("gray"), 1)
+        config.data.labels.forEach((tag) => {
+            const tag_count = overviewData.all_annotations[tag] || 0;
+            const tag_meta = overviewData.tag_metadata[tag] || {}
 
-    function updateOverviewChart(overviewChart, overviewData, config, mode)  {
-        if (!overviewData) { 
-            return;
-        }
-        overviewDataCache = overviewData;
-        overviewChartConfig = config;
-       
-        // mode = mode || 'all';
-        mode = mode || 'single';
-        config.data.labels = [...overviewData.tags];
+            let tag_color = null;
+            if (tag_meta.color && window.chartColors[tag_meta.color]) {
+                tag_color = window.chartColors[tag_meta.color];
+            }
+                
+            if (!tag_color) {
+                tag_color = default_colors.shift();
+            } else {
+                if (default_colors.indexOf(tag_color) > -1) {
+                    default_colors.splice(default_colors.indexOf(tag_color), 1);
+                }
+            }
 
-        if (mode === 'single') {
-            // config.data.labels.push("N/A");
-        }
-            
+            allAnnosDS.data.push(tag_count);
+            allAnnosDS.backgroundColor.push(tag_color);
+        });
+        allAnnosDS.label = "All Annotations";
+        overviewChart.data.datasets.push(allAnnosDS);
+    } else {
         overviewChart.data.datasets = [];
-        overviewChart.options.title.text = "Annotations";
-
-        if (mode === 'all') {
-            const allAnnosDS = {data: [], backgroundColor: []};
+        for (const [annotator, annotations] of Object.entries(overviewData.annotations)) {
+            const annoDS = {data: [], backgroundColor: []};
             const default_colors = [...Object.keys(window.chartColors)];
             default_colors.splice(default_colors.indexOf("gray"), 1)
             config.data.labels.forEach((tag) => {
-                const tag_count = overviewData.all_annotations[tag] || 0;
+                const tag_count = annotations[tag] || 0;
                 const tag_meta = overviewData.tag_metadata[tag] || {}
 
                 let tag_color = null;
                 if (tag_meta.color && window.chartColors[tag_meta.color]) {
                     tag_color = window.chartColors[tag_meta.color];
                 }
-                    
-                if (!tag_color) {
+                
+                console.log(tag_color, default_colors)
+                if (!tag_color) { 
                     tag_color = default_colors.shift();
                 } else {
                     if (default_colors.indexOf(tag_color) > -1) {
@@ -258,100 +307,71 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
                     }
                 }
 
-                allAnnosDS.data.push(tag_count);
-                allAnnosDS.backgroundColor.push(tag_color);
+                annoDS.data.push(tag_count);
+                annoDS.backgroundColor.push(tag_color);
             });
-            allAnnosDS.label = "All Annotations";
-            overviewChart.data.datasets.push(allAnnosDS);
-        } else {
-            overviewChart.data.datasets = [];
-            for (const [annotator, annotations] of Object.entries(overviewData.annotations)) {
-                const annoDS = {data: [], backgroundColor: []};
-                const default_colors = [...Object.keys(window.chartColors)];
-                default_colors.splice(default_colors.indexOf("gray"), 1)
-                config.data.labels.forEach((tag) => {
-                    const tag_count = annotations[tag] || 0;
-                    const tag_meta = overviewData.tag_metadata[tag] || {}
-
-                    let tag_color = null;
-                    if (tag_meta.color && window.chartColors[tag_meta.color]) {
-                        tag_color = window.chartColors[tag_meta.color];
-                    }
-                    
-                    console.log(tag_color, default_colors)
-                    if (!tag_color) { 
-                        tag_color = default_colors.shift();
-                    } else {
-                        if (default_colors.indexOf(tag_color) > -1) {
-                            default_colors.splice(default_colors.indexOf(tag_color), 1);
-                        }
-                    }
-
-                    annoDS.data.push(tag_count);
-                    annoDS.backgroundColor.push(tag_color);
-                });
-                
-                annoDS.label = annotator; 
-                console.log(annoDS);
-                overviewChart.data.datasets.push(annoDS);
-            }
+            
+            annoDS.label = annotator; 
+            console.log(annoDS);
+            overviewChart.data.datasets.push(annoDS);
         }
-        
-        overviewChart.update();
     }
+    
+    overviewChart.update();
+}
 
-    /**
-    * https://stackoverflow.com/questions/1090948/change-url-parameters
-     * http://stackoverflow.com/a/10997390/11236
-     */
-    function updateURLParameter(url, param, paramVal) {
-        let TheAnchor = null;
-        let newAdditionalURL = "";
-        let tempArray = url.split("?");
-        let baseURL = tempArray[0];
-        let additionalURL = tempArray[1];
-        let temp = "";
+/**
+* https://stackoverflow.com/questions/1090948/change-url-parameters
+ * http://stackoverflow.com/a/10997390/11236
+ */
+function updateURLParameter(url, param, paramVal) {
+    let TheAnchor = null;
+    let newAdditionalURL = "";
+    let tempArray = url.split("?");
+    let baseURL = tempArray[0];
+    let additionalURL = tempArray[1];
+    let temp = "";
 
-        if (additionalURL) 
-        {
-            let tmpAnchor = additionalURL.split("#");
-            let TheParams = tmpAnchor[0];
-            TheAnchor = tmpAnchor[1];
-            if(TheAnchor)
-                additionalURL = TheParams;
-
-            tempArray = additionalURL.split("&");
-
-            for (let i=0; i<tempArray.length; i++)
-            {
-                if(tempArray[i].split('=')[0] != param)
-                {
-                    newAdditionalURL += temp + tempArray[i];
-                    temp = "&";
-                }
-            }        
-        }
-        else
-        {
-            let tmpAnchor = baseURL.split("#");
-            let TheParams = tmpAnchor[0];
-            TheAnchor  = tmpAnchor[1];
-
-            if(TheParams)
-                baseURL = TheParams;
-        }
-
+    if (additionalURL) 
+    {
+        let tmpAnchor = additionalURL.split("#");
+        let TheParams = tmpAnchor[0];
+        TheAnchor = tmpAnchor[1];
         if(TheAnchor)
-            paramVal += "#" + TheAnchor;
+            additionalURL = TheParams;
 
-        let rows_txt = temp + "" + param + "=" + paramVal;
-        return baseURL + "?" + newAdditionalURL + rows_txt;
+        tempArray = additionalURL.split("&");
+
+        for (let i=0; i<tempArray.length; i++)
+        {
+            if(tempArray[i].split('=')[0] != param)
+            {
+                newAdditionalURL += temp + tempArray[i];
+                temp = "&";
+            }
+        }        
+    }
+    else
+    {
+        let tmpAnchor = baseURL.split("#");
+        let TheParams = tmpAnchor[0];
+        TheAnchor  = tmpAnchor[1];
+
+        if(TheParams)
+            baseURL = TheParams;
     }
 
-    const hideEmptyCB = document.getElementById("cb_hideempty");
-    hideEmptyCB.addEventListener("click", function() {
-        document.getElementById("restrict_view").value = hideEmptyCB.checked ? 'tagged' : "";
-        return $('#form_doquery').submit();
+    if(TheAnchor)
+        paramVal += "#" + TheAnchor;
+
+    let rows_txt = temp + "" + param + "=" + paramVal;
+    return baseURL + "?" + newAdditionalURL + rows_txt;
+}
+
+const hideEmptyCB = document.getElementById("cb_hideempty");
+hideEmptyCB.addEventListener("click", function() {
+    document.getElementById("restrict_view").value = hideEmptyCB.checked ? 'tagged' : "";
+    return $('#form_doquery').submit();
     });
 
 
@@ -406,6 +426,76 @@ function initEditorButton(btn) {
 
     initEditorButtons();
 
+    function updateTristateTargets() {
+        // update target fields
+
+        const includes = [];
+        const excludes = [];
+        document.querySelectorAll(".cb_show_tag_elem").forEach((cbtn) => {
+            const cbtn_state = +cbtn.dataset.tristate || 0;
+            if (cbtn_state === 1) {
+                includes.push(cbtn.dataset.tag);
+            } else if (cbtn_state === 2){
+                excludes.push(cbtn.dataset.tag);
+            }
+        });
+        
+        const includeTarget = document.getElementById("restrict_taglist_include");
+        const excludeTarget = document.getElementById("restrict_taglist_exclude");
+        includeTarget.value = JSON.stringify(includes);
+        excludeTarget.value = JSON.stringify(excludes);
+        console.log("updated tristate, include:", includes, "exclude:", excludes);
+    }
+
+    function applyTristate(cbtn) {
+
+        let label_prefix = "";
+        switch (+cbtn.dataset.tristate || 0) {
+            case 0:
+                cbtn.checked = false;
+                cbtn.indeterminate = false;
+                label_prefix = "";
+                break;
+            case 1:
+                cbtn.checked = true;
+                cbtn.indeterminate = false;
+                label_prefix = "include";
+                break;
+            case 2:
+                cbtn.checked = false;
+                cbtn.indeterminate = true;
+                label_prefix = "exclude";
+                break;
+        }
+
+        // update label with new state
+        const btn_tag = cbtn.dataset.tag;
+        const cbtn_label = cbtn.parentNode.querySelector("label");
+        if (cbtn_label) {
+            cbtn_label.textContent = label_prefix + " " + btn_tag;
+        }
+
+        updateTristateTargets();
+    } 
+
+    function initTagSelect(cbtn) {
+        console.log("initTagSelect", cbtn);
+        applyTristate(cbtn);
+
+        cbtn.addEventListener("change", (e) => {
+            e.preventDefault();
+            cbtn.dataset.tristate = ((+cbtn.dataset.tristate) + 1) % 3
+            applyTristate(cbtn);
+            console.log("change-tristate", cbtn, cbtn.dataset.tristate);
+            return $('#form_doquery').submit();
+            return true;
+        });
+    }
+
+    function initTagSelection() {
+        document.querySelectorAll(".cb_show_tag_elem").forEach(initTagSelect);
+    }
+    initTagSelection();
 
     </script>
 {% endblock %}
