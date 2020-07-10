@@ -500,7 +500,7 @@ li.nav-active-task div.sideprogress-active {
 }
 
 .df_inspect_overview {
-    margin-bottom: 1em;
+    margin-bottom: 2em;
 }
 
 .df_overview_collapse {
@@ -599,4 +599,10 @@ li.nav-active-task div.sideprogress-active {
 .sample_metadata {
     font-style: italic;
     font-size: 0.8em;
+}
+
+.df_inspect_tagselect {
+    max-width: 100%;
+    flex-wrap: wrap;
+    justify-content: end;
 }

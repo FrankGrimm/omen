@@ -6,6 +6,7 @@ import os
 import os.path
 import tempfile
 import re
+import json
 import string
 from functools import wraps
 from io import StringIO
@@ -130,6 +131,21 @@ def inspect_dataset(dsid=None):
         cur_dataset = get_accessible_dataset(dbsession, dsid)
         session_user = db.by_id(dbsession, session['user'])
 
+        tagstates = {}
+        restrict_include = json.loads(request.args.get("restrict_taglist_include", "[]"))
+        restrict_exclude = json.loads(request.args.get("restrict_taglist_exclude", "[]"))
+        if not isinstance(restrict_include, list):
+            restrict_include = []
+        if not isinstance(restrict_exclude, list):
+            restrict_exclude = []
+
+        for tag in cur_dataset.get_taglist():
+            tagstates[tag] = 0
+            if tag in restrict_include:
+                tagstates[tag] = 1
+            elif tag in restrict_exclude:
+                tagstates[tag] = 2
+
         template_name = "dataset_inspect.html"
         ctx_args = {}
         req_sample = request.args.get("single_row", "")
@@ -163,6 +179,8 @@ def inspect_dataset(dsid=None):
                                                 page_size=page_size,
                                                 user_column="annotations",
                                                 query=query,
+                                                tags_include=restrict_include,
+                                                tags_exclude=restrict_exclude,
                                                 restrict_view=restrict_view)
 
         df = reorder_dataframe(df, cur_dataset, annotation_columns)
@@ -190,7 +208,6 @@ def inspect_dataset(dsid=None):
                 ctx_args['index'] = index
                 ctx_args['row'] = row
 
-
         return render_template(template_name, dataset=cur_dataset,
                                 df=df,
                                 restrict_view=restrict_view,
@@ -199,6 +216,7 @@ def inspect_dataset(dsid=None):
                                 page=page,
                                 pages=pages,
                                 results=results,
+                                tagstates=tagstates,
                                 annotation_columns=annotation_columns,
                                 pagination_elements=pagination_elements,
                                 user_roles=cur_dataset.get_roles(dbsession, session_user),
