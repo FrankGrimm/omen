@@ -111,10 +111,6 @@ def reorder_dataframe(df, cur_dataset, annotation_columns):
     # drop other columns
     df = df.reset_index()
     df = df[columns]
-    # TODO REMOVE
-    db.fprint("*" * 100)
-    db.fprint(columns)
-    #df.set_index("sample_index")
     # reorder
     df = df[columns]
     return df
@@ -211,7 +207,6 @@ def inspect_dataset(dsid=None):
                 ctx_args['index'] = str(row["sample_index"])
                 ctx_args['row'] = row
 
-        db.fprint("RENDER " * 10, ctx_args)
         return render_template(template_name, dataset=cur_dataset,
                                 df=df,
                                 restrict_view=restrict_view,
