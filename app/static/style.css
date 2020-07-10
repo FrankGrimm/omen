@@ -396,6 +396,31 @@ li.nav-active-task div.sideprogress-active {
     height: 2em;
 }
 
+.dropdown-item:active, .dropdown-item:focus, .dropdown-item:hover.tagcolor_orange {
+    background-color: rgb(255, 159, 64, 0.7);
+    color: black;
+}
+.dropdown-item:active, .dropdown-item:focus, .dropdown-item:hover.tagcolor_red {
+    background-color: rgb(255, 99, 132, 0.7);
+    color: black;
+}
+.dropdown-item:active, .dropdown-item:focus, .dropdown-item:hover.tagcolor_green {
+    background-color: rgb(75, 192, 192, 0.7);
+    color: black;
+}
+.dropdown-item:active, .dropdown-item:focus, .dropdown-item:hover.tagcolor_blue {
+    background-color: rgb(54, 162, 235, 0.7);
+    color: black;
+}
+.dropdown-item:active, .dropdown-item:focus, .dropdown-item:hover.tagcolor_yellow {
+    background-color: rgb(255, 205, 86, 0.7);
+    color: black;
+}
+.dropdown-item:active, .dropdown-item:focus, .dropdown-item:hover.tagcolor_gray {
+    background-color: rgb(201, 203, 207, 0.7);
+    color: black;
+}
+
 .tagcolor_orange {
     background-color: rgb(255, 159, 64);
     color: black;
