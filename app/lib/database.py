@@ -530,7 +530,7 @@ class Dataset(Base):
             curtag_metadata = tag_metadata.get(tag, {})
             tagdata[tag] = {
                     "icon": curtag_metadata.get("icon", None),
-                    "color": curtag_metadata.get("color", None)
+                    "color": curtag_metadata.get("color", "")
                     }
 
         return tagdata
@@ -1170,7 +1170,7 @@ def annotation_tasks(dbsession, for_user):
             continue
 
         dsname = dataset.get_name()
-        task = {"id": dsid, "name": dsname,
+        task = {"id": int(dsid), "name": dsname,
                 "dataset": dataset,
                 "progress": 0,
                 "size": dataset.dsmetadata.get("size", -1) or -1,

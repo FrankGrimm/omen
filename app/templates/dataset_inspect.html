@@ -124,13 +124,14 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
 </div>
 <div class="row df_pagination">
     {% set taglist = dataset.get_taglist() %}
+    <input type="hidden" name="restrict_taglist_include" id="restrict_taglist_include" value="" />
+    <input type="hidden" name="restrict_taglist_exclude" id="restrict_taglist_exclude" value="" />
+
     {% if taglist|length <= 2 %}
-    <div class="col-12 col-md-6 offset-md-6 d-none d-md-flex df_inspect_tagselect">
-        <input type="hidden" name="restrict_taglist_include" id="restrict_taglist_include" value="" />
-        <input type="hidden" name="restrict_taglist_exclude" id="restrict_taglist_exclude" value="" />
-        {% else %}
+        <div class="col-12 col-md-6 offset-md-6 d-none d-md-flex df_inspect_tagselect">
+    {% else %}
         <div class="col-12 d-none d-md-flex df_inspect_tagselect">
-            {% endif %}
+    {% endif %}
             {% for tag in taglist %}
             <div class="custom-control custom-checkbox custom-control-inline">
                 <input name="cb_show_tag" autocomplete="off" id="cb_show_tag_{{loop.index}}" type="checkbox" class="custom-control-input cb_show_tag_elem" value="{{ tag }}" data-tristate="{{ tagstates[tag] or 0 }}" data-tag="{{ tag }}"> 
@@ -152,8 +153,8 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
 
 {% if df.shape[0] > 0 %}
 <div id="{{df_editor_id}}" class="df_inspect_table alert alert-{% if df_class=='error' %}danger{%else%}{{df_class}}{% endif %}">
-{% set id_column = df.columns[0] %}
-{% set text_column = df.columns[1] %}
+{% set id_column = dataset.get_id_column() %}
+{% set text_column = dataset.get_text_column() %}
 <div class="df_inspect_table_header row">
     <div class="df_inspect_header df_inspect_idcol d-none d-md-flex">{{ id_column }}</div>
     <div class="df_inspect_header df_inspect_textcol col-sm col-md d-flex">{{ text_column }}</div>
@@ -172,16 +173,49 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
 <script>
 const ACTIVE_DATASET_ID = {{ dataset.dataset_id }};
 
-window.chartColors = {
-    red: 'rgb(255, 99, 132)',
-    orange: 'rgb(255, 159, 64)',
-    yellow: 'rgb(255, 205, 86)',
-    green: 'rgb(75, 192, 192)',
-    blue: 'rgb(54, 162, 235)',
-    purple: 'rgb(153, 102, 255)',
-    gray: 'rgb(201, 203, 207)',
-    grey: 'rgb(201, 203, 207)'
-};
+function initChartPalette() {
+    const user_colors = {
+        white: 'rgb(255, 255, 255)',
+        red: 'rgb(255, 99, 132)',
+        orange: 'rgb(255, 159, 64)',
+        yellow: 'rgb(255, 205, 86)',
+        green: 'rgb(75, 192, 192)',
+        blue: 'rgb(54, 162, 235)',
+        purple: 'rgb(153, 102, 255)',
+        gray: 'rgb(201, 203, 207)',
+    };
+    const palette_colors = {};
+
+    const styles = getComputedStyle(document.documentElement);
+
+    for (var i = 0; i < styles.length; i++) {
+        const style_key = styles[i];
+        if (!style_key) { continue; }
+        
+        if (style_key.startsWith("--tag_color_")) {
+            let value = styles.getPropertyValue(style_key);
+            value = `rgb(${value})`
+            const color_name = style_key.substring("--tag_color_".length)
+            user_colors[color_name] = value;
+        }
+        if (style_key.startsWith("--palette_")) {
+            const value = styles.getPropertyValue(style_key);
+            const color_name = style_key.substring("--palette_".length)
+            
+            if (!(color_name in user_colors)) {
+                palette_colors[color_name] = value;
+            }
+        }
+    }
+
+    const result_palette = {
+        "user": user_colors,
+        "palette": palette_colors
+    };
+    return result_palette;
+}
+
+window.chartColors = initChartPalette();
 
 function initOverviewChart(target) {
     const ctx = document.getElementById(target);
@@ -257,27 +291,57 @@ function updateOverviewChart(overviewChart, overviewData, config, mode)  {
     overviewChart.data.datasets = [];
     overviewChart.options.title.text = "Annotations";
 
+    const idx_to_palette_color = {
+    };
+
+    function randomColor(target_index) {
+        const used_colors = Object.values(idx_to_palette_color);
+        const available_colors = Object.keys(window.chartColors.palette);
+        const num_colors = available_colors.length;
+
+        let result_color = null;
+        let attempt = 0;
+
+        while (attempt < num_colors && !result_color) {
+            attempt++;
+
+            const try_index = available_colors[Math.floor(num_colors * Math.random())];
+            const try_color = window.chartColors.palette[try_index];
+            if (try_color in window.chartColors.user) { continue; }
+            if (try_color in used_colors) { continue; }
+
+            result_color = try_color;
+        }
+        if (!result_color) { 
+            return "white";
+        }
+
+        idx_to_palette_color[target_index] = result_color;
+        return result_color;
+    }
+    
+    function getColor(tag_color, tag_idx) {
+        const cols = window.chartColors;
+
+        if (tag_color && tag_color in cols.user) {
+            return cols.user[tag_color];
+        }
+
+        if (tag_idx in idx_to_palette_color) {
+            return idx_to_palette_color[tag_idx];
+        }
+
+        return randomColor(tag_idx); 
+    }
+
     if (mode === 'all') {
         const allAnnosDS = {data: [], backgroundColor: []};
-        const default_colors = [...Object.keys(window.chartColors)];
-        default_colors.splice(default_colors.indexOf("gray"), 1)
-        config.data.labels.forEach((tag) => {
+        config.data.labels.forEach((tag, idx) => {
             const tag_count = overviewData.all_annotations[tag] || 0;
             const tag_meta = overviewData.tag_metadata[tag] || {}
 
-            let tag_color = null;
-            if (tag_meta.color && window.chartColors[tag_meta.color]) {
-                tag_color = window.chartColors[tag_meta.color];
-            }
-                
-            if (!tag_color) {
-                tag_color = default_colors.shift();
-            } else {
-                if (default_colors.indexOf(tag_color) > -1) {
-                    default_colors.splice(default_colors.indexOf(tag_color), 1);
-                }
-            }
-
+            const tag_color = getColor(tag_meta.color, idx);
+            
             allAnnosDS.data.push(tag_count);
             allAnnosDS.backgroundColor.push(tag_color);
         });
@@ -287,32 +351,16 @@ function updateOverviewChart(overviewChart, overviewData, config, mode)  {
         overviewChart.data.datasets = [];
         for (const [annotator, annotations] of Object.entries(overviewData.annotations)) {
             const annoDS = {data: [], backgroundColor: []};
-            const default_colors = [...Object.keys(window.chartColors)];
-            default_colors.splice(default_colors.indexOf("gray"), 1)
-            config.data.labels.forEach((tag) => {
+            config.data.labels.forEach((tag, idx) => {
                 const tag_count = annotations[tag] || 0;
                 const tag_meta = overviewData.tag_metadata[tag] || {}
-
-                let tag_color = null;
-                if (tag_meta.color && window.chartColors[tag_meta.color]) {
-                    tag_color = window.chartColors[tag_meta.color];
-                }
-                
-                console.log(tag_color, default_colors)
-                if (!tag_color) { 
-                    tag_color = default_colors.shift();
-                } else {
-                    if (default_colors.indexOf(tag_color) > -1) {
-                        default_colors.splice(default_colors.indexOf(tag_color), 1);
-                    }
-                }
+                const tag_color = getColor(tag_meta.color, idx);
 
                 annoDS.data.push(tag_count);
                 annoDS.backgroundColor.push(tag_color);
             });
             
             annoDS.label = annotator; 
-            console.log(annoDS);
             overviewChart.data.datasets.push(annoDS);
         }
     }
@@ -442,9 +490,13 @@ function initEditorButton(btn) {
         
         const includeTarget = document.getElementById("restrict_taglist_include");
         const excludeTarget = document.getElementById("restrict_taglist_exclude");
-        includeTarget.value = JSON.stringify(includes);
-        excludeTarget.value = JSON.stringify(excludes);
-        console.log("updated tristate, include:", includes, "exclude:", excludes);
+        if (includeTarget && excludeTarget) {
+            includeTarget.value = JSON.stringify(includes);
+            excludeTarget.value = JSON.stringify(excludes);
+            console.log("updated tristate, include:", includes, "exclude:", excludes);
+        } else {
+            console.log("DOM not ready to update tristate yet");
+        }
     }
 
     function applyTristate(cbtn) {
@@ -495,7 +547,9 @@ function initEditorButton(btn) {
     function initTagSelection() {
         document.querySelectorAll(".cb_show_tag_elem").forEach(initTagSelect);
     }
-    initTagSelection();
+    document.addEventListener("DOMContentLoaded",function(){
+        initTagSelection();
+    });
 
     </script>
 {% endblock %}

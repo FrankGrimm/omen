@@ -36,7 +36,7 @@
                 <input type="text" placeholder="dataset name" class="custom-input" value="{{ dataset.dsmetadata.name }}" id="dataset_name" name="dataset_name" required="required">
             </div>
             <div class="input-group-append">
-                <button class="btn btn-outline-primary input-group-text" id="inputGroupFileAddon02" onclick="return $('#form_change_name').submit();">
+                <button class="btn btn-sm btn-primary input-group-text" onclick="return $('#form_change_name').submit();">
                     <i class="fas fa-file"></i>&nbsp;OK
                 </button>
             </div>
@@ -57,7 +57,7 @@
                 <label class="custom-file-label" for="upload_file">Choose file</label>
             </div>
             <div class="input-group-append">
-                <button class="btn btn-outline-primary input-group-text" id="form_upload_file_submit" onclick="return $('#form_upload_file').submit();">
+                <button class="btn btn-sm btn-primary input-group-text" id="form_upload_file_submit" onclick="return $('#form_upload_file').submit();">
                     <i class="fas fa-file-upload"></i>&nbsp;
                     {% if can_import %}
                     Replace
@@ -335,7 +335,7 @@
         {% for userobj in db.userlist(dbsession) %}
             <li class="row">
                 
-                <i title="{{userobj.uid}}" class="col-1 fas fa-user aclusericon" style="margin-top: 0.5em;"></i>
+                <span class="col-1" aclusericon"><i title="{{userobj.uid}}" class="fas fa-user" style="margin-top: 0.5em;"></i></span>
                     
                 &nbsp; <span class="col-4 aclusermail">{{ userobj.get_name() }} ({{userobj.email}})</span>
 

@@ -105,13 +105,12 @@ def get_accessible_dataset(dbsession, dsid, check_role=None):
     return cur_dataset
 
 def reorder_dataframe(df, cur_dataset, annotation_columns):
-    columns = list(df.columns.intersection([cur_dataset.get_id_column(), cur_dataset.get_text_column()])) + \
+    columns = list(df.columns.intersection(["sample_index", cur_dataset.get_id_column(), cur_dataset.get_text_column()])) + \
                 list(df.columns.intersection(annotation_columns))
 
     # drop other columns
     df = df.reset_index()
     df = df[columns]
-    df.set_index(cur_dataset.get_id_column())
     # reorder
     df = df[columns]
     return df
@@ -203,9 +202,9 @@ def inspect_dataset(dsid=None):
             ctx_args['text_column'] = cur_dataset.get_text_column()
 
             for index, row in df.iterrows():
-                if str(row[id_column]) != str(req_sample):
+                if str(row["sample_index"]) != str(req_sample):
                     continue
-                ctx_args['index'] = index
+                ctx_args['index'] = str(row["sample_index"])
                 ctx_args['row'] = row
 
         return render_template(template_name, dataset=cur_dataset,
