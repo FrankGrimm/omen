@@ -309,7 +309,7 @@ a:hover {
     color: #576ab3;
 }
 
-a.with_anno_vote {
+.with_anno_vote {
     padding-right: 30px;
 }
 
@@ -585,10 +585,6 @@ li.nav-active-task div.sideprogress-active {
     display: flex;
     flex-shrink: 1;
     flex-grow: 1;
-}
-
-.df_inspect_useranno_title {
-    font-weight: bold;
 }
 
 .df_inspect_idcol {
