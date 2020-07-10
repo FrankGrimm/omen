@@ -51,9 +51,34 @@ def inject_globals():
         if is_authenticated:
             annotation_tasks = db.annotation_tasks(dbsession, session['user'])
 
+
+    def calculate_votes(row, anno_columns):
+        if row is None or anno_columns is None:
+            return None
+        vote_count = {}
+
+        for column in anno_columns:
+            if "-" not in column or column not in row:
+                continue
+            row_user = column.split("-", 2)[-1]
+            row_tag = row[column]
+            if row_tag is None or row_tag == "":
+                continue
+
+            if row_tag not in vote_count:
+                vote_count[row_tag] = []
+            vote_count[row_tag].append(row_user)
+
+        votes = {}
+        for k, v in reversed(sorted(vote_count.items(), key=lambda i: i[1])):
+            votes[k] = v
+
+        return votes
+
     return dict(product_name=config.get("product_name", "Annotations"), \
                 is_authenticated=is_authenticated,
                 tasks=annotation_tasks,
+                calculate_votes=calculate_votes,
                 cur_year=datetime.utcnow().year,
                 app_version=app_version)
 
@@ -78,7 +103,7 @@ def cli_reset_database():
     print("executing db::drop_all()")
     if not db_init_okay:
         print("reinitializing database")
-        db.init_db(skip_create=True)
+        db.init_db()
     print(db.flask_db.drop_all())
     print("all done")
 

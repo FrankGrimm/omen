@@ -2,6 +2,8 @@
 Route definitions and business logic.
 """
 from datetime import datetime
+import os
+import os.path
 import tempfile
 import re
 import string
@@ -15,7 +17,6 @@ from flask import flash, redirect, render_template, request, url_for, session, R
 
 import app.lib.config as config
 from app.web import app, BASEURI, db
-
 
 def login_required(func):
     @wraps(func)
@@ -103,22 +104,15 @@ def get_accessible_dataset(dbsession, dsid, check_role=None):
     return cur_dataset
 
 def reorder_dataframe(df, cur_dataset, annotation_columns):
-    columns = [cur_dataset.get_id_column(), cur_dataset.get_text_column()] + \
+    columns = list(df.columns.intersection([cur_dataset.get_id_column(), cur_dataset.get_text_column()])) + \
                 list(df.columns.intersection(annotation_columns))
 
     # drop other columns
     df = df.reset_index()
-    df = df.loc[:, columns]
+    df = df[columns]
     df.set_index(cur_dataset.get_id_column())
     # reorder
     df = df[columns]
-    return df
-
-def query_dataframe(df, textcol, query):
-    # text query filter
-    if not query is None and query != '':
-        df[textcol] = df[textcol].astype(str)
-        df = df[df[textcol].str.contains(query, na=False, regex=False, case=False)]
     return df
 
 @app.route(BASEURI + "/dataset/<dsid>/inspect", methods=["GET", "POST"])
@@ -126,10 +120,10 @@ def query_dataframe(df, textcol, query):
 def inspect_dataset(dsid=None):
     with db.session_scope() as dbsession:
 
-        hideempty = True
-        if not request.args.get("hideempty", None) is None and \
-                request.args.get("hideempty", None).lower() == "false":
-            hideempty = False
+        restrict_view = None
+        if not request.args.get("restrict_view", None) is None and \
+                request.args.get("restrict_view", None).lower() in ['tagged', 'untagged']:
+            restrict_view = request.args.get("restrict_view", None).lower()
 
         query = request.args.get("query", "").strip()
 
@@ -141,24 +135,14 @@ def inspect_dataset(dsid=None):
         req_sample = request.args.get("single_row", "")
         if request.method == "POST":
             request.get_json(force=True)
-        if not request.json is None:
+        if request.json is not None:
             req_sample = request.json.get("single_row", "")
 
-        if not req_sample is None and not req_sample == "":
-            if not request.json is None and "set_tag" in request.json:
+        if req_sample is not None and not req_sample == "":
+            if request.json is not None and "set_tag" in request.json:
                 cur_dataset.setanno(dbsession, session_user, req_sample, request.json.get("set_tag", None))
 
-        df, annotation_columns = cur_dataset.annotations(dbsession, \
-                                                foruser=session_user, \
-                                                user_column="annotations", \
-                                                hideempty=hideempty)
-
-        df = reorder_dataframe(df, cur_dataset, annotation_columns)
-
-        df = query_dataframe(df, textcol=cur_dataset.get_text_column(), query=query)
-
         # pagination
-        results = df.shape[0]
         page_size = 50
         page = 1
         pages = 1
@@ -172,15 +156,20 @@ def inspect_dataset(dsid=None):
         except ValueError as e:
             flash("Invalid value for param 'page': %s" % e, "error")
 
-        pages = math.ceil(df.shape[0] / page_size)
-        if df.shape[0] > page_size:
-            if page > pages:
-                page = pages
 
-            onset = max(0, page - 1) * page_size
-            offset = onset + page_size
+        df, annotation_columns, results = cur_dataset.annotations(dbsession,
+                                                foruser=session_user,
+                                                page=page,
+                                                page_size=page_size,
+                                                user_column="annotations",
+                                                query=query,
+                                                restrict_view=restrict_view)
 
-            df = df[onset:offset]
+        df = reorder_dataframe(df, cur_dataset, annotation_columns)
+
+        pages = math.ceil(results / page_size)
+        if page > pages:
+            page = pages
 
         pagination_size = 5
         pagination_elements = list(range(max(1, page - pagination_size),
@@ -204,12 +193,13 @@ def inspect_dataset(dsid=None):
 
         return render_template(template_name, dataset=cur_dataset,
                                 df=df,
-                                hideempty=hideempty,
+                                restrict_view=restrict_view,
                                 query=query,
                                 page_size=page_size,
                                 page=page,
                                 pages=pages,
                                 results=results,
+                                annotation_columns=annotation_columns,
                                 pagination_elements=pagination_elements,
                                 user_roles=cur_dataset.get_roles(dbsession, session_user),
                                 **ctx_args
@@ -222,7 +212,7 @@ def download(dsid=None):
     with db.session_scope() as dbsession:
         cur_dataset = get_accessible_dataset(dbsession, dsid)
 
-        df, _ = cur_dataset.annotations(dbsession, foruser=session['user'])
+        df, _, _ = cur_dataset.annotations(dbsession, foruser=session['user'])
 
         s = StringIO()
         df.to_csv(s)
@@ -294,7 +284,7 @@ def get_random_sample(df, id_column):
     sample_id = sample_row[id_column].values[0]
     return sample_idx, sample_id
 
-def handle_set_annotation(dbsession, request, dataset, df, id_column):
+def handle_set_annotation(dbsession, dataset, df, id_column):
     set_sample_idx = None
     set_sample_value = None
     try:
@@ -303,12 +293,11 @@ def handle_set_annotation(dbsession, request, dataset, df, id_column):
     except ValueError:
         pass
 
-    if not set_sample_idx is None:
+    if set_sample_idx is not None:
         set_sample_value = request.args.get("set_value", "")[:500]
 
-    if not set_sample_idx is None and not set_sample_value is None:
-        set_sample = df.iloc[int(set_sample_idx)][id_column]
-        dataset.setanno(dbsession, session['user'], set_sample, set_sample_value)
+    if set_sample_idx is not None and set_sample_value is not None:
+        dataset.setanno(dbsession, session['user'], set_sample_idx, set_sample_value)
 
 def get_votes(dbsession, dataset, user_roles, session_user, sample_id):
     anno_votes = None
@@ -319,47 +308,59 @@ def get_votes(dbsession, dataset, user_roles, session_user, sample_id):
             anno_votes[tag] = [annouser.get_name() for annouser in anno_votes[tag]]
     return anno_votes
 
-def get_next_sample(request, dataset, df, sample_idx, id_column):
-    next_sample_idx = None
-    next_sample_id = None
+def get_annotation_dataframe(dbsession, dataset, session_user, min_sample_idx=None, random_order=False):
+    order_by = "usercol_value, dc.sample_index ASC NULLS LAST"
+    if random_order:
+        order_by = "random()"
+
+    no_anno_df, annotation_columns, total = dataset.annotations(dbsession, foruser=session_user,
+                                        user_column="annotations",
+                                        restrict_view="untagged",
+                                        page_size=10,
+                                        only_user=True,
+                                        min_sample_index=min_sample_idx,
+                                        order_by=order_by)
+    if no_anno_df.empty:
+        no_anno_df, annotation_columns, total = dataset.annotations(dbsession, foruser=session_user,
+                                    user_column="annotations",
+                                    restrict_view="tagged",
+                                    page_size=10,
+                                    only_user=True,
+                                    min_sample_index=min_sample_idx,
+                                    order_by=order_by)
+
+    return no_anno_df, annotation_columns, total
+
+def get_sample_index(dbsession, dataset, session_user, random_order=False):
+    sample_idx = None
     sample_id = None
 
-    if sample_idx is None:
+    if not random_order:
         try:
             if not request.args.get("sample_idx", None) is None:
                 sample_idx = int(request.args.get("sample_idx", None))
         except ValueError:
             pass
 
-        if sample_idx is None:
-            if dataset.dsmetadata.get("annoorder", "sequential") == 'random':
-                sample_idx, sample_id = get_random_sample(df, id_column)
-            else:
-                no_anno = df[~(df.annotations != '')]
-                # make sure to select a sample that has not been annotated yet
-                # (if any are left)
-                if no_anno.empty:
-                    no_anno = df
+        no_anno_df, annotation_columns, total = get_annotation_dataframe(dbsession, dataset,
+                session_user, min_sample_idx=sample_idx, random_order=False)
+    else:
+        no_anno_df, annotation_columns, total = get_annotation_dataframe(dbsession, dataset,
+                session_user, random_order=True)
 
-                first_row = no_anno.iloc[no_anno.index[0]]
-                sample_idx = first_row['index']
-                sample_id = first_row[id_column]
+    # note that the random sample currently only gathers a sample from the first/current page
+    if sample_idx is None:
 
-                next_row = no_anno.iloc[no_anno.index[1]]
-                next_sample_idx = next_row['index']
-                next_sample_id = next_row[id_column]
+        if dataset.dsmetadata.get("annoorder", "sequential") == 'random':
+            sample_idx, sample_id = get_random_sample(no_anno_df, dataset.get_id_column())
+        else:
+           first_row = no_anno_df.iloc[no_anno_df.index[0]]
+           sample_idx = first_row['sample_index']
+           sample_id = first_row[dataset.get_id_column()]
+           db.fprint("DEBUG-firstrow", first_row)
 
-    return next_sample_idx, next_sample_id, sample_idx, sample_id
+    return sample_idx, sample_id, no_anno_df, annotation_columns, total
 
-def reorder_dataframe_noindex(df, dataset, annotation_columns):
-    columns = [dataset.get_id_column(), dataset.get_text_column()] + \
-                list(df.columns.intersection(annotation_columns))
-
-    df = df.reset_index()
-    df = df.loc[:, columns]
-    df = df[columns]
-    df = df.reset_index()
-    return df
 
 @app.route(BASEURI + "/dataset/<dsid>/annotate", methods=["GET", "POST"])
 @login_required
@@ -381,26 +382,24 @@ def annotate(dsid=None, sample_idx=None):
 
         id_column = dataset.get_id_column()
 
-        df, annotation_columns = dataset.annotations(dbsession, foruser=session_user,
-                                                    user_column="annotations",
-                                                    hideempty=False, only_user=True)
+        sample_idx, sample_id, df, annotation_columns, _ = get_sample_index(dbsession, dataset, session_user)
 
-        df = reorder_dataframe_noindex(df, dataset, annotation_columns)
+        db.fprint("DEBUG", sample_idx)
 
         sample_content = None
-        textcol = dataset.dsmetadata.get("textcol", None)
 
-        next_sample_idx, next_sample_id, sample_idx, sample_id = \
-                get_next_sample(request, dataset, df, sample_idx, id_column)
+        handle_set_annotation(dbsession, dataset, df, id_column)
 
-        handle_set_annotation(dbsession, request, dataset, df, id_column)
+        random_sample, random_sample_id, _, _, _ = get_sample_index(dbsession, dataset, session_user, random_order=True)
 
-        random_sample, _ = get_random_sample(df, id_column)
-        sample_content = df[textcol][sample_idx]
-        sample_id = df[id_column][sample_idx]
+        sample = dataset.sample_by_index(dbsession, sample_idx)
+        sample_content = sample.content
+        sample_id = sample.sample
 
-        set_sample = df.iloc[int(sample_idx)][id_column]
-        curanno_data = dataset.getanno(dbsession, session['user'], set_sample)
+        sample_prev, _ = dataset.get_prev_sample(dbsession, sample_idx, session_user)
+        sample_next, _ = dataset.get_next_sample(dbsession, sample_idx, session_user)
+
+        curanno_data = dataset.getanno(dbsession, session_user, sample_id)
         curanno = None
         if curanno_data and 'data' in curanno_data and \
                 'value' in curanno_data['data']:
@@ -409,15 +408,15 @@ def annotate(dsid=None, sample_idx=None):
         anno_votes = get_votes(dbsession, dataset, user_roles, session_user, sample_id)
 
         return render_template("annotate.html", dataset=dataset,
-                                task=task,
-                                sample_idx=sample_idx,
-                                set_sample=set_sample,
-                                random_sample=random_sample,
-                                sample_content=sample_content,
-                                curanno=curanno,
-                                next_sample_idx=next_sample_idx,
-                                next_sample_id=next_sample_id,
-                                votes=anno_votes)
+                               task=task,
+                               sample_id=sample_id,
+                               sample_idx=sample_idx,
+                               sample_content=sample_content,
+                               random_sample=random_sample,
+                               sample_prev=sample_prev,
+                               sample_next=sample_next,
+                               curanno=curanno,
+                               votes=anno_votes)
 
 def dataset_lookup_or_create(dbsession, dsid, editmode):
     if dsid is None:
@@ -485,10 +484,13 @@ def dataset_overview_json(dsid):
         user_roles = list(dataset.get_roles(dbsession, session_user))
 
         user_column = "anno-%s-You" % (session_user.uid)
-        df, annotation_columns = dataset.annotations(dbsession,
+        df, annotation_columns, total = dataset.annotations(dbsession,
                                                 foruser=session_user,
+                                                page=-1,
+                                                page_size=-1,
                                                 user_column=user_column,
-                                                hideempty=True)
+                                                with_content=False,
+                                                restrict_view='tagged')
         df = reorder_dataframe(df, dataset, annotation_columns)
 
         tags = dataset.get_taglist()
@@ -533,6 +535,10 @@ def new_dataset(dsid=None):
     editmode = 'create'
 
     with db.session_scope() as dbsession:
+
+        preview_df = None
+        import_alerts = None
+
         dataset = None
         try:
             dataset, editmode = dataset_lookup_or_create(dbsession, dsid, editmode)
@@ -648,7 +654,7 @@ def new_dataset(dsid=None):
                     newtags = request.form.get("settaglist", None).split("\n")
                     dataset.set_taglist(newtags)
 
-                new_content = None
+                # move uploaded file content to temporary file and store details in the dataset metadata
                 if formaction == 'upload_file':
                     if not request.files is None and 'upload_file' in request.files:
                         fileobj = request.files['upload_file']
@@ -658,26 +664,74 @@ def new_dataset(dsid=None):
                             dataset.dsmetadata['upload_timestamp'] = datetime.now().timestamp()
                             dataset.dsmetadata['hasdata'] = True
 
-                            with tempfile.TemporaryFile(mode='w+b') as tmpfile:
+                            tmp_handle, tmp_filename = tempfile.mkstemp(".csv")
+                            with os.fdopen(tmp_handle, 'wb') as tmpfile:
                                 fileobj.save(tmpfile)
-                                tmpfile.seek(0)
-                                new_content = tmpfile.read()
-                                if not new_content is None and not len(new_content) == 0:
-                                    new_content = new_content.decode('utf-8')
+                            dataset.dsmetadata["upload_tempfile"] = tmp_filename
 
-                if not new_content is None:
-                    dataset.content = new_content
-                    dataset.update_size()
 
+            dataset.update_size()
             dataset.dirty(dbsession)
             dbsession.commit()
 
             dbsession.flush()
 
-        df = None
+        # if uploaded content exists that has not been imported, load the content
+        new_content = None
+        can_import = False
+        if dataset.dsmetadata.get("upload_tempfile") is not None and \
+            request.method == "POST" and request.form is not None and \
+            request.form.get("action", "") == "do_discard_import":
 
-        if dataset and dataset.content:
-            df = dataset.as_df(strerrors=True, extended=True)
+            tmp_filename = dataset.dsmetadata.get("upload_tempfile")
+            # remove temporary file after successful import
+            if os.path.exists(tmp_filename):
+                db.fprint("[info] removing import file for dataset %s: %s" % (dataset, tmp_filename))
+                os.unlink(tmp_filename)
+                del dataset.dsmetadata["upload_tempfile"]
+
+        has_upload_content = False
+        if dataset.dsmetadata.get("upload_tempfile") is not None:
+
+            tmp_filename = dataset.dsmetadata.get("upload_tempfile")
+            if not os.path.exists(tmp_filename):
+                del dataset.dsmetadata["upload_tempfile"]
+            else:
+                db.fprint("[info] import dry run, dataset: %s, tempfile: %s" % (dataset, tmp_filename))
+                has_upload_content = True
+
+                import_dry_run = True
+                if request.method == "POST" and request.form is not None and \
+                        request.form.get("action", "") == "do_import":
+                    import_dry_run = False
+
+                import_success, import_errors, preview_df = dataset.import_content(dbsession, tmp_filename, dry_run=import_dry_run)
+                db.fprint("[info] import dry run status, dataset: %s, tempfile: %s, success: %s" % \
+                        (dataset, tmp_filename, import_success))
+
+                if os.path.exists(tmp_filename) and not import_dry_run:
+                    db.fprint("[info] removing import file for dataset %s after import: %s" % (dataset, tmp_filename))
+                    os.unlink(tmp_filename)
+                    del dataset.dsmetadata["upload_tempfile"]
+
+                can_import = import_success and import_dry_run
+                if not import_success:
+                    db.fprint("[error] import for dataset %s failed: %s" % (dataset, ", ".join(import_errors)))
+                if not import_dry_run:
+                    preview_df = None
+
+                # forward import errors to the frontend
+                if import_errors is not None and import_alerts is None:
+                    import_alerts = import_errors
+
+            dataset.update_size()
+            dataset.dirty(dbsession)
+            dbsession.commit()
+
+            dbsession.flush()
+
+        if preview_df is None and dataset and dataset.has_content():
+            preview_df = dataset.page(dbsession, page_size=10, extended=True)
 
         ds_errors = None
         if not dataset is None:
@@ -688,9 +742,9 @@ def new_dataset(dsid=None):
             return redirect(url_for('new_dataset', dsid=dataset.dataset_id))
 
         if editmode == "tageditor":
-            return render_template('tag_editor.html', dataset=dataset, editmode=editmode, previewdf=df, db=db, ds_errors=ds_errors, dbsession=dbsession)
+            return render_template('tag_editor.html', dataset=dataset, editmode=editmode, previewdf_alerts=import_alerts, previewdf=preview_df, db=db, ds_errors=ds_errors, dbsession=dbsession, can_import=can_import, has_upload_content=has_upload_content)
 
-        return render_template('dataset_new.html', dataset=dataset, editmode=editmode, previewdf=df, db=db, ds_errors=ds_errors, dbsession=dbsession)
+        return render_template('dataset_new.html', dataset=dataset, editmode=editmode, previewdf_alerts=import_alerts, previewdf=preview_df, db=db, ds_errors=ds_errors, dbsession=dbsession, can_import=can_import, has_upload_content=has_upload_content)
 
 @app.route(BASEURI + '/settings', methods=['GET', 'POST'])
 @login_required

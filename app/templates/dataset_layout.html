@@ -9,6 +9,7 @@
 </h1>
 </div>
 
+{% if dataset and dataset.get_description() != "" %}{{ macros.render_description_modal("dsDescriptionModal", dataset.get_description()) }}{% endif %}
 {% block pagebody %}
 {% endblock %}
 {% endblock %}

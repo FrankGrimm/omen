@@ -83,7 +83,7 @@ a.btn .fa-2x {
     font-size: 2em;
     border-radius: 5px;
     border: 1px solid #bdbdbd;
-    background: #f3f9ff;
+    background: rgb(249, 249, 249);
     padding: 1em;
 }
 
@@ -309,7 +309,7 @@ a:hover {
     color: #576ab3;
 }
 
-a.with_anno_vote {
+.with_anno_vote {
     padding-right: 30px;
 }
 
@@ -394,6 +394,31 @@ li.nav-active-task div.sideprogress-active {
 
 .ajax-loading img {
     height: 2em;
+}
+
+.dropdown-item:active, .dropdown-item:focus, .dropdown-item:hover.tagcolor_orange {
+    background-color: rgb(255, 159, 64, 0.7);
+    color: black;
+}
+.dropdown-item:active, .dropdown-item:focus, .dropdown-item:hover.tagcolor_red {
+    background-color: rgb(255, 99, 132, 0.7);
+    color: black;
+}
+.dropdown-item:active, .dropdown-item:focus, .dropdown-item:hover.tagcolor_green {
+    background-color: rgb(75, 192, 192, 0.7);
+    color: black;
+}
+.dropdown-item:active, .dropdown-item:focus, .dropdown-item:hover.tagcolor_blue {
+    background-color: rgb(54, 162, 235, 0.7);
+    color: black;
+}
+.dropdown-item:active, .dropdown-item:focus, .dropdown-item:hover.tagcolor_yellow {
+    background-color: rgb(255, 205, 86, 0.7);
+    color: black;
+}
+.dropdown-item:active, .dropdown-item:focus, .dropdown-item:hover.tagcolor_gray {
+    background-color: rgb(201, 203, 207, 0.7);
+    color: black;
 }
 
 .tagcolor_orange {
@@ -483,11 +508,6 @@ li.nav-active-task div.sideprogress-active {
     padding: 0;
 }
 
-.df_inspect_col_content {
-    display: flex;
-    flex-grow: 1;
-}
-
 .slim-card-header {
     margin: 0;
     padding: 0;
@@ -507,9 +527,11 @@ li.nav-active-task div.sideprogress-active {
 
 
 .df_inspect_col_content {
+    display: flex;
+    flex-grow: 1;
     margin-bottom: 1em;
+    flex-direction: column;
 }
-
 
 .inspect_tageditor_actions {
     display: flex;
@@ -550,4 +572,31 @@ li.nav-active-task div.sideprogress-active {
 .df_inspect_table_row > .df_inspect_textcol {
     flex-grow: 10;
     flex-shrink: 0;
+}
+
+.df_inspect_userannos {
+    display: flex;
+    flex-shrink: 1;
+    flex-grow: 1;
+    justify-content: start;
+}
+
+.df_inspect_userannos > .btn {
+    display: flex;
+    flex-shrink: 1;
+    flex-grow: 1;
+}
+
+.df_inspect_idcol {
+    width: 10%;
+    padding: 0 1em;
+}
+
+.df_inspect_votebtn {
+    padding: 0.3em;
+}
+
+.sample_metadata {
+    font-style: italic;
+    font-size: 0.8em;
 }

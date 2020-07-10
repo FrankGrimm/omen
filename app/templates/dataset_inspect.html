@@ -66,26 +66,26 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
         {% set addclass="" %}
         {% if page == 1 %}{% set addclass="active" %}{% endif %}
 
-        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, hideempty=hideempty, page=1) }}"><i class="fa fa-angle-double-left"> </i></a>
+        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, restrict_view=restrict_view, page=1) }}"><i class="fa fa-angle-double-left"> </i></a>
         {% if not 1 in pagination_elements and pages > 0 %}
-        <a class="btn btn-sm btn-outline-secondary" disabled href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, hideempty=hideempty, page=1) }}"><i class="fas fa-ellipsis-h"></i> </a>
+        <a class="btn btn-sm btn-outline-secondary" disabled href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, restrict_view=restrict_view, page=1) }}"><i class="fas fa-ellipsis-h"></i> </a>
         {% endif %}
 
         {% for pagination_page in pagination_elements %}
 
         {% set addclass="" %}
         {% if page == pagination_page %}{% set addclass="active" %}{% endif %}
-        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, hideempty=hideempty, page=pagination_page) }}">{{ pagination_page }}</a>
+        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, restrict_view=restrict_view, page=pagination_page) }}">{{ pagination_page }}</a>
 
         {% endfor %}
 
         {% if not pages in pagination_elements and pages > 0 %}
-        <a class="btn btn-sm btn-outline-secondary" disabled href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, hideempty=hideempty, page=1) }}"><i class="fas fa-ellipsis-h"></i> </a>
+        <a class="btn btn-sm btn-outline-secondary" disabled href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, restrict_view=restrict_view, page=1) }}"><i class="fas fa-ellipsis-h"></i> </a>
         {% endif %}
 
         {% set addclass="" %}
         {% if page == pages %}{% set addclass="active" %}{% endif %}
-        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, hideempty=hideempty, page=pages) }}"><i class="fa fa-angle-double-right"> </i></a>
+        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, restrict_view=restrict_view, page=pages) }}"><i class="fa fa-angle-double-right"> </i></a>
     </div>
 
     </div>
@@ -109,14 +109,14 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
         <div class="form-group row">
             <div class="col-12">
                 <div class="custom-control custom-checkbox custom-control-inline">
-                    {% if hideempty %}
-                    <input name="hideempty" id="hideempty" type="hidden" value="true" />
+                    {% if restrict_view and restrict_view == 'tagged' %}
+                    <input name="restrict_view" id="restrict_view" type="hidden" value="tagged" />
                     <input name="cb_hideempty" id="cb_hideempty" type="checkbox" class="custom-control-input" value="true" checked="checked"> 
                     {% else %}
-                    <input name="hideempty" id="hideempty" type="hidden" value="false" />
+                    <input name="restrict_view" id="restrict_view" type="hidden" value="" />
                     <input name="cb_hideempty" id="cb_hideempty" type="checkbox" class="custom-control-input" value="false"> 
                     {% endif %}
-                    <label for="cb_hideempty" class="custom-control-label">Hide rows without any tags</label>
+                    <label for="cb_hideempty" class="custom-control-label">Hide untagged rows</label>
                 </div>
             </div>
         </div> 
@@ -135,9 +135,8 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
     {% set id_column = df.columns[0] %}
     {% set text_column = df.columns[1] %}
     <div class="df_inspect_table_header row">
-        <div class="df_inspect_header df_inspect_table_entrynum d-none d-md-block">Entry #</div>
-        <div class="df_inspect_header df_inspect_idcol col-1 d-none d-md-block">{{ id_column }}</div>
-        <div class="df_inspect_header df_inspect_textcol col-sm col-md">{{ text_column }}</div>
+        <div class="df_inspect_header df_inspect_idcol d-none d-md-flex">{{ id_column }}</div>
+        <div class="df_inspect_header df_inspect_textcol col-sm col-md d-flex">{{ text_column }}</div>
     </div>
     {% for index, row in df.iterrows() %}
     {% include "dataset_inspect_row.html" with context %}
@@ -241,6 +240,7 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
         if (mode === 'all') {
             const allAnnosDS = {data: [], backgroundColor: []};
             const default_colors = [...Object.keys(window.chartColors)];
+            default_colors.splice(default_colors.indexOf("gray"), 1)
             config.data.labels.forEach((tag) => {
                 const tag_count = overviewData.all_annotations[tag] || 0;
                 const tag_meta = overviewData.tag_metadata[tag] || {}
@@ -250,8 +250,8 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
                     tag_color = window.chartColors[tag_meta.color];
                 }
                     
-                if (!tag_color) { 
-                    tag_color = default_colors.pop(0);
+                if (!tag_color) {
+                    tag_color = default_colors.shift();
                 } else {
                     if (default_colors.indexOf(tag_color) > -1) {
                         default_colors.splice(default_colors.indexOf(tag_color), 1);
@@ -268,6 +268,7 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
             for (const [annotator, annotations] of Object.entries(overviewData.annotations)) {
                 const annoDS = {data: [], backgroundColor: []};
                 const default_colors = [...Object.keys(window.chartColors)];
+                default_colors.splice(default_colors.indexOf("gray"), 1)
                 config.data.labels.forEach((tag) => {
                     const tag_count = annotations[tag] || 0;
                     const tag_meta = overviewData.tag_metadata[tag] || {}
@@ -276,9 +277,10 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
                     if (tag_meta.color && window.chartColors[tag_meta.color]) {
                         tag_color = window.chartColors[tag_meta.color];
                     }
-                        
+                    
+                    console.log(tag_color, default_colors)
                     if (!tag_color) { 
-                        tag_color = default_colors.pop(0);
+                        tag_color = default_colors.shift();
                     } else {
                         if (default_colors.indexOf(tag_color) > -1) {
                             default_colors.splice(default_colors.indexOf(tag_color), 1);
@@ -348,7 +350,7 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
 
     const hideEmptyCB = document.getElementById("cb_hideempty");
     hideEmptyCB.addEventListener("click", function() {
-        document.getElementById("hideempty").value = hideEmptyCB.checked;
+        document.getElementById("restrict_view").value = hideEmptyCB.checked ? 'tagged' : "";
         return $('#form_doquery').submit();
     });
 
@@ -386,6 +388,11 @@ function initEditorButton(btn) {
                     initEditorButton(btn);
                 }
             });
+            document.querySelectorAll("button.df_inspect_changeaction").forEach(btn => {
+                if (evt_sample == btn.dataset.sample) {
+                    initEditorButton(btn);
+                }
+            });
         });
 
         return false;
@@ -394,6 +401,7 @@ function initEditorButton(btn) {
 
      function initEditorButtons() {
          document.querySelectorAll("a.df_inspect_changeaction").forEach(initEditorButton);
+         document.querySelectorAll("button.df_inspect_changeaction").forEach(initEditorButton);
      }
 
     initEditorButtons();
