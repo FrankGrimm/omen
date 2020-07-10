@@ -18,7 +18,6 @@ from flask import flash, redirect, render_template, request, url_for, session, R
 import app.lib.config as config
 from app.web import app, BASEURI, db
 
-
 def login_required(func):
     @wraps(func)
     def decorated_function(*args, **kwargs):
@@ -285,7 +284,7 @@ def get_random_sample(df, id_column):
     sample_id = sample_row[id_column].values[0]
     return sample_idx, sample_id
 
-def handle_set_annotation(dbsession, request, dataset, df, id_column):
+def handle_set_annotation(dbsession, dataset, df, id_column):
     set_sample_idx = None
     set_sample_value = None
     try:
@@ -294,12 +293,11 @@ def handle_set_annotation(dbsession, request, dataset, df, id_column):
     except ValueError:
         pass
 
-    if not set_sample_idx is None:
+    if set_sample_idx is not None:
         set_sample_value = request.args.get("set_value", "")[:500]
 
-    if not set_sample_idx is None and not set_sample_value is None:
-        set_sample = df.iloc[int(set_sample_idx)][id_column]
-        dataset.setanno(dbsession, session['user'], set_sample, set_sample_value)
+    if set_sample_idx is not None and set_sample_value is not None:
+        dataset.setanno(dbsession, session['user'], set_sample_idx, set_sample_value)
 
 def get_votes(dbsession, dataset, user_roles, session_user, sample_id):
     anno_votes = None
@@ -310,46 +308,59 @@ def get_votes(dbsession, dataset, user_roles, session_user, sample_id):
             anno_votes[tag] = [annouser.get_name() for annouser in anno_votes[tag]]
     return anno_votes
 
-def get_next_sample(request, dataset, df, sample_idx, id_column):
-    next_sample_idx = None
-    next_sample_id = None
+def get_annotation_dataframe(dbsession, dataset, session_user, min_sample_idx=None, random_order=False):
+    order_by = "usercol_value, dc.sample_index ASC NULLS LAST"
+    if random_order:
+        order_by = "random()"
+
+    no_anno_df, annotation_columns, total = dataset.annotations(dbsession, foruser=session_user,
+                                        user_column="annotations",
+                                        restrict_view="untagged",
+                                        page_size=10,
+                                        only_user=True,
+                                        min_sample_index=min_sample_idx,
+                                        order_by=order_by)
+    if no_anno_df.empty:
+        no_anno_df, annotation_columns, total = dataset.annotations(dbsession, foruser=session_user,
+                                    user_column="annotations",
+                                    restrict_view="tagged",
+                                    page_size=10,
+                                    only_user=True,
+                                    min_sample_index=min_sample_idx,
+                                    order_by=order_by)
+
+    return no_anno_df, annotation_columns, total
+
+def get_sample_index(dbsession, dataset, session_user, random_order=False):
+    sample_idx = None
     sample_id = None
 
-    if sample_idx is None:
+    if not random_order:
         try:
             if not request.args.get("sample_idx", None) is None:
                 sample_idx = int(request.args.get("sample_idx", None))
         except ValueError:
             pass
 
-        if sample_idx is None:
-            if dataset.dsmetadata.get("annoorder", "sequential") == 'random':
-                sample_idx, sample_id = get_random_sample(df, id_column)
-            else:
-                no_anno = df[~(df.annotations != '')]
-                # make sure to select a sample that has not been annotated yet
-                # (if any are left)
-                if no_anno.empty:
-                    no_anno = df
+        no_anno_df, annotation_columns, total = get_annotation_dataframe(dbsession, dataset,
+                session_user, min_sample_idx=sample_idx, random_order=False)
+    else:
+        no_anno_df, annotation_columns, total = get_annotation_dataframe(dbsession, dataset,
+                session_user, random_order=True)
 
-                first_row = no_anno.iloc[no_anno.index[0]]
-                sample_idx = first_row['index']
-                sample_id = first_row[id_column]
+    # note that the random sample currently only gathers a sample from the first/current page
+    if sample_idx is None:
 
-                next_row = no_anno.iloc[no_anno.index[1]]
-                next_sample_idx = next_row['index']
-                next_sample_id = next_row[id_column]
+        if dataset.dsmetadata.get("annoorder", "sequential") == 'random':
+            sample_idx, sample_id = get_random_sample(no_anno_df, dataset.get_id_column())
+        else:
+           first_row = no_anno_df.iloc[no_anno_df.index[0]]
+           sample_idx = first_row['sample_index']
+           sample_id = first_row[dataset.get_id_column()]
+           db.fprint("DEBUG-firstrow", first_row)
 
-    return next_sample_idx, next_sample_id, sample_idx, sample_id
+    return sample_idx, sample_id, no_anno_df, annotation_columns, total
 
-def reorder_dataframe_noindex(df, dataset, annotation_columns):
-    columns = [dataset.get_id_column(), dataset.get_text_column()] + \
-                list(df.columns.intersection(annotation_columns))
-
-    df = df.reset_index()
-    df = df[columns]
-    df = df.reset_index()
-    return df
 
 @app.route(BASEURI + "/dataset/<dsid>/annotate", methods=["GET", "POST"])
 @login_required
@@ -371,26 +382,24 @@ def annotate(dsid=None, sample_idx=None):
 
         id_column = dataset.get_id_column()
 
-        df, annotation_columns, _ = dataset.annotations(dbsession, foruser=session_user,
-                                                    user_column="annotations",
-                                                    restrict_view=None, only_user=True)
+        sample_idx, sample_id, df, annotation_columns, _ = get_sample_index(dbsession, dataset, session_user)
 
-        df = reorder_dataframe_noindex(df, dataset, annotation_columns)
+        db.fprint("DEBUG", sample_idx)
 
         sample_content = None
-        textcol = dataset.dsmetadata.get("textcol", None)
 
-        next_sample_idx, next_sample_id, sample_idx, sample_id = \
-                get_next_sample(request, dataset, df, sample_idx, id_column)
+        handle_set_annotation(dbsession, dataset, df, id_column)
 
-        handle_set_annotation(dbsession, request, dataset, df, id_column)
+        random_sample, random_sample_id, _, _, _ = get_sample_index(dbsession, dataset, session_user, random_order=True)
 
-        random_sample, _ = get_random_sample(df, id_column)
-        sample_content = df[textcol][sample_idx]
-        sample_id = df[id_column][sample_idx]
+        sample = dataset.sample_by_index(dbsession, sample_idx)
+        sample_content = sample.content
+        sample_id = sample.sample
 
-        set_sample = df.iloc[int(sample_idx)][id_column]
-        curanno_data = dataset.getanno(dbsession, session['user'], set_sample)
+        sample_prev, _ = dataset.get_prev_sample(dbsession, sample_idx, session_user)
+        sample_next, _ = dataset.get_next_sample(dbsession, sample_idx, session_user)
+
+        curanno_data = dataset.getanno(dbsession, session_user, sample_id)
         curanno = None
         if curanno_data and 'data' in curanno_data and \
                 'value' in curanno_data['data']:
@@ -399,15 +408,15 @@ def annotate(dsid=None, sample_idx=None):
         anno_votes = get_votes(dbsession, dataset, user_roles, session_user, sample_id)
 
         return render_template("annotate.html", dataset=dataset,
-                                task=task,
-                                sample_idx=sample_idx,
-                                set_sample=set_sample,
-                                random_sample=random_sample,
-                                sample_content=sample_content,
-                                curanno=curanno,
-                                next_sample_idx=next_sample_idx,
-                                next_sample_id=next_sample_id,
-                                votes=anno_votes)
+                               task=task,
+                               sample_id=sample_id,
+                               sample_idx=sample_idx,
+                               sample_content=sample_content,
+                               random_sample=random_sample,
+                               sample_prev=sample_prev,
+                               sample_next=sample_next,
+                               curanno=curanno,
+                               votes=anno_votes)
 
 def dataset_lookup_or_create(dbsession, dsid, editmode):
     if dsid is None:

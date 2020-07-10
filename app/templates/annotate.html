@@ -10,31 +10,15 @@ Annotate &quot;<span class="annometa">{{ task.name }}</span>&quot;
 <div class="row">
 <div id="anno_actions">
 
-{% set nextsampleidx = sample_idx + 1 %}
-{% if not next_sample_idx is none %}
-    {% set nextsampleidx = next_sample_idx %}
-{% endif %}
-
-{% if dataset.dsmetadata.size > 0 and sample_idx == (dataset.dsmetadata.size - 1) %}
-    {% set nextsampleidx = 0 %}
-{% endif %}
-
-{{ macros.render_tag_buttons(dataset, nextsampleidx, votes) }}
-<pre>
-TODO remove
-current sample {{ sample_idx }}
-prev sample {{ sample_prev }}
-next sample {{ sample_next }}
-random sample {{ random_sample }}
-</pre>
+{{ macros.render_tag_buttons(dataset, sample_next, votes) }}
     <div class="btn-group">
     {% if sample_prev %}
-    <a id="anno_nav_prev"class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_prev) }}" title="previous sample">
+    <a id="anno_nav_prev"class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_prev) }}" title="skip (previous)">
         <i class="fas fa-2x fa-arrow-left"></i>
     </a>
     {% endif %}
     {% if sample_next %}
-    <a id="anno_nav_next" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_next) }}" title="next sample">
+    <a id="anno_nav_next" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_next) }}" title="skip (next)">
         <i class="fas fa-2x fa-arrow-right"></i>
     </a>
     {% endif %}
@@ -54,6 +38,11 @@ random sample {{ random_sample }}
 <blockquote class="sampletext col-12 col-md-10 offset-md-1">
     {{sample_content}}
 </blockquote>
+</div>
+<div class="row">
+    <div class="col-12">
+        <span class="sample_metadata">ID: {{sample_id}}</span>
+    </div>
 </div>
 
 <br />

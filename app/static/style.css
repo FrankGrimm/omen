@@ -83,7 +83,7 @@ a.btn .fa-2x {
     font-size: 2em;
     border-radius: 5px;
     border: 1px solid #bdbdbd;
-    background: #f3f9ff;
+    background: rgb(249, 249, 249);
     padding: 1em;
 }
 
@@ -594,4 +594,9 @@ li.nav-active-task div.sideprogress-active {
 
 .df_inspect_votebtn {
     padding: 0.3em;
+}
+
+.sample_metadata {
+    font-style: italic;
+    font-size: 0.8em;
 }

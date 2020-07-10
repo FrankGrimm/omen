@@ -342,7 +342,7 @@ class Dataset(Base):
 
     def annotations(self, dbsession, page=1, page_size=50, foruser=None,
             user_column=None, restrict_view=None, only_user=False, with_content=True,
-            query=None):
+            query=None, order_by=None, min_sample_index=None):
 
         foruser = by_id(dbsession, foruser)
         user_roles = self.get_roles(dbsession, foruser)
@@ -385,9 +385,9 @@ class Dataset(Base):
             sql_select += """
             {join_type} JOIN annotations AS usercol ON usercol.dataset_id = dc.dataset_id AND usercol.sample_index = dc.sample_index AND usercol.owner_id = %(foruser_join)s
             """.format(join_type=join_type, usercol=user_column)
-            col_renames["usercol"] = user_column
+            col_renames["usercol_value"] = user_column
             params['foruser_join'] = foruser.uid
-            field_list.append("usercol.data->'value' AS usercol")
+            field_list.append("usercol.data->'value' #>> '{}' AS usercol_value")
             annotation_columns.append(user_column)
 
         target_users = [foruser] # if user is annotator, only export and show their own annotations
@@ -419,6 +419,10 @@ class Dataset(Base):
         elif restrict_view is not None and restrict_view == "untagged":
             sql_where += "\nAND usercol IS NULL"
 
+        if min_sample_index is not None:
+            sql_where += "\nAND dc.sample_index >= %(min_sample_index)s"
+            params["min_sample_index"] = min_sample_index
+
         sql = """
         SELECT {field_list} FROM datasetcontent AS dc
         {sql_select}
@@ -435,6 +439,9 @@ class Dataset(Base):
                 sql_select="\n" + sql_select.strip(),
                 sql_where="\n" + sql_where.strip())
 
+        if order_by is not None:
+            sql += "\nORDER BY %s" % order_by
+
         if page_size > 0:
             sql += "\nLIMIT %(page_size)s"
             params["page_size"] = page_size
@@ -444,7 +451,7 @@ class Dataset(Base):
             params["page_onset"] = (page - 1) * page_size
 
         sql = prep_sql(sql)
-        fprint("DB_SQL_LOG", sql)
+        fprint("DB_SQL_LOG", sql, params)
 
         df = pd.read_sql(sql,
                 dbsession.bind,
@@ -527,7 +534,7 @@ class Dataset(Base):
 
     def getannos(self, dbsession, uid, asdict=False):
         user_obj = by_id(dbsession, uid)
-        annores = dbsession.query(Annotation).filter_by( \
+        annores = dbsession.query(Annotation).filter_by(
                     owner_id=user_obj.uid, dataset_id=self.dataset_id).all()
         if not asdict:
             return annores
@@ -537,7 +544,7 @@ class Dataset(Base):
             resdict['uid'].append(anno.owner_id)
             resdict['sample'].append(anno.sample)
             resdict['annotation'].append(anno.data['value'] \
-                    if 'value' in anno.data and not anno.data['value'] is None \
+                    if 'value' in anno.data and not anno.data['value'] is None
                     else None)
 
         return resdict
@@ -547,7 +554,7 @@ class Dataset(Base):
         sample = str(sample)
         anno_obj_data = {}
 
-        anno_obj = dbsession.query(Annotation).filter_by(owner_id=user_obj.uid, \
+        anno_obj = dbsession.query(Annotation).filter_by(owner_id=user_obj.uid,
                         dataset_id=self.dataset_id, sample=sample).one_or_none()
 
         if not anno_obj is None:
@@ -558,7 +565,125 @@ class Dataset(Base):
                 "data": anno_obj_data
                }
 
-    def setanno(self, dbsession, uid, sample, value):
+    def sample_by_index(self, dbsession, sample_index):
+        qry = self.content_query(dbsession).filter_by(sample_index=int(sample_index))
+        return qry.one_or_none()
+
+    def get_next_sample(self, dbsession, sample_index, user_obj, exclude_annotated=True):
+        sample_index = int(sample_index)
+
+        sql = ""
+        if exclude_annotated:
+            sql = """
+            SELECT
+                dc.sample_index, dc.sample, COUNT(anno.owner_id) AS annocount
+            FROM
+                datasetcontent AS dc
+            LEFT JOIN annotations AS anno
+                ON anno.sample_index = dc.sample_index AND anno.dataset_id = dc.dataset_id
+            WHERE 1=1
+                AND dc.dataset_id = %(dsid)s
+                AND (anno.owner_id != %(uid)s
+                OR anno.owner_id IS NULL)
+                AND dc.sample_index > %(req_sample_idx)s
+            GROUP BY dc.sample_index, dc.sample
+            ORDER BY dc.sample_index ASC
+            LIMIT 1
+            """.format().strip()
+        else:
+            sql = """
+            SELECT
+                dc.sample_index, dc.sample, COUNT(anno.owner_id) AS annocount
+            FROM
+                datasetcontent AS dc
+            LEFT JOIN annotations AS anno
+                ON anno.sample_index = dc.sample_index AND anno.dataset_id = dc.dataset_id
+            WHERE 1=1
+                AND dc.dataset_id = %(dsid)s
+                AND dc.sample_index > %(req_sample_idx)s
+            GROUP BY dc.sample_index, dc.sample
+            ORDER BY dc.sample_index ASC
+            LIMIT 1
+            """.format().strip()
+
+        params = {
+                "uid": user_obj.uid,
+                "dsid": self.dataset_id,
+                "req_sample_idx": sample_index
+                }
+
+        fprint("DF_SQL_LOG", "get_next_sample(excl=%s)" % exclude_annotated, sql, params)
+        df = pd.read_sql(sql,
+                         dbsession.bind,
+                         params=params)
+
+        if df.shape[0] == 0 and exclude_annotated:
+            return self.get_next_sample(dbsession, sample_index, user_obj, exclude_annotated=False)
+        elif df.shape[0] > 0:
+            first_row = df.iloc[df.index[0]]
+            return first_row["sample_index"], first_row["sample"]
+        else:
+            # empty dataset
+            return None, None
+
+    def get_prev_sample(self, dbsession, sample_index, user_obj, exclude_annotated=True):
+        sample_index = int(sample_index)
+
+        sql = ""
+        if exclude_annotated:
+            sql = """
+            SELECT
+                dc.sample_index, dc.sample, COUNT(anno.owner_id) AS annocount
+            FROM
+                datasetcontent AS dc
+            LEFT JOIN annotations AS anno
+                ON anno.sample_index = dc.sample_index AND anno.dataset_id = dc.dataset_id
+            WHERE 1=1
+                AND dc.dataset_id = %(dsid)s
+                AND (anno.owner_id != %(uid)s
+                OR anno.owner_id IS NULL)
+                AND dc.sample_index < %(req_sample_idx)s
+            GROUP BY dc.sample_index, dc.sample
+            ORDER BY dc.sample_index DESC
+            LIMIT 1
+            """.format().strip()
+        else:
+            sql = """
+            SELECT
+                dc.sample_index, dc.sample, COUNT(anno.owner_id) AS annocount
+            FROM
+                datasetcontent AS dc
+            LEFT JOIN annotations AS anno
+                ON anno.sample_index = dc.sample_index AND anno.dataset_id = dc.dataset_id
+            WHERE 1=1
+                AND dc.dataset_id = %(dsid)s
+                AND dc.sample_index < %(req_sample_idx)s
+            GROUP BY dc.sample_index, dc.sample
+            ORDER BY dc.sample_index DESC
+            LIMIT 1
+            """.format().strip()
+
+        params = {
+                "uid": user_obj.uid,
+                "dsid": self.dataset_id,
+                "req_sample_idx": sample_index
+                }
+
+        fprint("DF_SQL_LOG", "get_prev_sample(excl=%s)" % exclude_annotated, sql, params)
+        df = pd.read_sql(sql,
+                         dbsession.bind,
+                         params=params)
+
+        if df.shape[0] == 0 and exclude_annotated:
+            return self.get_prev_sample(dbsession, sample_index, user_obj, exclude_annotated=False)
+        elif df.shape[0] > 0:
+            first_row = df.iloc[df.index[0]]
+            return first_row["sample_index"], first_row["sample"]
+        else:
+            # empty dataset
+            return None, None
+
+    def setanno(self, dbsession, uid, sample_index, value):
         user_obj = by_id(dbsession, uid)
 
         if user_obj is None:
@@ -568,11 +693,10 @@ class Dataset(Base):
 
         sample_obj = self.content_query(dbsession).filter_by(
                 dataset_id=self.dataset_id,
-                sample=sample,
+                sample_index=sample_index,
                 ).one()
 
-        sample = str(sample)
-        existing_anno = dbsession.query(Annotation).filter_by( \
+        existing_anno = dbsession.query(Annotation).filter_by(
                 owner_id=user_obj.uid,
                 dataset_id=self.dataset_id,
                 sample=sample_obj.sample,
@@ -581,13 +705,15 @@ class Dataset(Base):
 
         if existing_anno is None:
             newanno = Annotation(owner=user_obj,
-                    dataset=self,
-                    sample=sample_obj.sample,
-                    sample_index=sample_obj.sample_index,
-                    data=anno_data)
+                                 dataset=self,
+                                 sample=sample_obj.sample,
+                                 sample_index=sample_obj.sample_index,
+                                 data=anno_data)
             dbsession.add(newanno)
+            fprint("created annotation %s for sample %s with value %s" % (newanno, sample_obj, value))
         else:
             existing_anno.data = anno_data
+            fprint("updated annotation %s for sample %s with value %s" % (existing_anno, sample_obj, value))
             dbsession.merge(existing_anno)
 
         # ensure this change is reflected in subsequent dataset loads
