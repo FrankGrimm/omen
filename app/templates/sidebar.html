@@ -14,9 +14,9 @@
 {% macro sideicon(cssclass, target, title) -%}
 <li class="nav-item">
     {% if request.url_rule.endpoint == target %}
-    <a class="nav-link active" href="{{ url_for(target) }}" title="{{title}}">
+    <a class="nav-link active {% if target == "logout" %}d-flex d-sm-none{% endif %}" href="{{ url_for(target) }}" title="{{title}}">
     {% else %}
-    <a class="nav-link" href="{{ url_for(target) }}" title="{{title}}">
+    <a class="nav-link {% if target == "logout" %}d-flex d-sm-none{% endif %}" href="{{ url_for(target) }}" title="{{title}}">
     {% endif %}
     <i class="{{cssclass}}"></i>
     </a>
@@ -28,6 +28,7 @@
         {{ sideicon("fas fa-home", "index", "Overview") }}
         {{ sideicon("fas fa-cogs", "settings", "Settings") }}
         {{ sideicon("fas fa-database", "show_datasets", "Manage") }}
+        {{ sideicon("fas fa-sign-out-alt", "logout", "Logout") }}
     </ul>
 </nav>
 <nav class="col-md-2 d-none d-md-block bg-light sidebar" id="sidebar-menu">
