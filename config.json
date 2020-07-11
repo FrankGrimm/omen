@@ -2,5 +2,6 @@
     "dbconnection": "postgresql+psycopg2://omenusr:omenusr@db:5432/omenusr",
     "dbconnection_disabled": "sqlite:///database.db",
     "flask_secret": "5d1-0u8$#kmj",
-    "db_debug_disabled": true
+    "db_debug_disabled": true,
+    "tag_orientation_cutoff": 5
 }
