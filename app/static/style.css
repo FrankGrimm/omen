@@ -42,7 +42,6 @@
     --tag_color_gray: 201, 203, 207;
 
     --palette_aliceblue: rgb(240,248,255);
-    --palette_antiquewhite: rgb(250,235,215);
     --palette_aqua: rgb(0,255,255);
     --palette_aquamarine: rgb(127,255,212);
     --palette_azure: rgb(240,255,255);
@@ -87,11 +86,9 @@
     --palette_dimgrey: rgb(105,105,105);
     --palette_dodgerblue: rgb(30,144,255);
     --palette_firebrick: rgb(178,34,34);
-    --palette_floralwhite: rgb(255,250,240);
     --palette_forestgreen: rgb(34,139,34);
     --palette_fuchsia: rgb(255,0,255);
     --palette_gainsboro: rgb(220,220,220);
-    --palette_ghostwhite: rgb(248,248,255);
     --palette_gold: rgb(255,215,0);
     --palette_goldenrod: rgb(218,165,32);
     --palette_gray: rgb(128,128,128);
@@ -141,7 +138,6 @@
     --palette_mintcream: rgb(245,255,250);
     --palette_mistyrose: rgb(255,228,225);
     --palette_moccasin: rgb(255,228,181);
-    --palette_navajowhite: rgb(255,222,173);
     --palette_navy: rgb(0,0,128);
     --palette_oldlace: rgb(253,245,230);
     --palette_olive: rgb(128,128,0);
@@ -185,8 +181,6 @@
     --palette_turquoise: rgb(64,224,208);
     --palette_violet: rgb(238,130,238);
     --palette_wheat: rgb(245,222,179);
-    --palette_white: rgb(255,255,255);
-    --palette_whitesmoke: rgb(245,245,245);
     --palette_yellow: rgb(255,255,0);
     --palette_yellowgreen: rgb(154,205,50);
 }
