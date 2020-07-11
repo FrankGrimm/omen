@@ -187,12 +187,23 @@
 
 #anno_actions
 {
-  margin:0 auto;
+    margin:0 auto;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+}
+
+#anno_actions > .btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: space-evenly;
+    margin-top: 0.5em;
 }
 
 #anno_actions .btn
 {
-  height:3em;
+  height: auto;
+  padding-bottom: 0.3rem;
   line-height:2em;
 }
 
