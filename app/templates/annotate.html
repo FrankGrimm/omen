@@ -9,8 +9,14 @@ Annotate &quot;<span class="annometa">{{ task.name }}</span>&quot;
 
 <div class="row">
 <div id="anno_actions" class="d-flex col-12">
-
-{{ macros.render_tag_buttons(dataset, sample_next, votes) }}
+    {% set add_classes = "" %}
+    {% if dataset.get_taglist()|length > 5 %}
+        {% set add_classes = "btn-group-vertical" %}
+    {% endif %}
+    
+    {% if add_classes == "" %}
+        {{ macros.render_tag_buttons(dataset, sample_next, votes, add_classes=add_classes) }}
+    {% endif %}
     <div class="btn-group">
     {% if sample_prev %}
     <a id="anno_nav_prev"class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_prev) }}" title="skip (previous)">
@@ -34,8 +40,12 @@ Annotate &quot;<span class="annometa">{{ task.name }}</span>&quot;
 </div>
 
 <br />
-<div class="row">
-<blockquote class="sampletext col-12 col-md-10 offset-md-1">
+<div class="row d-flex-row">
+
+{% if add_classes != "" %}
+    {{ macros.render_tag_buttons(dataset, sample_next, votes, add_classes=add_classes) }}
+{% endif %}
+<blockquote class="sampletext">
     {{sample_content}}
 </blockquote>
 </div>

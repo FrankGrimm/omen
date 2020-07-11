@@ -200,6 +200,21 @@
     margin-top: 0.5em;
 }
 
+.d-flex-row {
+    flex-flow: row;
+}
+@media screen and (max-width: 990px) {
+    .d-flex-row {
+        flex-direction: column;
+    }
+}
+.btn-group-vertical {
+    flex-direction: column !important;
+    position: relative;
+    left: 0;
+    margin-bottom: 3em;
+}
+
 #anno_actions .btn
 {
   height: auto;
@@ -324,6 +339,7 @@ a.btn .fa-2x {
     border: 1px solid var(--layout_minimal_border);
     background: var(--layout_bg_minimal);
     padding: 1em;
+    margin: 0 1em;
 }
 
 li.singleprogress {
