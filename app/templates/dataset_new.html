@@ -36,8 +36,8 @@
                 <input type="text" placeholder="dataset name" class="custom-input" value="{{ dataset.dsmetadata.name }}" id="dataset_name" name="dataset_name" required="required">
             </div>
             <div class="input-group-append">
-                <button class="btn btn-sm btn-primary input-group-text" onclick="return $('#form_change_name').submit();">
-                    <i class="fas fa-file"></i>&nbsp;OK
+                <button class="btn btn-primary input-group-text" onclick="return $('#form_change_name').submit();">
+                    <i class="mdi mdi-file-outline"></i>&nbsp;OK
                 </button>
             </div>
         </div>
@@ -57,8 +57,8 @@
                 <label class="custom-file-label" for="upload_file">Choose file</label>
             </div>
             <div class="input-group-append">
-                <button class="btn btn-sm btn-primary input-group-text" id="form_upload_file_submit" onclick="return $('#form_upload_file').submit();">
-                    <i class="fas fa-file-upload"></i>&nbsp;
+                <button class="btn btn-primary input-group-text" id="form_upload_file_submit" onclick="return $('#form_upload_file').submit();">
+                    <i class="mdi mdi-upload"></i>&nbsp;
                     {% if can_import %}
                     Replace
                     {% elif dataset and dataset.has_content() %}
@@ -210,7 +210,7 @@
         <div class="form-group row">
             <div class="col-12">
                 <button class="btn btn-danger" id="form_import_discard_submit" onclick="return $('#form_upload_file').submit();">
-                    <i class="fas fa-ban"></i>&nbsp;Discard Data
+                    <i class="mdi mdi-cancel"></i>&nbsp;Discard Data
                 </button>
             </div>
         </div>
@@ -220,7 +220,7 @@
         <div class="form-group row">
             <div class="col-12">
                 <button class="btn btn-success" id="form_import_commit_submit" onclick="return $('#form_upload_file').submit();">
-                    <i class="fas fa-file-upload"></i>&nbsp;Import Now
+                    <i class="mdi mdi-plus-outline"></i>&nbsp;Import Now
                 </button>
             </div>
         </div>
@@ -235,8 +235,8 @@
     <div class="row ds_actions_toolbar">
         <div class="btn-toolbar col-12">
             <div class="btn-group">
-                <a class="btn btn-sm btn-primary" href="{{ url_for("download", dsid=dataset.dataset_id) }}"><i class="fas fa-download"></i> Download</a> 
-                <a class="btn btn-sm btn-secondary" href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id) }}"><i class="fas fa-table"></i> View</a> 
+                <a class="btn btn-primary" href="{{ url_for("download", dsid=dataset.dataset_id) }}"><i class="mdi mdi-download"></i> Download</a> 
+                <a class="btn btn-secondary" href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id) }}"><i class="mdi mdi-table-search"></i> View</a> 
             </div>
 
         </div>
@@ -313,8 +313,8 @@
                 </div>
             </div> 
             <div class="row">
-                <div class="col-12 offset-md-4 col-md-9">
-                    <button name="submit" type="submit" class="btn btn-primary">Update Description</button>
+                <div class="col-12 offset-md-3 col-md-9">
+                    <button name="submit" type="submit" class="btn btn-primary"><i class="mdi mdi-square-edit-outline"></i> Update Description</button>
                 </div>
             </div>
         </form>
@@ -325,17 +325,17 @@
 
     <div class="row">
         <div class="col-12 col-md-8">Manage users who are allowed to add annotations for this dataset:</div>
-        <div class="col-12 col-md-4"><a href="{{ url_for("createuser") }}" class="btn btn-sm btn-primary">
-                <span class="">create new</span> <i class="fa fa-user-plus"></i>
+        <div class="col-12 col-md-4"><a href="{{ url_for("createuser") }}" class="btn btn-primary">
+                <span class="">create new</span> <i class="mdi mdi-account-plus"></i>
             </a>
             </div>
     </div>
-    <div class="row">
+    <div class="row seprow">
         <ul class="col-12 dsacl" id="dsacl">
         {% for userobj in db.userlist(dbsession) %}
             <li class="row">
                 
-                <span class="col-1" aclusericon"><i title="{{userobj.uid}}" class="fas fa-user" style="margin-top: 0.5em;"></i></span>
+                <span class="col-1" aclusericon"><i title="{{userobj.uid}}" class="mdi mdi-account" style="margin-top: 0.5em;"></i></span>
                     
                 &nbsp; <span class="col-4 aclusermail">{{ userobj.get_name() }} ({{userobj.email}})</span>
 
@@ -405,7 +405,7 @@
             <input type="hidden" name="action" value="delete_dataset" />
             <input type="hidden" name="confirmation" id="confirmation" value="delete_dataset_unconfirmed" />
             <button class="btn btn-danger" id="form_delete_dataset_confirm">
-                <i class="fas fa-trash"></i>&nbsp;OK
+                <i class="mdi mdi-trash-can"></i>&nbsp;OK
             </button>
         </div>
     </form>

@@ -20,18 +20,18 @@ Annotate &quot;<span class="annometa">{{ task.name }}</span>&quot;
     <div class="btn-group">
     {% if sample_prev %}
     <a id="anno_nav_prev"class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_prev) }}" title="skip (previous)">
-        <i class="fas fa-2x fa-arrow-left"></i>
+        <i class="mdi mdi-arrow-left"></i>
     </a>
     {% endif %}
     {% if sample_next %}
     <a id="anno_nav_next" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_next) }}" title="skip (next)">
-        <i class="fas fa-2x fa-arrow-right"></i>
+        <i class="mdi mdi-arrow-right"></i>
     </a>
     {% endif %}
 
     {% if random_sample %}
     <a id="anno_nav_random" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=random_sample) }}" title="random sample">
-        <i class="fas fa-2x fa-random"></i>
+        <i class="mdi mdi-shuffle-variant"></i>
     </a>
     {% endif %}
     </div>

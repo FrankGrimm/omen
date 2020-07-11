@@ -510,6 +510,10 @@ class Dataset(Base):
 
         fprint("Fleiss' Kappa %s (%s)" % (f_kappa, f_kappa_text))
 
+        if np.isnan(f_kappa):
+            f_kappa = None
+            f_kappa_text = "Unknown"
+
         return {
                 "type": "fleiss",
                 "kappa": f_kappa,

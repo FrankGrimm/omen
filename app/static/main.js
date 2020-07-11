@@ -81,8 +81,10 @@ $(document).ready(function() {
     
     const titled_links = document.querySelectorAll("a[title]");
     const titled_buttons = document.querySelectorAll("a[title]");
+    const nav_items = document.querySelectorAll(".nav-item[title]");
     titled_links.forEach(addPopOvers)
     titled_buttons.forEach(addPopOvers)
+    nav_items.forEach(addPopOvers)
 
     $('select').selectpicker();
 });

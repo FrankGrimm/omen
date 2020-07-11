@@ -4,8 +4,9 @@
 
   <h4 class="d-flex" style="align-items: center; flex-direction: row; flex-wrap: wrap">
       <span class="d-flex">My Datasets</span>
-      <a class="btn btn-light d-flex" style="font-size: 12pt; margin-left: auto;" href="{{ url_for('new_dataset') }}" title="Create new dataset">
-          create new &nbsp; <i class="fas fa-plus-circle"></i>
+      <a class="btn btn-light d-flex" style="margin-left: auto;" href="{{ url_for('new_dataset') }}" title="Create new dataset">
+          create new &nbsp; 
+          <i class="mdi mdi-plus-circle"></i>
       </a>
   </h4>
     
@@ -17,11 +18,11 @@
             <div class="row">
                 <div class="col-sm-4 col-md-3 col-lg-3">
                     <div class="btn-group">
-                    <a class="btn btn-sm btn-light" href="{{ url_for("new_dataset", dsid=dsid) }}" title="Edit Dataset"><i class="fas fa-cog"></i></a> 
+                    <a class="btn btn-light" href="{{ url_for("new_dataset", dsid=dsid) }}" title="Edit Dataset"><i class="mdi mdi-cog"></i></a> 
 
                     {% if not (ds and ds_errors and ds in ds_errors and ds_errors[ds]) %}
-                    <a class="btn btn-sm btn-secondary" href="{{ url_for("download", dsid=dsid) }}" title="Download"><i class="fas fa-download"></i></a> 
-                    <a class="btn btn-sm btn-secondary" href="{{ url_for("inspect_dataset", dsid=dsid) }}" title="View"><i class="fas fa-table"></i></a> 
+                    <a class="btn btn-secondary" href="{{ url_for("download", dsid=dsid) }}" title="Download"><i class="mdi mdi-download"></i></a> 
+                    <a class="btn btn-secondary" href="{{ url_for("inspect_dataset", dsid=dsid) }}" title="View"><i class="mdi mdi-table-search"></i></a> 
                     {% endif %}
                     </div>
                 </div>
@@ -57,15 +58,15 @@
             <div class="col-sm-4 col-md-3 col-lg-3">
                 <div class="btn-group">
                     {% if 'curator' in dsroles %}
-                    <a class="btn btn-sm btn-secondary" href="{{ url_for("download", dsid=dsid) }}" title="Download"><i class="fas fa-download"></i></a> 
+                    <a class="btn btn-secondary" href="{{ url_for("download", dsid=dsid) }}" title="Download"><i class="mdi mdi-download"></i></a> 
                     {% endif %}
                     {% if 'annotator' in dsroles %}
-                    <a class="btn btn-sm btn-secondary" href="{{ url_for("inspect_dataset", dsid=dsid) }}" title="View"><i class="fas fa-table"></i></a> 
+                    <a class="btn btn-secondary" href="{{ url_for("inspect_dataset", dsid=dsid) }}" title="View"><i class="mdi mdi-table-search"></i></a> 
                     {% endif %}
                 </div>
             </div>
             <div class="col-sm col-md col-lg ds_overview_label">
-                <i class="fas fa-users"></i> <strong>{{ ds.get_name() }}</strong>, owned by {{ ds.owner.get_name() }} (access: {{ dsroles|join(", ") }})
+                <i class="mdi mdi-account-multiple-outline"></i> <strong>{{ ds.get_name() }}</strong>, owned by {{ ds.owner.get_name() }} (access: {{ dsroles|join(", ") }})
             </div>
             </div>
         </li>
