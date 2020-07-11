@@ -3,10 +3,59 @@ Chart.platform.disableCSSInjection = true;
 
 $(document).ready(function() {
 
+    function restoreSidebarState() {
+        if (!window.localStorage) { return; }
+
+        const val = window.localStorage.getItem("sidebar-visibility");
+
+        if (val && val === "hidden") {
+            const smenu = document.getElementById("sidebar-menu");
+            const scompact = document.getElementById("sidebar-compact");
+            const $smenu = $(smenu);
+            const $scompact = $(scompact);
+            $smenu.removeClass("d-none");
+            $smenu.removeClass("d-md-block");
+            $smenu.hide();
+            $scompact.show();
+            $("main").removeClass("col-md-10 col-lg-10");
+            $("main").addClass("col-md-12 col-lg-12");
+        }
+    }
+    restoreSidebarState();
+
+    function storeSidebarState(new_state) {
+        if (!window.localStorage) { return; }
+        if (new_state) {
+            window.localStorage.setItem("sidebar-visibility", "visible");
+        } else {
+            window.localStorage.setItem("sidebar-visibility", "hidden");
+        }
+    }
+
     document.getElementById("sidebar-brandlink").addEventListener("click", function() {
         const smenu = document.getElementById("sidebar-menu");
-        $(smenu).toggleClass("d-sm-block", 500);
-        $(smenu).toggleClass("d-none", 500);
+        const scompact = document.getElementById("sidebar-compact");
+        const $smenu = $(smenu);
+        const $scompact = $(scompact);
+
+        const initial_visibility = $smenu.is(":visible");
+        $smenu.removeClass("d-none");
+        $smenu.removeClass("d-md-block");
+
+        if (initial_visibility) {
+            $smenu.hide();
+            $scompact.show();
+            $("main").removeClass("col-md-10 col-lg-10");
+            $("main").addClass("col-md-12 col-lg-12");
+        } else {
+            $smenu.show();
+            $scompact.hide();
+            $("main").addClass("col-md-10 col-lg-10");
+            $("main").removeClass("col-md-12 col-lg-12");
+        }
+
+        storeSidebarState(!initial_visibility);
+
         console.log("toggled sidebar");
     });
 

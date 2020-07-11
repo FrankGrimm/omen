@@ -201,6 +201,34 @@
     margin-top: 3em;
 }
 
+.sidebar-compact {
+	position: fixed;
+    top: 48px;
+    margin-top: -.5rem;
+    width: 100%;
+    padding-top: .5rem;
+    overflow: hidden;
+	left: 0;
+	z-index: 99;
+	padding: 0;
+    margin-bottom: auto;
+    border-style: solid;
+    border-width: 0 1px 1px 0;
+    border-color: var(--layout_minimal_border);
+	box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+}
+
+.sidebar-compact > .nav {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-evenly;
+}
+
+.d-hidden {
+    display: none !important;
+}
+
 .sidebar .nav-link.active {
     background-color: var(--theme_bg_nav_active);
     color: var(--theme_fg_nav_active);

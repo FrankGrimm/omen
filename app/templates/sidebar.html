@@ -11,7 +11,25 @@
     </a>
 </li>
 {%- endmacro %}
+{% macro sideicon(cssclass, target, title) -%}
+<li class="nav-item">
+    {% if request.url_rule.endpoint == target %}
+    <a class="nav-link active" href="{{ url_for(target) }}" title="{{title}}">
+    {% else %}
+    <a class="nav-link" href="{{ url_for(target) }}" title="{{title}}">
+    {% endif %}
+    <i class="{{cssclass}}"></i>
+    </a>
+</li>
+{%- endmacro %}
 
+<nav class="sidebar-compact d-flex bg-light col-sm-3 col-md-2 justify-content-center" id="sidebar-menu-compact">
+    <ul class="nav d-flex">
+        {{ sideicon("fas fa-home", "index", "Overview") }}
+        {{ sideicon("fas fa-cogs", "settings", "Settings") }}
+        {{ sideicon("fas fa-database", "show_datasets", "Manage") }}
+    </ul>
+</nav>
 <nav class="col-md-2 d-none d-md-block bg-light sidebar" id="sidebar-menu">
     <div class="sidebar-sticky">
         <ul class="nav flex-column">
