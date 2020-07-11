@@ -75,11 +75,19 @@ def inject_globals():
 
         return votes
 
+    tag_orientation_cutoff = 5
+    try:
+        tag_orientation_cutoff = int(config.get("tag_orientation_cutoff", "5"))
+    except ValueError:
+        print("[warn] malformed entry for key tag_orientation_cutoff", file=sys.stderr)
+        pass
+
     return dict(product_name=config.get("product_name", "Annotations"), \
                 is_authenticated=is_authenticated,
                 tasks=annotation_tasks,
                 calculate_votes=calculate_votes,
                 cur_year=datetime.utcnow().year,
+                tag_orientation_cutoff=tag_orientation_cutoff,
                 app_version=app_version)
 
 @app.errorhandler(404)

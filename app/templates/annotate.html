@@ -10,7 +10,7 @@ Annotate &quot;<span class="annometa">{{ task.name }}</span>&quot;
 <div class="row">
 <div id="anno_actions" class="d-flex col-12">
     {% set add_classes = "" %}
-    {% if dataset.get_taglist()|length > 5 %}
+    {% if dataset.get_taglist()|length > tag_orientation_cutoff %}
         {% set add_classes = "btn-group-vertical" %}
     {% endif %}
     
