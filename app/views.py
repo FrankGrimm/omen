@@ -500,37 +500,11 @@ def dataset_overview_json(dsid):
         dataset = get_accessible_dataset(dbsession, dsid)
         user_roles = list(dataset.get_roles(dbsession, session_user))
 
-        user_column = "anno-%s-You" % (session_user.uid)
-        df, annotation_columns, total = dataset.annotations(dbsession,
-                                                foruser=session_user,
-                                                page=-1,
-                                                page_size=-1,
-                                                user_column=user_column,
-                                                with_content=False,
-                                                restrict_view='tagged')
-        df = reorder_dataframe(df, dataset, annotation_columns)
-
         tags = dataset.get_taglist()
         tag_metadata = dataset.get_taglist(include_metadata=True)
-        annotations_by_user = {}
-        all_annotations = {}
         ds_total = dataset.get_size()
-        for anno_column in annotation_columns:
-            value_counts = df[anno_column].value_counts()
-            column_title = anno_column.split("-", 2)[-1]
 
-            annotations_by_user[column_title] = {}
-            anno_count = 0
-            for tag in tags:
-                tag_count = int(value_counts[tag]) if tag in value_counts else 0
-                annotations_by_user[column_title][tag] = tag_count
-                anno_count += tag_count
-
-                if not tag in all_annotations:
-                    all_annotations[tag] = 0
-                all_annotations[tag] += tag_count
-
-            annotations_by_user[column_title]["N/A"] = ds_total - anno_count
+        annotations_by_user, all_annotations = dataset.annotation_counts(dbsession, session_user)
 
         dsoverview = {
                 "dataset": dataset.dataset_id,
@@ -539,7 +513,7 @@ def dataset_overview_json(dsid):
                 "all_annotations": all_annotations,
                 "total": ds_total,
                 "tags": tags,
-                "tag_metadata": tag_metadata
+                "tag_metadata": tag_metadata,
                 }
 
         return dsoverview

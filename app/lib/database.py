@@ -340,6 +340,66 @@ class Dataset(Base):
 
         return migrated_annotations
 
+    def annotation_counts(self, dbsession, foruser):
+        foruser = by_id(dbsession, foruser)
+        user_roles = self.get_roles(dbsession, foruser)
+
+        params = {
+                "dataset_id": self.dataset_id
+                }
+        sql = """
+        SELECT users.uid,
+            (CASE WHEN
+                (users.displayname IS NULL OR users.displayname = '')
+                THEN users.email
+                ELSE users.displayname
+                END) AS username,
+            anno.data->'value' #>> '{}' AS anno_tag,
+            COUNT(anno.sample_index) AS cnt
+        FROM annotations as anno
+        LEFT JOIN users
+            ON users.uid = anno.owner_id
+        WHERE
+            anno.dataset_id = %(dataset_id)s
+        GROUP BY
+            users.uid, anno.data->'value' #>> '{}'
+        """
+
+        sql = prep_sql(sql)
+        fprint("DB_SQL_LOG", sql, params)
+
+        df = pd.read_sql(sql,
+                         dbsession.bind,
+                         params=params)
+
+        result_data = df.replace(np.nan, "", regex=True).to_dict()
+        result_data = json.dumps(result_data, cls=NpEncoder)
+        result_data = json.loads(result_data)
+
+        annotations_by_user = {}
+        all_annotations = {}
+        tags = self.get_taglist()
+
+        for tag in tags:
+            all_annotations[tag] = 0
+
+        if 'uid' in result_data:
+            for rowidx, uid in result_data['uid'].items():
+                row_username = result_data['username'].get(rowidx, str(uid))
+                row_tag = result_data['anno_tag'].get(rowidx, None)
+
+                if row_tag not in tags:
+                    continue
+
+                row_cnt = result_data['cnt'].get(rowidx, 0)
+
+                if row_username not in annotations_by_user:
+                    annotations_by_user[row_username] = {}
+                annotations_by_user[row_username][row_tag] = row_cnt
+                all_annotations[row_tag] += row_cnt
+
+        return annotations_by_user, all_annotations
+
     def annotations(self, dbsession, page=1, page_size=50, foruser=None,
             user_column=None, restrict_view=None, only_user=False, with_content=True,
             query=None, order_by=None, min_sample_index=None,
@@ -382,10 +442,10 @@ class Dataset(Base):
                 "sample_content": self.get_text_column()
                 }
 
-        if not foruser is None:
+        if foruser is not None:
             sql_select += """
             {join_type} JOIN annotations AS usercol ON usercol.dataset_id = dc.dataset_id AND usercol.sample_index = dc.sample_index AND usercol.owner_id = %(foruser_join)s
-            """.format(join_type=join_type, usercol=user_column)
+            """.format(join_type=join_type)
             col_renames["usercol_value"] = user_column
             params['foruser_join'] = foruser.uid
             field_list.append("usercol.data->'value' #>> '{}' AS usercol_value")
@@ -462,6 +522,7 @@ class Dataset(Base):
                 sql_select="\n" + sql_select.strip(),
                 sql_where="\n" + sql_where.strip())
 
+        # ordering and constraints
         if order_by is not None:
             sql += "\nORDER BY %s" % order_by
 
