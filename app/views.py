@@ -504,7 +504,9 @@ def dataset_overview_json(dsid):
         tag_metadata = dataset.get_taglist(include_metadata=True)
         ds_total = dataset.get_size()
 
-        annotations_by_user, all_annotations = dataset.annotation_counts(dbsession, session_user)
+        annotations_by_user, all_annotations = dataset.annotation_counts(dbsession)
+
+        agreement_fleiss = dataset.annotation_agreement(dbsession)
 
         dsoverview = {
                 "dataset": dataset.dataset_id,
@@ -514,6 +516,7 @@ def dataset_overview_json(dsid):
                 "total": ds_total,
                 "tags": tags,
                 "tag_metadata": tag_metadata,
+                "fleiss": agreement_fleiss,
                 }
 
         return dsoverview

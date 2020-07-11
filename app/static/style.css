@@ -808,3 +808,8 @@ li.nav-active-task div.sideprogress-active {
     flex-wrap: wrap;
     justify-content: end;
 }
+
+.df_inspect_note {
+    font-size: 0.9em;
+    text-style: italic;
+}

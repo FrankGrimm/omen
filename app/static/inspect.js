@@ -82,7 +82,10 @@ function initOverviewChart(target) {
 
     fetch(window.OMEN_BASE + "dataset/" + ACTIVE_DATASET_ID + "/overview.json")
       .then(response => response.json())
-      .then(overviewData => updateOverviewChart(overviewChart, overviewData, config));
+      .then(overviewData => {
+          updateOverviewChart(overviewChart, overviewData, config);
+          updateAnnotatorAgreement(overviewData);
+      });
 
     return overviewChart;
 }
@@ -97,6 +100,23 @@ document.getElementById("show_all_annotators").addEventListener("click", () => {
 document.getElementById("show_individual_annotators").addEventListener("click", () => {
     updateOverviewChart(overviewChart, overviewDataCache, overviewChartConfig, "single");
 });
+
+function updateAnnotatorAgreement(overviewData) {
+    if (!overviewData || !overviewData.fleiss) {
+        return;
+    }
+   
+    const value_target = document.getElementById("anno_fleiss_value");
+    const kappa_val = overviewData.fleiss.kappa;
+    value_target.textContent = kappa_val;
+    if (kappa_val >= 0.0 && kappa_val <= 1.0) {
+        const kappa_hue = (kappa_val * 120).toString(10);
+        value_target.parentNode.style.backgroundColor = `hsl(${kappa_hue}, 100%, 50%)`;
+    }
+
+    document.getElementById("anno_fleiss_text").textContent = `(${overviewData.fleiss.interpretation})`;
+
+}
 
 function updateOverviewChart(overviewChart, overviewData, config, mode)  {
     if (!overviewData) { 

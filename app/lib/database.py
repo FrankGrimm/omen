@@ -149,6 +149,23 @@ class NpEncoder(json.JSONEncoder):
         else:
             return super(NpEncoder, self).default(obj)
 
+def get_kappa_interpretation(kappa):
+    if kappa is None or kappa == np.nan:
+        return "Invalid value"
+
+    if kappa < 0:
+        return "Poor"
+    elif kappa <= 0.2:
+        return "Slight"
+    elif kappa <= 0.4:
+        return "Fair"
+    elif kappa <= 0.6:
+        return "Moderate"
+    elif kappa <= 0.8:
+        return "Substantial"
+    else: # kappa > 0.8:
+        return "Almost perfect"
+
 class Dataset(Base):
     __tablename__ = 'datasets'
 
@@ -340,10 +357,7 @@ class Dataset(Base):
 
         return migrated_annotations
 
-    def annotation_counts(self, dbsession, foruser):
-        foruser = by_id(dbsession, foruser)
-        user_roles = self.get_roles(dbsession, foruser)
-
+    def annotation_counts(self, dbsession):
         params = {
                 "dataset_id": self.dataset_id
                 }
@@ -399,6 +413,108 @@ class Dataset(Base):
                 all_annotations[row_tag] += row_cnt
 
         return annotations_by_user, all_annotations
+
+    def annotation_agreement(self, dbsession, exclude_insufficient=False):
+        """
+        calculates Fleiss' Kappa statistic on the annotations
+        for this dataset
+
+        if exclude_insufficient is set, rows with annotations by only one user are excluded.
+        """
+
+        tags = self.get_taglist()
+
+        params = {
+                "dataset_id": self.dataset_id
+                }
+        sql = """
+        SELECT
+            anno.sample_index,
+            anno.data->'value' #>> '{}' AS anno_tag,
+            COUNT(anno.owner_id) AS cnt
+        FROM
+            annotations as anno
+        WHERE
+            anno.dataset_id = %(dataset_id)s
+        GROUP BY
+            anno.sample_index, anno.data->'value' #>> '{}'
+        """
+
+        sql = prep_sql(sql)
+        fprint("DB_SQL_LOG", sql, params)
+
+        df = pd.read_sql(sql,
+                         dbsession.bind,
+                         params=params)
+
+        if df.shape[0] == 0:
+            return {"type": "fleiss", "kappa": None,
+                    "interpretation": "Insufficient data"}
+
+        # pivot by given tag
+        df = df.pivot(index="sample_index", columns="anno_tag")
+        # remove pivot level from dataframe
+        df.columns = df.columns.droplevel(0)
+        df.columns.name = None
+        df = df.reset_index().set_index("sample_index")
+
+        # replace all nan's in the count columns with 0.0
+        tag_columns = df.columns.difference(["sample_index"])
+        df[tag_columns] = df[tag_columns].fillna(value=0.0)
+
+        k = len(tags)
+        n = df[tag_columns].sum(axis=1).max()
+
+        tag_totals = df[tag_columns].sum()
+        total_sum = tag_totals.sum()
+
+        # normalize rows to max number of annotators n
+        # this makes the calculation easier later on
+        # because it assumes that all annotators
+        # have annotated every sample
+        # or (exclude_insufficient=True): restrict calculation to samples
+        # that were at least annotated by more than one user:
+        if exclude_insufficient:
+            df["row_total"] = df[tag_columns].sum(axis=1)
+            df = df.loc[df.row_total > 1]
+        else:
+            df[tag_columns] = df[tag_columns].apply(
+                    lambda x: x/(x.sum()/n),
+                    axis=1)
+
+        if df.shape[0] == 0:
+            return {"type": "fleiss", "kappa": None,
+                    "interpretation": "Insufficient data"}
+
+        df["row_total"] = df[tag_columns].sum(axis=1)
+
+        df["p_i"] = np.NAN
+        df.loc[df["row_total"] <= 1, "p_i"] = 1.0
+        df.loc[df["row_total"] > 1, "p_i"] = \
+            (1.0 / (df.row_total * (df.row_total - 1))) \
+            * (
+                df[tag_columns].pow(2).sum(axis=1) - df.row_total
+            )
+
+        p_avg = (1.0 / df.shape[0]) * df.p_i.sum(axis=0)
+
+        p_j = (1.0 / (df.shape[0]*n)) * df[tag_columns].sum(axis=0)
+        p_avg_e = p_j.pow(2).sum()
+
+        fprint("N=%s, n=%s, k=%s, total_sum=%s" % (df.shape[0], n, k, total_sum))
+        fprint("p_avg=%s, p_avg_e=%s" % (p_avg, p_avg_e))
+
+        f_kappa = (p_avg - p_avg_e) / (1 - p_avg_e)
+        f_kappa = np.round(f_kappa, 4)
+        f_kappa_text = get_kappa_interpretation(f_kappa)
+
+        fprint("Fleiss' Kappa %s (%s)" % (f_kappa, f_kappa_text))
+
+        return {
+                "type": "fleiss",
+                "kappa": f_kappa,
+                "interpretation": f_kappa_text
+                }
 
     def annotations(self, dbsession, page=1, page_size=50, foruser=None,
             user_column=None, restrict_view=None, only_user=False, with_content=True,

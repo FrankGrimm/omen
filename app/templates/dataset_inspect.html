@@ -42,8 +42,18 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
             <div id="df_overview_collapse_a" class="collapse hide" data-parent="#df_overview_collapse">
                 <div class="card-body">
 
-                    <div id="overview-chart-holder" style="">
-                        <canvas id="overview-chart" style="position: relative; height: 40vh; width: 80vw;"></canvas>
+                    <div class="row">
+                        <div id="overview-chart-holder row" class="col-12 col-md-6" style="">
+                            <canvas id="overview-chart" style="position: relative; height: 40vh;"></canvas>
+                        </div>
+                        <div class="df_inspect_analysis_meta col-12 col-md-6">
+                            <p>
+                            <strong>Fleiss' Kappa:</strong> <span id="anno_fleiss_value">unavailable</span> <span id="anno_fleiss_text"></span> <br />
+                            </p>
+                            <p class="df_inspect_note">
+                            Note that inter-annotator agreement only takes into account samples with annotations by at least 2 different users.
+                            </p>
+                        </div>
                     </div>
                     <div class="overview-chart-controls">
                     <span>Annotators: </span>
