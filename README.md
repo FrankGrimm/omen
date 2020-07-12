@@ -4,9 +4,8 @@
 
 # OMEN - A dockerized, collaborative, annotation platform
 
-![screen rec](https://frankgrimm.github.io/omen/img/screen_rec.gif)
+![](https://frankgrimm.github.io/omen/img/annotation-overview.gif)
 
-## Setup
+![](https://frankgrimm.github.io/omen/img/dataset-curation-view.gif)
 
-**Note**: The setup information is outdated, a full setup guide is coming soon.
-
+Please refer to the [project website](https://frankgrimm.github.io/omen/) for more information.
