@@ -30,11 +30,13 @@ def login_required(func):
 
 @app.template_filter(name="highlight")
 def highlight(value, query):
+    db.fprint("-" * 20, type(value), type(Markup(value)))
     if not query is None and query.strip() != "":
         query = r"(" + re.escape(query.strip()) + ")"
-        value = re.sub(query, r'<span class="ds_highlight">\1</span>', value, \
-                flags=re.IGNORECASE)
-    return Markup(value)
+        value = re.sub(query, lambda g: Markup('<span class="ds_highlight">%s</span>') % g.group(1),
+                       value, flags=re.IGNORECASE)
+
+    return value
 
 @app.route('/')
 @app.route(BASEURI + '/')
