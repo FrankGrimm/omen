@@ -1,0 +1,7 @@
+{
+    "dbconnection": "postgresql+psycopg2://omenusr:omenusr@db:5432/omenusr",
+    "dbconnection_disabled": "sqlite:///database.db",
+    "flask_secret": "RFT$@#UJ(!19",
+    "db_debug_disabled": true,
+    "tag_orientation_cutoff": 5
+}

@@ -1,1 +1,22 @@
-
+version: '3'
+services:
+    omen:
+        image: docker.pkg.github.com/frankgrimm/omen/omen-prod:latest
+        restart: always
+        ports:
+            - "5000:5000"
+        volumes:
+            - ${PWD}/logs:/home/omenuser/logs
+            - ${PWD}/config.json:/home/omenuser/app/config.json
+        environment:
+            - LOGLEVEL=debug
+            - WORKERS_PER_CORE=1
+    db:
+        image: postgres:12.3
+        restart: always
+        volumes:
+            - ${PWD}/dbdata:/var/lib/postgresql/data
+        environment:
+            - PGDATA=/var/lib/postgresql/data/pgdata
+            - POSTGRES_USER=omenusr
+            - POSTGRES_PASSWORD=omenusr
