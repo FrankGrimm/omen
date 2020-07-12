@@ -1364,6 +1364,9 @@ def annotation_tasks(dbsession, for_user):
 
         tasks.append(task)
 
+    # make sure completed tasks are pushed to the bottom of the list
+    tasks.sort(key=lambda task: (task["progress"] >= 100.0, task["name"]))
+
     return tasks
 
 def userlist(dbsession):
