@@ -161,11 +161,11 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
     {% set hide_nan = True %}
 
     {% if df.shape[0] > 0 %}
-    <div id="{{df_editor_id}}" class="df_inspect_table alert alert-{% if df_class=='error' %}danger{%else%}{{df_class}}{% endif %}">
+    <div id="{{df_editor_id}}" class="df_inspect_table col-12 alert alert-{% if df_class=='error' %}danger{%else%}{{df_class}}{% endif %}">
         {% set id_column = dataset.get_id_column() %}
         {% set text_column = dataset.get_text_column() %}
-        <div class="df_inspect_table_header row">
-            <div class="df_inspect_header df_inspect_idcol d-none d-md-flex">{{ id_column }}</div>
+        <div class="df_inspect_table_header row col-12">
+            <!--div class="df_inspect_header df_inspect_idcol d-none d-md-flex">{{ id_column }}</div-->
             <div class="df_inspect_header df_inspect_textcol col-sm col-md d-flex">{{ text_column }}</div>
         </div>
         {% for index, row in df.iterrows() %}

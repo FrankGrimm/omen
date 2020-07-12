@@ -459,6 +459,12 @@ ul.ds_overview_issues li {
 
 .ds_overview_label {
     font-size: 12pt;
+    display: flex;
+    align-self: center;
+}
+
+.ds_overview_label > a {
+    width: 100%;
 }
 
 ul.dslist .ds_meta {

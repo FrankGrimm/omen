@@ -26,16 +26,16 @@
     </button>
 {%- endmacro %}
 
-<div class="col-12 df_inspect_table_row" data-sample-idx="{{ row.sample_index }}" data-sample-id="{{ row[id_column] }}">
+<div class="col-12 df_inspect_table_row row" data-sample-idx="{{ row.sample_index }}" data-sample-id="{{ row[id_column] }}">
     {% set row_sample = row.sample_index %}
     {% set all_tags = dataset.get_taglist(include_metadata=True) %}
     {% set tag = row['annotations'] %}
     {% set tagmetadata = all_tags.get(tag, None) %}
 
-    <div class="df_inspect_idcol df_inspect_col_content d-none d-md-flex">
+    <!-- div class="df_inspect_idcol df_inspect_col_content d-none d-md-flex">
         {% if not (hide_nans and not row[id_column].is_na()) %}<div class="df_col_content df_inspect_col_content">{{ macros.render_cell(row, id_column, query) }}</div>{% endif %}
-    </div>
-    <div class="df_inspect_textcol df_inspect_col_content col-sm col-md d-md-flex">
+    </div -->
+    <div class="df_inspect_textcol df_inspect_col_content col-sm-12 col-md-8 col-lg-9 d-md-flex">
         {% if not (hide_nans and not row[text_column].is_na()) %}
         <div class="df_col_content df_inspect_col_content">
             <div class="df_inspect_fulltext">{{ macros.render_cell(row, text_column, query) }}</div>
