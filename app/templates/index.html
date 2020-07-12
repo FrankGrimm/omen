@@ -14,11 +14,22 @@
           <div class="list-group">
             {% for task in tasks %}
                 <a class="list-group-item list-group-item-action" href="{{ url_for('annotate', dsid=task.id) }}">
+                    {% set task_state_icon = "mdi-checkbox-multiple-blank-outline" %}
+
                     {% if 'owner' in task.user_roles%}
-                    <i class="mdi mdi-server index_taskicon"></i>
-                    {% else %}
-                    <i class="mdi mdi-account-multiple index_taskicon"></i>
+                        {% set task_state_icon = "mdi-checkbox-blank-outline" %}
                     {% endif %}
+
+                    {% if task.progress and task.progress >= 100.0 %}
+                        {% set task_state_icon = "mdi-checkbox-multiple-marked-outline" %}
+
+                        {% if 'owner' in task.user_roles%}
+                            {% set task_state_icon = "mdi-checkbox-marked-outline" %}
+                        {% endif %}
+                    {% endif %}
+
+                    <i class="mdi {{ task_state_icon }}"></i>
+
                     {{task.name}} <span class="index_task_meta">{{task.annos}}/{{task.size}}</span> 
                     <span class="index_task_role">{% if 'owner' in task.user_roles%}owned by you{% elif 'curator' in task.user_roles %}curator{% elif 'annotator' in task.user_roles %}annotator{% endif %}{% if not 'owner' in task.user_roles %}, owned by <i class="fas fa-user"></i> <span class="index_task_dsowner">{{ task.dataset.owner.get_name() }}</span>{% endif %}
                     </span>
