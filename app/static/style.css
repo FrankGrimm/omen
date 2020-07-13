@@ -341,6 +341,9 @@ a.btn .fa-2x {
     background: var(--layout_bg_minimal);
     padding: 1em;
     margin: 0 1em;
+    align-self: center;
+    display: flex;
+    width: 100%;
 }
 
 li.singleprogress {
