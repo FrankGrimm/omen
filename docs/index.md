@@ -63,4 +63,12 @@ _Note_ that this deployment example ends at the container level, it should be us
 Check out our [milestones](https://github.com/FrankGrimm/omen/milestones) and [issues](https://github.com/FrankGrimm/omen/issues) to see what is going on with the project. If you want to get started, go ahead and [fork](https://github.com/FrankGrimm/omen) the project. We provide two ready-to-go docker-compose configurations. These should work for most setups and are also used to configure the CI (via GitHub actions) and package releases:
 
 - `docker-compose.dev.yml` which runs the current OMEN branch using Flask debug (featuring auto-reloading) and configures a local database within the same compose-network. This should be the default configuration for development
+    ```bash
+    docker-compose --env-file /dev/null -f docker-compose.dev.yml up
+    ```
 - `docker-compose.prod.yml` which runs a full `gunicorn` instance and is used to create the production release. This is otherwise mostly used directly when setting up test and staging environments.
+    ```bash
+    docker-compose --env-file /dev/null -f docker-compose.prod.yml up
+    ```
+
+
