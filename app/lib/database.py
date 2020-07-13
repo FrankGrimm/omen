@@ -1012,7 +1012,7 @@ class Dataset(Base):
                 elif len(df.shape) <= 1:
                     errors.append("did not recognize any content (invalid shape)")
                     success = False
-                elif df.shape[1] <= 2:
+                elif df.shape[1] < 2:
                     errors.append("sample file needs at least two columns, found: %s" % df.shape[1])
                     success = False
 
