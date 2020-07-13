@@ -16,6 +16,7 @@ WORKDIR /home/omenuser
 USER omenuser
 
 COPY ./app ./app/app/
+COPY ./app/migrations ./app/
 COPY ./config.json ./app/app/
 COPY ./gunicorn_conf.py /gunicorn_conf.py
 
