@@ -33,6 +33,10 @@
     
     --tag_accent_opacity: 0.7;
 
+    --taskprogress_bg: rgb(200, 230, 201);
+    --taskprogress_height: 10px;
+    --taskprogress_side_height: 5px;
+
     --tag_color_white: 255, 255, 255;
     --tag_color_orange: 255, 159, 64;
     --tag_color_red: 255, 99, 132;
@@ -346,16 +350,30 @@ a.btn .fa-2x {
     width: 100%;
 }
 
+.singleprogress > .progress-bar {
+    border-bottom-width: var(--taskprogress_height, 10px) !important;
+    height: var(--taskprogress_height, 10px) !important;
+}
+.annoprogress > .progress-bar {
+    border-bottom-width: var(--taskprogress_height, 10px) !important;
+    height: var(--taskprogress_height, 10px) !important;
+}
+
 li.singleprogress {
-    height: 10px !important;
+    border-bottom-width: var(--taskprogress_height, 10px) !important;
+    background-color: var(--taskprogress_bg);
+    height: var(--taskprogress_height, 10px) !important;
     padding: 1em 0;
     margin: 1em auto auto 10% !important;
     width: auto;
 }
 div.annoprogress {
-    height: 0.7em;
+    border-bottom-width: var(--taskprogress_height, 10px) !important;
+    background-color: var(--taskprogress_bg);
+    height: var(--taskprogress_height, 10px) !important;
     padding: 0;
     margin: -2em 0 1em 0;
+    height: var(--taskprogress_height, 10px) !important;
 }
 
 i.aclusericon {
@@ -614,14 +632,31 @@ div.df_pagination a:hover {
     color: var(--theme_fg_nav_active);
 }
 
-li.nav-active-task div.sideprogress {
+.sideprogress {
+    border-bottom-width: var(--taskprogress_side_height, var(--taskprogress_height, 10px)) !important;
+    background-color: var(--taskprogress_bg);
+    height: var(--taskprogress_side_height, var(--taskprogress_height, 10px)) !important;
     padding: 0;
     margin: 0;
 }
-li.nav-active-task div.sideprogress-active {
+.sideprogress-active {
+    border-bottom-width: var(--taskprogress_side_height, var(--taskprogress_height, 10px)) !important;
+    background-color: var(--taskprogress_bg);
+    height: var(--taskprogress_side_height, var(--taskprogress_height, 10px)) !important;
     padding: 0;
     margin: 0;
 }
+
+.sideprogress > .progress-bar {
+    border-bottom-width: var(--taskprogress_side_height, var(--taskprogress_height, 10px)) !important;
+    height: var(--taskprogress_side_height, var(--taskprogress_height, 10px)) !important;
+}
+ 
+.sideprogress-active > .progress-bar {
+    border-bottom-width: var(--taskprogress_side_height, var(--taskprogress_height, 10px)) !important;
+    height: var(--taskprogress_side_height, var(--taskprogress_height, 10px)) !important;
+}
+
 
 .nav-active-task-data {
     font-size: 0.9em;
