@@ -16,8 +16,9 @@ WORKDIR /home/omenuser
 USER omenuser
 
 COPY ./app ./app/app/
-COPY ./app/migrations ./app/
+COPY ./app/migrations ./app/migrations
 COPY ./config.json ./app/app/
+COPY ./container/prestart.sh /app/prestart.sh
 COPY ./gunicorn_conf.py /gunicorn_conf.py
 
 WORKDIR /home/omenuser/app
