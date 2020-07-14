@@ -377,7 +377,6 @@ def get_sample_index(dbsession, dataset, session_user, random_order=False):
            first_row = no_anno_df.iloc[no_anno_df.index[0]]
            sample_idx = first_row['sample_index']
            sample_id = first_row[dataset.get_id_column()]
-           db.fprint("DEBUG-firstrow", first_row)
 
     return sample_idx, sample_id, no_anno_df, annotation_columns, total
 
@@ -403,8 +402,6 @@ def annotate(dsid=None, sample_idx=None):
         id_column = dataset.get_id_column()
 
         sample_idx, sample_id, df, annotation_columns, _ = get_sample_index(dbsession, dataset, session_user)
-
-        db.fprint("DEBUG", sample_idx)
 
         sample_content = None
 
