@@ -3,6 +3,7 @@ Main entrypoint.
 """
 
 import sys
+import logging
 from datetime import datetime
 
 from flask import Flask, redirect, render_template, request, url_for, session
@@ -13,6 +14,10 @@ from app import __version__ as app_version
 BASEURI = config.get("base_uri", "/omen") or "/omen"
 flask_app = app = Flask(__name__, static_url_path=BASEURI + "/static")
 app.secret_key = config.get("flask_secret", raise_missing=True)
+
+logging.basicConfig(level=config.get("log_level", "DEBUG").upper(),
+                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                    datefmt='%m-%d %H:%M')
 
 import app.lib.database as db
 
