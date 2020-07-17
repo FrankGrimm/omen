@@ -631,7 +631,7 @@ def new_dataset(dsid=None):
                         not request.form.get("annorole", None) is None:
                     annouser = request.form.get("annouser", None)
                     annorole = request.form.get("annorole", None)
-                    if annorole in db.VALID_ROLES:
+                    if annorole in db.User.VALID_ROLES:
                         dataset.set_role(dbsession, annouser, annorole)
 
                 if formaction == 'rem_role' and \

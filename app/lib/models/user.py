@@ -1,7 +1,7 @@
 """
 Implementation of the user model.
 """
-from sqlalchemy import Column, Integer, String, JSON, ForeignKey, and_, ForeignKeyConstraint
+from sqlalchemy import Column, Integer, String, JSON, ForeignKey, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.attributes import flag_dirty, flag_modified
 
@@ -13,6 +13,7 @@ import sys
 from app.lib.database_internals import Base
 
 PW_MINLEN = 5
+VALID_ROLES = set(['annotator', 'curator'])
 
 
 class User(Base):
