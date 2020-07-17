@@ -51,15 +51,6 @@ def shutdown():
         engine.dispose()
 
 
-class Job(Base):
-    __tablename__ = 'jobs'
-
-    jobid = Column(Integer, primary_key=True)
-    target_fn = Column(String, nullable=False)
-    jobstate = Column(String, nullable=False, default="queued")
-    jobdata = Column(JSON, nullable=False)
-
-
 def connect():
     global flask_db, migrate
 

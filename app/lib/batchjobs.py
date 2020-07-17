@@ -13,6 +13,15 @@ _MANAGED_JOBS = []
 _COUNTERS = defaultdict(int)
 batch_pool = None
 
+
+# class Job(Base):
+#     __tablename__ = 'jobs'
+#
+#     jobid = Column(Integer, primary_key=True)
+#     target_fn = Column(String, nullable=False)
+#     jobstate = Column(String, nullable=False, default="queued")
+#     jobdata = Column(JSON, nullable=False)
+
 def accepts_jobs():
     return batch_pool is not None
 
@@ -31,7 +40,7 @@ def tick():
 def startup():
     """
     creates the pool of worker processes
-    
+
     app.web is responsible for calling this method and ensures only one of these is active in a cluster setup
     """
     global batch_pool
