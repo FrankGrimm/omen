@@ -271,7 +271,7 @@ class Dataset(Base):
         """
 
         sql = prep_sql(sql)
-        logging.debug("DB_SQL_LOG", sql, params)
+        logging.debug("DB_SQL_LOG %s %s", sql, params)
 
         df = pd.read_sql(sql,
                          dbsession.bind,
@@ -332,7 +332,7 @@ class Dataset(Base):
         """
 
         sql = prep_sql(sql)
-        logging.debug("DB_SQL_LOG", sql, params)
+        logging.debug("DB_SQL_LOG %s %s", sql, params)
 
         df = pd.read_sql(sql,
                          dbsession.bind,
@@ -546,7 +546,7 @@ class Dataset(Base):
             params["page_onset"] = (page - 1) * page_size
 
         sql = prep_sql(sql)
-        logging.debug("DB_SQL_LOG", sql, params)
+        logging.debug("DB_SQL_LOG %s %s", sql, params)
 
         df = pd.read_sql(sql,
                 dbsession.bind,
@@ -707,7 +707,7 @@ class Dataset(Base):
                 "req_sample_idx": sample_index
                 }
 
-        logging.debug("DF_SQL_LOG", "get_next_sample(excl=%s)" % exclude_annotated, sql, params)
+        logging.debug("DF_SQL_LOG %s\n%s\n%s", "get_next_sample(excl=%s)" % exclude_annotated, sql, params)
         df = pd.read_sql(sql,
                          dbsession.bind,
                          params=params)
@@ -764,7 +764,7 @@ class Dataset(Base):
                 "req_sample_idx": sample_index
                 }
 
-        logging.debug("DF_SQL_LOG", "get_prev_sample(excl=%s)" % exclude_annotated, sql, params)
+        logging.debug("DF_SQL_LOG %s\n%s\n%s", "get_prev_sample(excl=%s)" % exclude_annotated, sql, params)
         df = pd.read_sql(sql,
                          dbsession.bind,
                          params=params)
