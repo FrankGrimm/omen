@@ -12,3 +12,4 @@ PyJWT==1.7.1
 Flask-Migrate==2.5.3
 pylint==2.5.3
 pylint-flask-sqlalchemy==0.2.0
+iso639==0.1.4

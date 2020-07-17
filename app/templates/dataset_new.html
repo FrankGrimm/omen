@@ -332,7 +332,7 @@
     </div>
     <div class="row seprow">
         <ul class="col-12 dsacl" id="dsacl">
-        {% for userobj in db.userlist(dbsession) %}
+        {% for userobj in db.User.userlist(dbsession) %}
             <li class="row">
                 
                 <span class="col-1" aclusericon"><i title="{{userobj.uid}}" class="mdi mdi-account" style="margin-top: 0.5em;"></i></span>

@@ -32,6 +32,11 @@ def store_config(cfg):
         json.dump(cfg, outfile)
     return cfg
 
+def get_int(key, default_value=None, raise_missing=False):
+    val = get(key, default_value, raise_missing)
+    if val is not None:
+        return int(val)
+
 def get(key, default_value=None, raise_missing=False):
     cfg = load_config()
     if key is None:
