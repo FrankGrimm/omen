@@ -13,8 +13,7 @@ import getpass
 import atexit
 
 from passlib.hash import scrypt
-from sqlalchemy.ext.declarative import declarative_base
-Base = declarative_base()
+from app.lib.database_internals import Base
 from sqlalchemy import Column, Integer, String, JSON, ForeignKey, and_, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.attributes import flag_dirty, flag_modified
