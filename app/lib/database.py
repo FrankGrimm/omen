@@ -9,10 +9,8 @@ import os
 import os.path
 from io import StringIO
 import sys
-import getpass
 import atexit
 
-from passlib.hash import scrypt
 from app.lib.database_internals import Base
 from sqlalchemy import Column, Integer, String, JSON, ForeignKey, and_, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
@@ -30,7 +28,6 @@ from . import config
 flask_db = None
 migrate = None
 
-PW_MINLEN = 5
 VALID_ROLES = set(['annotator', 'curator'])
 
 
@@ -58,6 +55,8 @@ def shutdown():
     if not engine is None:
         engine.dispose()
 
+from app.lib.models.user import User
+
 class Job(Base):
     __tablename__ = 'jobs'
 
@@ -65,50 +64,6 @@ class Job(Base):
     target_fn = Column(String, nullable=False)
     jobstate = Column(String, nullable=False, default="queued")
     jobdata = Column(JSON, nullable=False)
-
-class User(Base):
-    __tablename__ = 'users'
-
-    uid = Column(Integer, primary_key=True)
-    email = Column(String, nullable=False)
-    displayname = Column(String, nullable=True)
-    pwhash = Column(String, nullable=False)
-
-    datasets = relationship("Dataset")
-    annotations = relationship("Annotation")
-
-    def __init__(self, uid=None, email=None, pwhash=None):
-        self.uid = uid
-        self.email = email
-        self.pwhash = pwhash
-        self._cached_df = None
-
-    def get_name(self):
-        if not self.displayname is None and not self.displayname.strip() == '':
-            return self.displayname.strip()
-        return self.email
-
-    def verify_password(self, pw):
-        return scrypt.verify(pw, self.pwhash)
-
-    def change_password(self, dbsession, curpw, pw1, pw2):
-        if not curpw or not pw1 or not pw2:
-            raise Exception("All fields mandatory")
-
-        if not self.verify_password(curpw):
-            raise Exception("Invalid credentials")
-
-        if pw1 != pw2:
-            raise Exception("Password and confirmation do not match")
-
-        newpwhash = scrypt.hash(pw1)
-        self.pwhash = newpwhash
-        dbsession.merge(self)
-
-        return self.verify_password(pw1)
-
-    def __str__(self):
-        return "[User #%s, %s]" % (self.uid, self.email)
 
 DATASET_CONTENT_CACHE = {}
 
@@ -242,7 +197,7 @@ class Dataset(Base):
         if isinstance(user_obj, str):
             user_obj = int(user_obj)
         if isinstance(user_obj, int):
-            user_obj = by_id(dbsession, user_obj)
+            user_obj = User.by_id(dbsession, user_obj)
         if not user_obj:
             return set()
 
@@ -531,7 +486,7 @@ class Dataset(Base):
             query=None, order_by=None, min_sample_index=None,
             tags_include=None, tags_exclude=None):
 
-        foruser = by_id(dbsession, foruser)
+        foruser = User.by_id(dbsession, foruser)
         user_roles = self.get_roles(dbsession, foruser)
 
         if not 'annotator' in user_roles and \
@@ -602,7 +557,7 @@ class Dataset(Base):
         target_users = [foruser] # if user is annotator, only export and show their own annotations
         if 'curator' in user_roles and not only_user:
             # curator, also implied by owner role
-            target_users = list(set(userlist(dbsession)) - set([foruser]))
+            target_users = list(set(User.userlist(dbsession)) - set([foruser]))
 
         additional_user_columns = []
         if not only_user:
@@ -743,7 +698,7 @@ class Dataset(Base):
         return anno_votes
 
     def getannos(self, dbsession, uid, asdict=False):
-        user_obj = by_id(dbsession, uid)
+        user_obj = User.by_id(dbsession, uid)
         annores = dbsession.query(Annotation).filter_by(
                     owner_id=user_obj.uid, dataset_id=self.dataset_id).all()
         if not asdict:
@@ -760,7 +715,7 @@ class Dataset(Base):
         return resdict
 
     def getanno(self, dbsession, uid, sample):
-        user_obj = by_id(dbsession, uid)
+        user_obj = User.by_id(dbsession, uid)
         sample = str(sample)
         anno_obj_data = {}
 
@@ -894,7 +849,7 @@ class Dataset(Base):
             return None, None
 
     def setanno(self, dbsession, uid, sample_index, value):
-        user_obj = by_id(dbsession, uid)
+        user_obj = User.by_id(dbsession, uid)
 
         if user_obj is None:
             raise Exception("setanno() requires a user object or id")
@@ -1264,7 +1219,7 @@ def all_datasets(dbsession):
 def my_datasets(dbsession, user_id):
     res = {}
 
-    user_obj = by_id(dbsession, user_id)
+    user_obj = User.by_id(dbsession, user_id)
 
     for ds in dbsession.query(Dataset).filter_by(owner=user_obj).all():
         if not ds or not ds.dataset_id:
@@ -1276,7 +1231,7 @@ def my_datasets(dbsession, user_id):
 def dataset_roles(dbsession, user_id):
     res = {}
 
-    user_obj = by_id(dbsession, user_id)
+    user_obj = User.by_id(dbsession, user_id)
 
     all_user_datasets = accessible_datasets(dbsession, user_id, include_owned=True)
 
@@ -1288,7 +1243,7 @@ def dataset_roles(dbsession, user_id):
 def accessible_datasets(dbsession, user_id, include_owned=False):
     res = {}
 
-    user_obj = by_id(dbsession, user_id)
+    user_obj = User.by_id(dbsession, user_id)
 
     if include_owned:
         res = my_datasets(dbsession, user_id)
@@ -1309,34 +1264,6 @@ def accessible_datasets(dbsession, user_id, include_owned=False):
         res[str(ds.dataset_id)] = ds
 
     return res
-
-def by_email(dbsession, email, doraise=True):
-    qry = dbsession.query(User).filter_by(email=email)
-
-    if doraise:
-        return qry.one()
-
-    return qry.one_or_none()
-
-def by_id(dbsession, uid):
-    if isinstance(uid, User):
-        return uid
-    if isinstance(uid, str):
-        uid = int(uid)
-    return dbsession.query(User).filter_by(uid=uid).one()
-
-def insert_user(dbsession, email, pwhash):
-    existing = by_email(dbsession, email, doraise=False)
-    if not existing is None:
-        return (False, existing)
-
-    newobj = User(email=email, pwhash=pwhash)
-    dbsession.add(newobj)
-
-    dbsession.commit()
-
-    newobj = by_email(dbsession, email)
-    return (True, newobj)
 
 def task_calculate_progress(task):
     if task is None:
@@ -1374,37 +1301,6 @@ def annotation_tasks(dbsession, for_user):
     tasks.sort(key=lambda task: (task["progress"] >= 100.0, task["name"]))
 
     return tasks
-
-def userlist(dbsession):
-    return dbsession.query(User).all()
-
-def create_user(dbsession, email=None):
-    fprint("creating user")
-    if email is None:
-        email = input("E-Mail: ")
-    pw1 = getpass.getpass("Password: ")
-    pw2 = getpass.getpass("Confirm password: ")
-    if not email or not pw1 or not pw2:
-        fprint("Missing email or password")
-        sys.exit(1)
-    if pw1 != pw2:
-        fprint("Password and confirmation do not match")
-        sys.exit(1)
-
-    if len(pw1) < PW_MINLEN:
-        fprint("Passwords need to be at least %s characters long." % PW_MINLEN)
-        sys.exit(1)
-
-    pwhash = scrypt.hash(pw1)
-    del pw1
-    del pw2
-
-    fprint("inserting")
-    inserted, obj = insert_user(dbsession, email, pwhash)
-    if inserted:
-        fprint("created user", obj)
-    else:
-        fprint("user already exists", obj)
 
 def connect():
     global flask_db, migrate

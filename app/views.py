@@ -44,7 +44,7 @@ def highlight(value, query):
 def index():
     with db.session_scope() as dbsession:
 
-        session_user = db.by_id(dbsession, session['user'])
+        session_user = db.User.by_id(dbsession, session['user'])
         annotation_tasks = db.annotation_tasks(dbsession, session['user'])
 
         my_datasets = db.my_datasets(dbsession, session['user'])
@@ -86,7 +86,7 @@ def logout():
     return redirect(url_for('index'))
 
 def get_accessible_dataset(dbsession, dsid, check_role=None):
-    session_user = db.by_id(dbsession, session['user'])
+    session_user = db.User.by_id(dbsession, session['user'])
 
     my_datasets = db.my_datasets(dbsession, session_user)
     access_datasets = db.accessible_datasets(dbsession, session_user)
@@ -131,7 +131,7 @@ def inspect_dataset(dsid=None):
         query = request.args.get("query", "").strip()
 
         cur_dataset = get_accessible_dataset(dbsession, dsid)
-        session_user = db.by_id(dbsession, session['user'])
+        session_user = db.User.by_id(dbsession, session['user'])
 
         tagstates = {}
         restrict_include = json.loads(request.args.get("restrict_taglist_include", "[]"))
@@ -257,7 +257,7 @@ def download(dsid=None):
 def show_datasets(dsid=None):
     with db.session_scope() as dbsession:
 
-        userobj = db.by_id(dbsession, session['user'])
+        userobj = db.User.by_id(dbsession, session['user'])
 
         my_datasets = db.my_datasets(dbsession, session['user'])
         access_datasets = db.accessible_datasets(dbsession, session['user'])
@@ -387,7 +387,7 @@ def annotate(dsid=None, sample_idx=None):
     dataset = None
 
     with db.session_scope() as dbsession:
-        session_user = db.by_id(dbsession, session['user'])
+        session_user = db.User.by_id(dbsession, session['user'])
         dataset = get_accessible_dataset(dbsession, dsid, "annotator")
 
         if dataset is None:
@@ -496,7 +496,7 @@ def dataset_overview_json(dsid):
     dataset = None
 
     with db.session_scope() as dbsession:
-        session_user = db.by_id(dbsession, session['user'])
+        session_user = db.User.by_id(dbsession, session['user'])
         dataset = get_accessible_dataset(dbsession, dsid)
         user_roles = list(dataset.get_roles(dbsession, session_user))
 
@@ -540,7 +540,7 @@ def new_dataset(dsid=None):
             flash("Dataset not found or access denied", "error")
             return abort(404, description="Dataset not found or access denied")
 
-        userobj = db.by_id(dbsession, session['user'])
+        userobj = db.User.by_id(dbsession, session['user'])
         if dataset.owner is None:
             dataset.owner = userobj
 
@@ -744,7 +744,7 @@ def new_dataset(dsid=None):
 @login_required
 def settings():
     with db.session_scope() as dbsession:
-        userobj = db.by_id(dbsession, session['user'])
+        userobj = db.User.by_id(dbsession, session['user'])
         if request.method == 'POST':
             act = request.form.get("action", None)
 
@@ -792,7 +792,7 @@ def login(backto=None):
         loginerror = 'Invalid credentials'
         if not req_user is None and not req_pw is None:
             with db.session_scope() as dbsession:
-                req_user_obj = db.by_email(dbsession, req_user, doraise=False)
+                req_user_obj = db.User.by_email(dbsession, req_user, doraise=False)
                 if not req_user_obj is None:
                     if req_user_obj.verify_password(req_pw):
                         flash('You were successfully logged in.', "success")

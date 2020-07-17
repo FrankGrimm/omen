@@ -124,7 +124,7 @@ def cli_reset_database():
 @flask_app.cli.command("createuser")
 def cli_createuser():
     with db.session_scope() as dbsession:
-        db.create_user(dbsession)
+        db.User.create_user(dbsession)
 
 server_status = None
 
