@@ -2,8 +2,10 @@
 Main entrypoint.
 """
 
+import os
 import sys
 import logging
+import atexit
 from datetime import datetime
 
 from flask import Flask, redirect, render_template, request, url_for, session
@@ -85,7 +87,6 @@ def inject_globals():
         tag_orientation_cutoff = int(config.get("tag_orientation_cutoff", "5"))
     except ValueError:
         print("[warn] malformed entry for key tag_orientation_cutoff", file=sys.stderr)
-        pass
 
     return dict(product_name=config.get("product_name", "Annotations"), \
                 is_authenticated=is_authenticated,
@@ -124,6 +125,27 @@ def cli_reset_database():
 def cli_createuser():
     with db.session_scope() as dbsession:
         db.create_user(dbsession)
+
+server_status = None
+
+def on_shutdown():
+    global server_status
+    logging.info("server shutdown received")
+
+def on_starting(_):
+    global server_status
+    logging.info("server startup received")
+    server_status = "started"
+
+# make sure startup/shutdown handlers are called when not
+# automatically invoked through the gunicorn events
+exec_environment = "gunicorn"
+if os.environ.get("FLASK_RUN_FROM_CLI", "").strip() == "true":
+    exec_environment = "flask"
+
+if exec_environment == "flask" and server_status is None:
+    on_starting(None)
+    atexit.register(on_shutdown)
 
 app = flask_app
 
