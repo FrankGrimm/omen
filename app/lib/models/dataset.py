@@ -271,7 +271,7 @@ class Dataset(Base):
         """
 
         sql = prep_sql(sql)
-        logging.debug("DB_SQL_LOG", sql, params)
+        logging.debug("DB_SQL_LOG %s", sql, params)
 
         df = pd.read_sql(sql,
                          dbsession.bind,
@@ -332,7 +332,7 @@ class Dataset(Base):
         """
 
         sql = prep_sql(sql)
-        logging.debug("DB_SQL_LOG", sql, params)
+        logging.debug("DB_SQL_LOG %s", sql, params)
 
         df = pd.read_sql(sql,
                          dbsession.bind,
@@ -546,7 +546,7 @@ class Dataset(Base):
             params["page_onset"] = (page - 1) * page_size
 
         sql = prep_sql(sql)
-        logging.debug("DB_SQL_LOG", sql, params)
+        logging.debug("DB_SQL_LOG %s", sql, params)
 
         df = pd.read_sql(sql,
                 dbsession.bind,
