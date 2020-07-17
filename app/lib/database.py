@@ -59,6 +59,13 @@ def shutdown():
     if not engine is None:
         engine.dispose()
 
+class Job(Base):
+    __tablename__ = 'jobs'
+
+    jobid = Column(Integer, primary_key=True)
+    target_fn = Column(String, nullable=False)
+    jobstate = Column(String, nullable=False, default="queued")
+    jobdata = Column(JSON, nullable=False)
 
 class User(Base):
     __tablename__ = 'users'
@@ -132,11 +139,11 @@ class DatasetContent(Base):
                 self.sample
                 )
 
-"""
-numpy safe JSON converter
-adapted from https://stackoverflow.com/a/57915246
-"""
 class NpEncoder(json.JSONEncoder):
+    """
+    numpy safe JSON converter
+    adapted from https://stackoverflow.com/a/57915246
+    """
     def default(self, obj):
         if isinstance(obj, np.integer):
             return int(obj)

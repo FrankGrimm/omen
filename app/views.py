@@ -769,6 +769,16 @@ def settings():
 
         return render_template('settings.html', session_user=userobj)
 
+@app.route(BASEURI + '/debug', methods=["GET", "POST"])
+@login_required
+def debugroute():
+    debugdata = {}
+
+    import app.lib.learning as learning
+    debugdata['learning'] = learning.debug()
+
+    return debugdata
+
 @app.route(BASEURI + '/login', methods=['GET', 'POST'])
 def login(backto=None):
     if backto is None:
