@@ -24,16 +24,18 @@
 
 <div class="row" id="dataset_name_change">
     <form method="post" id="form_change_name" enctype="multipart/form-data" class="col-12">
-        <div class="input-group col-12">
+        <div class="input-group input-group-with-tagtext col-12">
             <input type="hidden" name="action" value="change_name" />
 
-    {% if dataset and ds_errors and 'unnamed dataset' in ds_errors %}
-            <div class="col-12 col-md-2 dsnamecol ds_field_error">Dataset name:</div>
-    {% else %}
-            <div class="col-12 col-md-2 dsnamecol">Dataset name:</div>
-    {% endif %}
-            <div class="custom-file col-12 col-md-10">
-                <input type="text" placeholder="dataset name" class="custom-input" value="{{ dataset.dsmetadata.name }}" id="dataset_name" name="dataset_name" required="required">
+            <div class="custom-file">
+                {% set ds_name_add = "" %}
+                {% if dataset and ds_errors and 'unnamed dataset' in ds_errors %}
+                    {% set ds_name_add = "field_error" %}
+                {% endif %}
+                <div class="input-group-tagtext {{ ds_name_add }}">
+                    Dataset Name
+                </div>
+                <input type="text" placeholder="Specify a name for this dataset" class="custom-input" value="{{ dataset.dsmetadata.name }}" id="dataset_name" name="dataset_name" required="required">
             </div>
             <div class="input-group-append">
                 <button class="btn btn-primary input-group-text" onclick="return $('#form_change_name').submit();">
@@ -44,15 +46,14 @@
     </form>
 </div>
 
-<div class="row">
-    <h3 class="col-12">Import New Samples</h3>
-</div>
-
 <div class="row" id="dataset_content">
     <form method="post" id="form_upload_file" enctype="multipart/form-data" class="col-12">
-        <div class="input-group col-12">
+        <div class="input-group input-group-with-tagtext col-12">
             <input type="hidden" name="action" value="upload_file" />
             <div class="custom-file">
+                <div class="input-group-tagtext">
+                    Import New Samples
+                </div>
                 <input type="file" class="custom-file-input" id="upload_file" name="upload_file" required="required">
                 <label class="custom-file-label" for="upload_file">Choose file</label>
             </div>
@@ -385,10 +386,10 @@
 
 {% else %}
     {% if not can_import %}
-    <div class="row">
+    <div class="row" style="margin-top: 3em;">
         <div class="col-12">
             <div class="alert alert-info">
-                Please upload and format data first.
+                Please upload and import data in order to configure this dataset.
             </div>
         </div>
     </div>
@@ -396,10 +397,11 @@
 {% endif %}
 
 <div class="row seprow">
-    <h4 class="col-12">Delete Dataset</h4>
-</div>
-<div class="row seprow">
     <div class="col-12">
+        <h4>Delete Dataset</h4>
+        <p>
+        Warning: This completely deletes the current dataset (including all annotations) and <strong>cannot be undone</strong>.
+        </p>
     <form method="post" id="form_delete_dataset" enctype="multipart/form-data" class="col-12">
         <div class="input-group col-12">
             <input type="hidden" name="action" value="delete_dataset" />

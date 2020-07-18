@@ -19,11 +19,17 @@
     --theme_bg_nav_active_border: #163b64;
     --theme_fg_nav_active: #ebf1f9;
 
-    --theme_input_border: rgb(206, 212, 218);
+    --theme_input_border: rgba(0, 0, 0, 0.42);
+    --theme_input_border_hover: rgba(234, 101, 144, 0.79);
     --theme_table_accent: #ecf2ff;
     --theme_table_accent_alt: #b4cbfe;
     --theme_table_accent_row: #e4f1fd;
     --theme_table_header_fg: #07517e;
+
+    --theme_input_tagtext_fg: #f5f5f5;
+    --theme_input_tagtext_bg: rgb(127, 127, 128);
+    --theme_input_tagtext_fg_error: #f5f5f5;
+    --theme_input_tagtext_bg_error: #f57c01;
 
     --tag_border_size: 0 0 5px 0;
     --tag_border_active_inverted: black;
@@ -437,12 +443,34 @@ table.dataframe tbody td {
     white-space: nowrap;
 }
 
-.input-group > .custom-file, .input-group > .custom-select, .input-group > .form-control, .input-group > .form-control-plaintext {
-	position: relative;
-	-ms-flex: 1 1 0;
-	flex: 1 1 0;
-	min-width: 0;
-	margin-bottom: 0;
+input {
+    background-color: white;
+}
+
+.input-group-tagtext {
+    color: var(--theme_input_tagtext_fg);
+    background-color: var(--theme_input_tagtext_bg);
+    padding: 0.1rem 0.2rem;
+    font-size: 0.8rem;
+    display: flex;
+    position: absolute;
+	bottom: calc(-1.2rem - 1px);
+    left: 0;
+}
+
+.input-group-tagtext.field_error {
+    color: var(--theme_input_tagtext_fg_error);
+    background-color: var(--theme_input_tagtext_bg_error);
+}
+
+.input-group-with-tagtext {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 2rem;
+}
+.input-group {
+    display: flex;
+    flex-direction: row;
 }
 
 .custom-input {
@@ -451,7 +479,17 @@ table.dataframe tbody td {
 	width: 100%;
 	height: calc(1.5em + .75rem + 2px);
 	margin: 0;
-	border: 1px solid var(--theme_input_border);
+	padding: 0;
+    border-style: solid;
+    border-width: 0 0 1px 0;
+	border-color: var(--theme_input_border);
+    transition-property: border-color;
+    transition-timing-function: cubic-bezier(.4,0,.2,1);
+}
+.custom-input:hover {
+	border-bottom: 1px solid var(--theme_input_border_hover);
+    transition-property: border-color;
+    transition-timing-function: cubic-bezier(.4,0,.2,1);
 }
 
 .custom-file-input {
