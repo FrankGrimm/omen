@@ -35,7 +35,7 @@
                 <div class="input-group-tagtext {{ ds_name_add }}">
                     Dataset Name
                 </div>
-                <input type="text" placeholder="Specify a name for this dataset" class="custom-input" value="{{ dataset.dsmetadata.name }}" id="dataset_name" name="dataset_name" required="required">
+                <input type="text" placeholder="Specify a name for this dataset" class="custom-input" value="{{ dataset.dsmetadata.name }}" id="dataset_name" name="dataset_name" required="required" autocomplete="off">
             </div>
             <div class="input-group-append">
                 <button class="btn btn-primary input-group-text" onclick="return $('#form_change_name').submit();">
@@ -306,7 +306,7 @@
             <div class="row">
                 <label for="setdescription" class="col-12 col-md-3 col-form-label">
                     <div><strong>Description</strong> or annotation guidelines.<br />
-                        This is visible to all users, markdown is supported.</div>
+                        This is visible to all users.</div>
                 </label> 
                 <div class="col-12 col-md-9">
                     <textarea id="setdescription" name="setdescription" cols="40" rows="5" class="form-control with-markdown" aria-describedby="setdescriptionHelpBlock" required="required">{% if dataset.dsmetadata.description %}{{ dataset.dsmetadata.description }}{% endif %}</textarea> 
@@ -324,7 +324,7 @@
 
     <h3>Manage Access</h3>
 
-    <div class="row">
+    <div class="row seprow">
         <div class="col-12 col-md-8">Manage users who are allowed to add annotations for this dataset:</div>
         <div class="col-12 col-md-4"><a href="{{ url_for("createuser") }}" class="btn btn-primary">
                 <span class="">create new</span> <i class="mdi mdi-account-plus"></i>

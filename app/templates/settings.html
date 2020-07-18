@@ -6,29 +6,37 @@
 
   <form method=post>
       <input type=hidden name="action" value="change_displayname" />
-    <dl class="row">
+    <dl class="input-group">
       <dt class="col-12 col-md-3">Name:
-      <dd class="col-12 col-md-9"><input type="text" name="new_displayname" placeholder="{% if session_user.displayname %}{{session_user.displayname}}{% endif %}" value="{% if session_user.displayname %}{{session_user.displayname}}{% endif %}">
+      <dd class="col-12 col-md-9"><input type="text" name="new_displayname" placeholder="{% if session_user.displayname %}{{session_user.displayname}}{% endif %}" value="{% if session_user.displayname %}{{session_user.displayname}}{% endif %}" class="custom-input">
     </dl>
-    <p><input type=submit value="Apply">
+    <div class="row">
+        <div class="col-12">
+            <input type="submit" value="Apply" class="btn btn-primary">
+        </div>
+    </div>
   </form>
 
-  <h3><i class="mdi mdi-account-key"></i> Change Password</h3>
+  <h3 style="margin-top:2em;"><i class="mdi mdi-account-key"></i> Change Password</h3>
   
   <form method=post>
       <input type=hidden name="action" value="change_password" />
-    <dl class="row">
+    <dl class="input-group">
       <dt class="col-12 col-md-3">Current Password:
-      <dd class="col-12 col-md-9"><input type=password name=curpassword>
+      <dd class="col-12 col-md-9"><input type="password" name="curpassword" class="custom-input">
     </dl>
-    <dl class="row">
+    <dl class="input-group">
       <dt class="col-12 col-md-3">New Password:
-      <dd class="col-12 col-md-9"><input type=password name=newpw1>
+      <dd class="col-12 col-md-9"><input type="password" name="newpw1" class="custom-input">
     </dl>
-    <dl class="row">
+    <dl class="input-group">
       <dt class="col-12 col-md-3">Confirm New Password:
-      <dd class="col-12 col-md-9"><input type=password name=newpw2>
+      <dd class="col-12 col-md-9"><input type="password" name="newpw2" class="custom-input">
     </dl>
-    <p><input type=submit value="Change password">
+    <div class="row">
+        <div class="col-12">
+            <input type="submit" value="Change password" class="btn btn-primary">
+        </div>
+    </div>
   </form>
 {% endblock %}

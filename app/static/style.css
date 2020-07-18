@@ -312,8 +312,7 @@ ul.dslist {
 }
 .seprow {
     min-height: 2.5em;
-    margin-top: 1em;
-    margin-bottom: 1em;
+    margin: 1em 0;
 }
 
 .upload_meta {
@@ -443,7 +442,7 @@ table.dataframe tbody td {
     white-space: nowrap;
 }
 
-input {
+input[type=text] {
     background-color: white;
 }
 
@@ -486,6 +485,7 @@ input {
     transition-property: border-color;
     transition-timing-function: cubic-bezier(.4,0,.2,1);
 }
+
 .custom-input:hover {
 	border-bottom: 1px solid var(--theme_input_border_hover);
     transition-property: border-color;
@@ -1109,3 +1109,11 @@ h3 {
         margin-left: 0;
     }
 }
+
+/* SimpleMDE customization */
+#setdescriptionHelpBlock {
+    display: none;
+}
+/* /SimpleMDE customization */
+
+
