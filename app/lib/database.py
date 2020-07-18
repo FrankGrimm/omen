@@ -6,21 +6,19 @@ from contextlib import contextmanager
 import sys
 import atexit
 
-from app.lib.database_internals import Base
-from sqlalchemy import Column, Integer, String, JSON
-from sqlalchemy.orm import relationship
-from sqlalchemy.orm.attributes import flag_dirty, flag_modified
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-
-import numpy as np
+from app.lib.database_internals import Base
 
 import app.web as web
 from app.lib import config
+
+
 from app.lib.models.user import User
 from app.lib.models.datasetcontent import DatasetContent
 from app.lib.models.annotation import Annotation
 from app.lib.models.dataset import *
+from app.lib.models.activity import Activity
 
 flask_db = None
 migrate = None
