@@ -220,6 +220,11 @@
     align-self: self-start;
 }
 
+blockquote {
+    color: #535252;
+    font-style: italic;
+}
+
 #anno_actions .btn
 {
   height: auto;

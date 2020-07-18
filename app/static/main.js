@@ -97,4 +97,32 @@ $(document).ready(function() {
     nav_items.forEach(addPopOvers)
 
     $('select').selectpicker();
+
+    document.querySelectorAll("textarea.with-markdown").forEach((textarea) => {
+        const mdeToolbar = [
+            {name:"bold", action: SimpleMDE.toggleBold, className: "mdi mdi-format-bold", title: "Bold"},
+            {name:"italic", action: SimpleMDE.toggleItalic, className: "mdi mdi-format-italic", title: "Italic"},
+            {name:"heading", action: SimpleMDE.toggleHeading1, className: "mdi mdi-format-header-pound", title: "Heading"},
+            "|",
+            {name:"quote", action: SimpleMDE.toggleBlockquote, className: "mdi mdi-format-quote-open", title: "Quote"},
+            {name:"unordered-list", action: SimpleMDE.toggleUnorderedList, className: "mdi mdi-format-list-bulleted", title: "Generic List"},
+            {name:"ordered-list", action: SimpleMDE.toggleOrderedList, className: "mdi mdi-format-list-numbered", title: "Numbered List"},
+            "|",
+            {name:"link", action: SimpleMDE.drawLink, className: "mdi mdi-link-variant", title: "Create Link"},
+            "|",
+            {name:"preview", action: SimpleMDE.togglePreview, className: "mdi mdi-eye no-disable", title: "Toggle Preview"},
+            {name:"guide","action":"https://simplemde.com/markdown-guide", className: "mdi mdi-help-circle-outline", title: "Markdown Guide"},
+            "|"];
+        const mdeOptions = {
+            element: textarea,
+            autoDownloadFontAwesome: false,
+            autofocus: false,
+            autosave: false,
+            forceSync: true,
+            spellChecker: true,
+            toolbar: mdeToolbar
+        };
+        const mde = new SimpleMDE(mdeOptions);
+        window.mde = mde;
+    });
 });

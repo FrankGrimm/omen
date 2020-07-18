@@ -308,7 +308,7 @@
                         This is visible to all users, markdown is supported.</div>
                 </label> 
                 <div class="col-12 col-md-9">
-                    <textarea id="setdescription" name="setdescription" cols="40" rows="5" class="form-control" aria-describedby="setdescriptionHelpBlock" required="required">{% if dataset.dsmetadata.description %}{{ dataset.dsmetadata.description }}{% endif %}</textarea> 
+                    <textarea id="setdescription" name="setdescription" cols="40" rows="5" class="form-control with-markdown" aria-describedby="setdescriptionHelpBlock" required="required">{% if dataset.dsmetadata.description %}{{ dataset.dsmetadata.description }}{% endif %}</textarea> 
                     <span id="setdescriptionHelpBlock" class="form-text text-muted">separate single entries by newlines</span>
                 </div>
             </div> 
