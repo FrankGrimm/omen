@@ -70,17 +70,27 @@ $(document).ready(function() {
         if (!elem.getAttribute("title")) { return; }
         const popoverText = elem.getAttribute("title").trim();
         if (!popoverText) { return; }
-        $(elem).popover({
+
+        const $elem = $(elem);
+        $elem.popover({
             trigger: "hover focus",
             placement: "auto",
             content: popoverText,
             title: "",
             template: '<div class="popover" role="tooltip"><div class="arrow"></div><div class="popover-body"></div></div>'
         });
+        
+        $elem.hover(function() {
+            if ($elem.is(":disabled")) {
+                $elem.popover("hide");
+            }
+        }, function() {
+            // blur, do nothing
+        });
     };
     
     const titled_links = document.querySelectorAll("a[title]");
-    const titled_buttons = document.querySelectorAll("a[title]");
+    const titled_buttons = document.querySelectorAll("button[title]");
     const nav_items = document.querySelectorAll(".nav-item[title]");
     titled_links.forEach(addPopOvers)
     titled_buttons.forEach(addPopOvers)

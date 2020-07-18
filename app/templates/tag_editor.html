@@ -18,7 +18,7 @@
                 <div class="tageditor_entry input-group" data-tag="{{ tag }}" data-position="{{ loop.index }}" data-tagcount="{{ dataset.get_taglist()|length }}">
                     <div class="input-group-prepend">
                         <div class="dropdown">
-                            <a class="btn btn-outline-primary dropdown-toggle" role="button" data-tag="{{ tag }}" data-toggle="dropdown">
+                            <a class="btn btn-outline-primary dropdown-toggle" role="button" data-tag="{{ tag }}" data-toggle="dropdown" title="Tag Icon">
                                 <i class="{% if tagmetadata.icon %}{{ tagmetadata.icon }}{% else %}mdi mdi-circle-off-outline{% endif %}"> </i>
                             </a>
 
@@ -33,7 +33,7 @@
                         </div>
 
                         <div class="dropdown">
-                            <a class="btn btn-outline-primary dropdown-toggle{% if tagmetadata and tagmetadata.color %} tagcolor_{{ tagmetadata.color }}{% endif %}" role="button" data-tag="{{ tag }}" data-toggle="dropdown">
+                            <a class="btn btn-outline-primary dropdown-toggle{% if tagmetadata and tagmetadata.color %} tagcolor_{{ tagmetadata.color }}{% endif %}" role="button" data-tag="{{ tag }}" data-toggle="dropdown" title="Tag Color">
                                 <i class="mdi mdi-palette"> </i>
                             </a>
 
@@ -50,16 +50,16 @@
                     <input autocomplete="off" name="tageditor_rename_tag" placeholder="rename tag {{ tag }}" type="text" class="form-control tageditor_taginput" value="{{ tag }}"> 
                     <div class="input-group-append">
                         <div class="btn-group">
-                            <button data-action="rename_tag" data-tag="{{ tag }}" class="tageditor_action tageditor_action_rename btn btn-outline-primary input-group-text" disabled>
+                            <button data-action="rename_tag" data-tag="{{ tag }}" class="tageditor_action tageditor_action_rename btn btn-outline-primary input-group-text" title="Rename" disabled>
                                 <i class="mdi mdi-square-edit-outline"></i>
                             </button> 
-                        <button data-action="move_tag_down" data-tag="{{ tag }}" class="tageditor_action btn btn-outline-primary input-group-text"{% if loop.index == dataset.get_taglist()|length %} disabled{% endif %}>
+                        <button data-action="move_tag_down" data-tag="{{ tag }}" class="tageditor_action btn btn-outline-primary input-group-text" title="Move Down"{% if loop.index == dataset.get_taglist()|length %} disabled{% endif %}>
                             <i class="mdi mdi-arrow-down"></i>
                         </button> 
-                        <button data-action="move_tag_up" data-tag="{{ tag }}" class="tageditor_action btn btn-outline-primary input-group-text"{% if loop.index == 1 %} disabled{% endif %}>
+                        <button data-action="move_tag_up" data-tag="{{ tag }}" class="tageditor_action btn btn-outline-primary input-group-text" title="Move Up"{% if loop.index == 1 %} disabled{% endif %}>
                             <i class="mdi mdi-arrow-up"></i>
                         </button> 
-                        <button data-action="delete_tag" data-tag="{{ tag }}" class="tageditor_action btn btn-outline-primary input-group-text">
+                        <button data-action="delete_tag" data-tag="{{ tag }}" class="tageditor_action btn btn-outline-primary input-group-text" title="Delete">
                             <i class="mdi mdi-trash-can-outline"></i>
                         </button> 
                         </div>
@@ -73,7 +73,7 @@
                     <input autocomplete="off" id="tageditor_add_tag" name="tageditor_add_tag" placeholder="add new tag" type="text" class="form-control" value=""> 
                     <div class="input-group-append">
                         <div class="btn-group">
-                        <button class="btn btn-outline-primary input-group-text" id="tageditor_add_tag_action" disabled>
+                        <button class="btn btn-outline-primary input-group-text" id="tageditor_add_tag_action" title="Add Tag" disabled>
                             <i class="mdi mdi-plus"></i>
                         </button>
                         </div>
