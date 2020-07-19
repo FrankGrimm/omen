@@ -71,7 +71,7 @@ function initOverviewChart(target) {
             },
             title: {
                 display: true,
-                text: "Annotations"
+                text: "Annotation Distribution"
             },
             circumference: Math.PI,
             rotation: -Math.PI

@@ -19,6 +19,7 @@ from flask import flash, redirect, render_template, request, url_for, session, R
 import app.lib.config as config
 from app.web import app, BASEURI, db
 
+
 def login_required(func):
     @wraps(func)
     def decorated_function(*args, **kwargs):
@@ -28,16 +29,17 @@ def login_required(func):
         return func(*args, **kwargs)
     return decorated_function
 
+
 @app.template_filter(name="highlight")
 def highlight(value, query):
-    db.fprint("-" * 20, type(value), type(Markup(value)))
-    if not query is None and query.strip() != "":
+    if query is not None and query.strip() != "":
         query = r"(" + re.escape(query.strip()) + ")"
         value = Markup.escape(value)
         value = re.sub(query, lambda g: '<span class="ds_highlight">%s</span>' % g.group(1),
                        value, flags=re.IGNORECASE)
 
     return Markup(value)
+
 
 @app.route('/')
 @app.route(BASEURI + '/')
@@ -62,11 +64,12 @@ def index():
             ds_errors[cur_dataset] = cur_dataset.check_dataset()
 
         return render_template('index.html', my_datasets=my_datasets,
-                                    access_datasets=access_datasets,
-                                    ds_errors=ds_errors,
-                                    dbsession=dbsession,
-                                    session_user=session_user,
-                                    tasks=annotation_tasks)
+                               access_datasets=access_datasets,
+                               ds_errors=ds_errors,
+                               dbsession=dbsession,
+                               session_user=session_user,
+                               tasks=annotation_tasks)
+
 
 @app.before_request
 def before_handler():
@@ -77,6 +80,7 @@ def before_handler():
     session['request_counter'] = req_count
     # print("REQCOUNT", session.get("user", None), req_count)
 
+
 @app.route(BASEURI + "/logout")
 @login_required
 def logout():
@@ -85,6 +89,7 @@ def logout():
 
     return redirect(url_for('index'))
 
+
 def get_accessible_dataset(dbsession, dsid, check_role=None):
     session_user = db.User.by_id(dbsession, session['user'])
 
@@ -92,20 +97,21 @@ def get_accessible_dataset(dbsession, dsid, check_role=None):
     access_datasets = db.accessible_datasets(dbsession, session_user)
 
     cur_dataset = None
-    if not dsid is None and dsid in my_datasets:
+    if dsid is not None and dsid in my_datasets:
         cur_dataset = my_datasets[dsid]
-    if not dsid is None and dsid in access_datasets:
+    if dsid is not None and dsid in access_datasets:
         cur_dataset = access_datasets[dsid]
 
     if check_role is None:
         return cur_dataset
 
-    if not cur_dataset is None:
+    if cur_dataset is not None:
         user_roles = cur_dataset.get_roles(dbsession, session_user)
-        if not check_role in user_roles:
+        if check_role not in user_roles:
             return None
 
     return cur_dataset
+
 
 def reorder_dataframe(df, cur_dataset, annotation_columns):
     columns = list(df.columns.intersection(["sample_index", cur_dataset.get_id_column(), cur_dataset.get_text_column()])) + \
@@ -117,6 +123,7 @@ def reorder_dataframe(df, cur_dataset, annotation_columns):
     # reorder
     df = df[columns]
     return df
+
 
 @app.route(BASEURI + "/dataset/<dsid>/inspect", methods=["GET", "POST"])
 @login_required
@@ -506,7 +513,7 @@ def dataset_overview_json(dsid):
 
         annotations_by_user, all_annotations = dataset.annotation_counts(dbsession)
 
-        agreement_fleiss = dataset.annotation_agreement(dbsession)
+        agreement_fleiss = dataset.annotation_agreement(dbsession, by_tag=False)
 
         dsoverview = {
                 "dataset": dataset.dataset_id,
