@@ -45,7 +45,10 @@ function initPopovers() {
             title: "",
             template: '<div class="popover" role="tooltip"><div class="arrow"></div><div class="popover-body"></div></div>'
         });
-        
+
+        $elem.click(function() {
+            $elem.popover("hide");
+        });
         $elem.hover(function() {
             if ($elem.is(":disabled")) {
                 $elem.popover("hide");
