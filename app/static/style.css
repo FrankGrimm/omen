@@ -442,6 +442,10 @@ table.dataframe tbody td {
     white-space: nowrap;
 }
 
+label.option_update_active {
+    color: gray;
+}
+
 input[type=text] {
     background-color: white;
 }

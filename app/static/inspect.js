@@ -392,6 +392,7 @@ function initEditorButton(btn) {
     function initTagSelection() {
         document.querySelectorAll(".cb_show_tag_elem").forEach(initTagSelect);
     }
+
     document.addEventListener("DOMContentLoaded",function(){
         initTagSelection();
     });

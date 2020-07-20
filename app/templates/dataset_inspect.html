@@ -178,8 +178,8 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
 {% endblock %}
 
 {% block addscript %}
-    <script>
-    const ACTIVE_DATASET_ID = {{ dataset.dataset_id }};
-    </script>
+<script>
+const ACTIVE_DATASET_ID = {{ dataset.dataset_id }};
+</script>
 <script src="{{ url_for("static", filename="inspect.js") }}"></script>
 {% endblock %}

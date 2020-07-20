@@ -460,6 +460,24 @@ def dataset_lookup_or_create(dbsession, dsid, editmode):
 
 TAGORDER_ACTIONS = ["update_taglist", "rename_tag", "delete_tag", "move_tag_down", "move_tag_up"]
 
+def handle_option_update(dbsession, request, dataset):
+
+    set_key = request.json.get("option_key", "")
+    set_value = request.json.get("option_value", None)
+
+    if set_key == "" or set_key not in ["hide_votes"]:
+        raise Exception("did not recognize a key in JSON data")
+
+    if set_key == "hide_votes":
+        set_value = bool(set_value)
+
+    dataset.dsmetadata[set_key] = set_value
+    dataset.dirty(dbsession)
+    dbsession.commit()
+    dbsession.flush()
+
+    return {"action": "update_option",
+            "set_key": set_key}
 
 def handle_tag_update(dbsession, request, dataset):
     update_action = request.json.get("tagaction", "")
@@ -565,11 +583,13 @@ def new_dataset(dsid=None):
         if request.method == 'POST':
 
             if request.json is not None and request.json.get("action", "") == "tageditor":
-
                 editmode = "tageditor"
                 handle_tag_update(dbsession, request, dataset)
                 # data: JSON.stringify({"action": "tageditor", "action": tag_action, "tag": current_tag, "value": tag_value}),
 
+            if request.json is not None and request.json.get("action", "") == "update_option":
+                editmode = "update_option"
+                return handle_option_update(dbsession, request, dataset)
 
             formaction = request.form.get("action", None)
             # print("--- " * 5)
@@ -678,7 +698,6 @@ def new_dataset(dsid=None):
             dbsession.flush()
 
         # if uploaded content exists that has not been imported, load the content
-        new_content = None
         can_import = False
         if dataset.dsmetadata.get("upload_tempfile") is not None and \
             request.method == "POST" and request.form is not None and \
