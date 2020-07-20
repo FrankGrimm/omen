@@ -28,6 +28,10 @@ class User(Base):
     annotations = relationship("Annotation")
 
     @staticmethod
+    def is_valid_role(annorole):
+        return annorole in VALID_ROLES
+
+    @staticmethod
     def userlist(dbsession):
         return dbsession.query(User).all()
 

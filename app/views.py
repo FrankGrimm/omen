@@ -114,8 +114,10 @@ def get_accessible_dataset(dbsession, dsid, check_role=None):
 
 
 def reorder_dataframe(df, cur_dataset, annotation_columns):
-    columns = list(df.columns.intersection(["sample_index", cur_dataset.get_id_column(), cur_dataset.get_text_column()])) + \
-                list(df.columns.intersection(annotation_columns))
+    columns = list(df.columns.intersection([
+                    "sample_index",
+                    cur_dataset.get_id_column(),
+                    cur_dataset.get_text_column()])) + list(df.columns.intersection(annotation_columns))
 
     # drop other columns
     df = df.reset_index()
@@ -658,7 +660,7 @@ def new_dataset(dsid=None):
                         not request.form.get("annorole", None) is None:
                     annouser = request.form.get("annouser", None)
                     annorole = request.form.get("annorole", None)
-                    if annorole in db.User.VALID_ROLES:
+                    if db.User.is_valid_role(annorole):
                         dataset.set_role(dbsession, annouser, annorole)
 
                 if formaction == 'rem_role' and \
