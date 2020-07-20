@@ -239,7 +239,7 @@ def download(dsid=None):
     with db.session_scope() as dbsession:
         cur_dataset = get_accessible_dataset(dbsession, dsid)
 
-        df, _, _ = cur_dataset.annotations(dbsession, foruser=session['user'])
+        df, _, _ = cur_dataset.annotations(dbsession, foruser=session['user'], page_size=-1)
 
         s = StringIO()
         df.to_csv(s)
