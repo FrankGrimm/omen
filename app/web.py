@@ -22,6 +22,7 @@ logging.basicConfig(level=config.get("log_level", "DEBUG").upper(),
                     datefmt='%m-%d %H:%M')
 
 import app.lib.database as db
+import app.lib.crypto as app_crypto
 
 try:
     from app.lib.getch import getch
@@ -126,6 +127,7 @@ def cli_createuser():
     with db.session_scope() as dbsession:
         db.User.create_user(dbsession)
 
+
 server_status = None
 
 def on_shutdown():
@@ -135,6 +137,9 @@ def on_shutdown():
 def on_starting(_):
     global server_status
     logging.info("server startup received")
+
+    app_crypto.initialize()
+
     server_status = "started"
 
 # make sure startup/shutdown handlers are called when not

@@ -13,6 +13,7 @@ Users can override any configuration value by passing the respective equivalent 
 """
 import json
 import os
+import logging
 
 CFG_FILENAME = os.environ.get("OMEN_CONFIG_FILENAME", "./config.json")
 
@@ -27,15 +28,19 @@ def load_config():
         obj = {}
     return obj
 
+
 def store_config(cfg):
     with open(CFG_FILENAME, "wt") as outfile:
-        json.dump(cfg, outfile)
+        json.dump(cfg, outfile, indent=4)
+    logging.debug("written configuration to %s", CFG_FILENAME)
     return cfg
+
 
 def get_int(key, default_value=None, raise_missing=False):
     val = get(key, default_value, raise_missing)
     if val is not None:
         return int(val)
+
 
 def get(key, default_value=None, raise_missing=False):
     cfg = load_config()
@@ -53,7 +58,9 @@ def get(key, default_value=None, raise_missing=False):
 
     return cfg[key]
 
+
 def store(key, val):
+    logging.debug("config::value update %s", key)
     cfg = load_config()
     cfg[key] = val
     store_config(cfg)
