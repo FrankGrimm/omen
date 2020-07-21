@@ -42,7 +42,7 @@ except Exception as e:
 
 @app.before_request
 def check_auth():
-    if request and request.url_rule and request.url_rule.endpoint in ['login', 'static']:
+    if request and request.url_rule and request.url_rule.endpoint in ['login', 'static', 'accept_invite']:
         return None
     if session and 'user' in session and not session['user'] is None:
         return None
@@ -97,9 +97,16 @@ def inject_globals():
                 tag_orientation_cutoff=tag_orientation_cutoff,
                 app_version=app_version)
 
+
 @app.errorhandler(404)
 def page_not_found(error):
     return render_template("404.html", error=error), 404
+
+
+@app.errorhandler(400)
+def bad_request_error(error):
+    return render_template("400.html", error=error), 400
+
 
 import app.views
 
