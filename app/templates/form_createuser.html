@@ -10,7 +10,7 @@
                         <i class="mdi mdi-account-edit"></i>
                     </div>
                 </div> 
-                <input id="newuser_email" name="newuser_email" placeholder="user@domain.tld" type="email" autocomplete="off" autocapitalize="off" class="form-control" required="required">
+                <input id="newuser_email" name="newuser_email" placeholder="user@domain.tld" type="email" autocomplete="off" autocapitalize="off" class="form-control" required="required" value="{{request.form.newuser_email}}">
             </div>
         </div>
     </div>
@@ -23,7 +23,7 @@
                         <i class="mdi mdi-account-edit"></i>
                     </div>
                 </div> 
-                <input id="newuser_displayname" name="newuser_displayname" placeholder="User Name" type="text" autocomplete="off" class="form-control">
+                <input id="newuser_displayname" name="newuser_displayname" placeholder="User Name" type="text" autocomplete="off" class="form-control" value="{{request.form.newuser_displayname}}">
             </div>
         </div>
     </div>

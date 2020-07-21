@@ -330,14 +330,18 @@ def createuser():
         feature_user_manualcreate = config.get_bool("feature_user_manualcreate", True)
         session_user = db.User.by_id(dbsession, session['user'])
 
-        if request.method == 'POST' and request.json is not None:
-            req_action = request.json.get("action", "")
+        if request.method == 'POST' and (request.json is not None or len(request.form) > 0):
+            req_action = ""
+            if request.json is not None and "action" in request.json:
+                req_action = request.json.get("action", "")
+            if request.form is not None and "action" in request.form:
+                req_action = request.form.get("action", "")
 
             allowed_actions = set()
             if feature_user_invite:
                 allowed_actions.add("generate_invite")
             if feature_user_manualcreate:
-                allowed_actions.add("do_create")
+                allowed_actions.add("docreate")
 
             if req_action not in allowed_actions:
                 return abort(400, description="invalid action specified")
@@ -347,8 +351,33 @@ def createuser():
                 invite_uri = url_for("accept_invite")
                 return {"token": invite_token, "uri": invite_uri, "by": session_user.uid}
 
-        session_user.purge_invites(dbsession)
+            if req_action == "docreate":
+                email = request.form.get("newuser_email", None)
+                pw1 = request.form.get("newuser_password", None)
+                pw2 = request.form.get("newuser_password_confirm", None)
+                displayname = request.form.get("newuser_displayname", "")
 
+                if not email or not pw1 or not pw2:
+                    flash("Missing email or password", "warning")
+                elif pw1 != pw2:
+                    flash("Password and confirmation do not match", "warning")
+                elif len(pw1) < db.User.minimum_password_length():
+                    flash("Passwords need to be at least "
+                          + str(db.User.minimum_password_length())
+                          + " characters long.", "error")
+                else:
+                    pwhash = scrypt.hash(pw1)
+                    del pw1
+                    del pw2
+
+                    logging.info("inserting new user")
+                    inserted, created_userobj = db.User.insert_user(dbsession, email, pwhash, displayname=displayname)
+                    if inserted:
+                        flash("Account created.", "success")
+                        return redirect(url_for("createuser"))
+                    flash("An account with this e-mail already exists.", "warning")
+
+        session_user.purge_invites(dbsession)
         pending_invites = session_user.get_invites('pending')
 
         return render_template("createuser.html",
