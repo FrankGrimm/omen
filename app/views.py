@@ -484,13 +484,13 @@ def dataset_lookup_or_create(dbsession, dsid, editmode):
 
 TAGORDER_ACTIONS = ["update_taglist", "rename_tag", "delete_tag", "move_tag_down", "move_tag_up"]
 
-def handle_option_update(dbsession, request, dataset):
+def handle_option_update(dbsession, dataset):
 
     set_key = request.json.get("option_key", "")
     set_value = request.json.get("option_value", None)
 
-    if set_key == "" or set_key not in ["hide_votes"]:
-        raise Exception("did not recognize a key in JSON data")
+    if set_key == "" or set_key not in dataset.valid_option_keys:
+        raise Exception("did not recognize option key in JSON data")
 
     if set_key == "hide_votes":
         set_value = bool(set_value)
@@ -613,7 +613,7 @@ def new_dataset(dsid=None):
 
             if request.json is not None and request.json.get("action", "") == "update_option":
                 editmode = "update_option"
-                return handle_option_update(dbsession, request, dataset)
+                return handle_option_update(dbsession, dataset)
 
             formaction = request.form.get("action", None)
             # print("--- " * 5)

@@ -57,6 +57,10 @@ class Dataset(Base):
 
     persisted = False
     _cached_df = None
+    valid_option_keys = set(["hide_votes", "annotators_can_comment"])
+
+    def get_option(self, key, default_value=False):
+        return bool(self.dsmetadata.get(key, default_value))
 
     def empty(self):
         return not self.has_content()
