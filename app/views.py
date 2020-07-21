@@ -917,21 +917,23 @@ def login(backto=None):
         req_pw = request.form.get("password", None)
 
         loginerror = 'Invalid credentials'
-        if not req_user is None and not req_pw is None:
+        if req_user is not None and req_pw is not None:
             with db.session_scope() as dbsession:
                 req_user_obj = db.User.by_email(dbsession, req_user, doraise=False)
-                if not req_user_obj is None:
+                if req_user_obj is not None:
                     if req_user_obj.verify_password(req_pw):
                         flash('You were successfully logged in.', "success")
                         session['user'] = req_user_obj.uid
                         session['user_email'] = req_user_obj.email
                         session['user_displayname'] = req_user_obj.get_name()
+                        req_user_obj.purge_invites(dbsession)
                         loginerror = None
 
                         return redirect(url_for('index'))
         else:
             return redirect(url_for('index'))
-    if not loginerror is None:
+
+    if loginerror is not None:
         flash("%s" % loginerror, "error")
 
     return render_template('login.html')
