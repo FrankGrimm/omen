@@ -11,6 +11,7 @@ import string
 from functools import wraps
 from io import StringIO
 import math
+from collections import namedtuple
 
 from markupsafe import Markup
 from werkzeug.utils import secure_filename
@@ -127,67 +128,108 @@ def reorder_dataframe(df, cur_dataset, annotation_columns):
     return df
 
 
+def request_arg(key, valid_values, default_value=None):
+    value = default_value
+    req_value = request.args.get(key, None)
+
+    if req_value is not None and req_value.lower() in valid_values:
+        value = req_value.lower()
+    return value
+
+
+def get_tagstates(cur_dataset):
+    tagstates = {}
+    restrict_include = json.loads(request.args.get("restrict_taglist_include", "[]"))
+    restrict_exclude = json.loads(request.args.get("restrict_taglist_exclude", "[]"))
+    if not isinstance(restrict_include, list):
+        restrict_include = []
+    if not isinstance(restrict_exclude, list):
+        restrict_exclude = []
+
+    for tag in cur_dataset.get_taglist():
+        tagstates[tag] = 0
+        if tag in restrict_include:
+            tagstates[tag] = 1
+        elif tag in restrict_exclude:
+            tagstates[tag] = 2
+    return tagstates, restrict_include, restrict_exclude
+
+
+def get_pagination_elements(pagination, results, pagination_size=5):
+    pagination.pages = math.ceil(results / pagination.page_size)
+    if pagination.page > pagination.pages:
+        pagination.page = pagination.pages
+
+    pagination_elements = list(range(max(1, pagination.page - pagination_size),
+                                     min(pagination.page + pagination_size + 1, pagination.pages + 1)))
+    pagination_elements.sort()
+    return pagination_elements
+
+def inspect_update_sample(req_sample, cur_dataset, ctx_args, df):
+    if req_sample is None or req_sample == "":
+        return False
+    id_column = cur_dataset.get_id_column()
+
+    ctx_args['hide_nan'] = True
+    ctx_args['id_column'] = id_column
+    ctx_args['text_column'] = cur_dataset.get_text_column()
+
+    for _, row in df.iterrows():
+        if str(row["sample_index"]) != str(req_sample):
+            continue
+        ctx_args['index'] = str(row["sample_index"])
+        ctx_args['row'] = row
+    return True
+
+def inspect_get_requested_sample():
+    req_sample = request.args.get("single_row", "")
+    if request.method == "POST":
+        request.get_json(force=True)
+    if request.json is not None:
+        req_sample = request.json.get("single_row", "")
+    return req_sample
+
 @app.route(BASEURI + "/dataset/<dsid>/inspect", methods=["GET", "POST"])
 @login_required
 def inspect_dataset(dsid=None):
     with db.session_scope() as dbsession:
 
-        restrict_view = None
-        if not request.args.get("restrict_view", None) is None and \
-                request.args.get("restrict_view", None).lower() in ['tagged', 'untagged']:
-            restrict_view = request.args.get("restrict_view", None).lower()
-
+        restrict_view = request_arg("restrict_view", ["tagged", "untagged"], None)
         query = request.args.get("query", "").strip()
 
         cur_dataset = get_accessible_dataset(dbsession, dsid)
         session_user = db.User.by_id(dbsession, session['user'])
 
-        tagstates = {}
-        restrict_include = json.loads(request.args.get("restrict_taglist_include", "[]"))
-        restrict_exclude = json.loads(request.args.get("restrict_taglist_exclude", "[]"))
-        if not isinstance(restrict_include, list):
-            restrict_include = []
-        if not isinstance(restrict_exclude, list):
-            restrict_exclude = []
-
-        for tag in cur_dataset.get_taglist():
-            tagstates[tag] = 0
-            if tag in restrict_include:
-                tagstates[tag] = 1
-            elif tag in restrict_exclude:
-                tagstates[tag] = 2
+        tagstates, restrict_include, restrict_exclude = get_tagstates(cur_dataset)
 
         template_name = "dataset_inspect.html"
         ctx_args = {}
-        req_sample = request.args.get("single_row", "")
-        if request.method == "POST":
-            request.get_json(force=True)
-        if request.json is not None:
-            req_sample = request.json.get("single_row", "")
 
+        req_sample = inspect_get_requested_sample()
         if req_sample is not None and not req_sample == "":
             if request.json is not None and "set_tag" in request.json:
                 cur_dataset.setanno(dbsession, session_user, req_sample, request.json.get("set_tag", None))
 
         # pagination
-        page_size = 50
-        page = 1
-        pages = 1
+        pagination = namedtuple("Pagination", ["page_size", "page", "pages"])
+        pagination.page_size = 50
+        pagination.page = 1
+        pagination.pages = 1
         try:
-            page_size = int(config.get("inspect_page_size", "50"))
+            pagination.page_size = int(config.get("inspect_page_size", "50"))
         except ValueError as e:
             flash("Invalid config value for 'inspect_page_size': %s" % e, "error")
 
         try:
-            page = int(request.args.get("page", "1"))
+            pagination.page = int(request.args.get("page", "1"))
         except ValueError as e:
             flash("Invalid value for param 'page': %s" % e, "error")
 
 
         df, annotation_columns, results = cur_dataset.annotations(dbsession,
                                                 foruser=session_user,
-                                                page=page,
-                                                page_size=page_size,
+                                                page=pagination.page,
+                                                page_size=pagination.page_size,
                                                 user_column="annotations",
                                                 query=query,
                                                 tags_include=restrict_include,
@@ -196,36 +238,18 @@ def inspect_dataset(dsid=None):
 
         df = reorder_dataframe(df, cur_dataset, annotation_columns)
 
-        pages = math.ceil(results / page_size)
-        if page > pages:
-            page = pages
+        pagination_elements = get_pagination_elements(pagination, results, pagination_size=5)
 
-        pagination_size = 5
-        pagination_elements = list(range(max(1, page - pagination_size),
-                                         min(page + pagination_size + 1, pages + 1)))
-        pagination_elements.sort()
-
-        if req_sample != "":
-            id_column = cur_dataset.get_id_column()
-
+        if inspect_update_sample(req_sample, cur_dataset, ctx_args, df):
             template_name = "dataset_inspect_row.html"
-            ctx_args['hide_nan'] = True
-            ctx_args['id_column'] = id_column
-            ctx_args['text_column'] = cur_dataset.get_text_column()
-
-            for index, row in df.iterrows():
-                if str(row["sample_index"]) != str(req_sample):
-                    continue
-                ctx_args['index'] = str(row["sample_index"])
-                ctx_args['row'] = row
 
         return render_template(template_name, dataset=cur_dataset,
                                 df=df,
                                 restrict_view=restrict_view,
                                 query=query,
-                                page_size=page_size,
-                                page=page,
-                                pages=pages,
+                                page_size=pagination.page_size,
+                                page=pagination.page,
+                                pages=pagination.pages,
                                 results=results,
                                 tagstates=tagstates,
                                 annotation_columns=annotation_columns,
@@ -313,7 +337,7 @@ def get_random_sample(df, id_column):
     sample_id = sample_row[id_column].values[0]
     return sample_idx, sample_id
 
-def handle_set_annotation(dbsession, dataset, df, id_column):
+def handle_set_annotation(dbsession, dataset):
     set_sample_idx = None
     set_sample_value = None
     try:
@@ -383,9 +407,9 @@ def get_sample_index(dbsession, dataset, session_user, random_order=False):
         if dataset.dsmetadata.get("annoorder", "sequential") == 'random':
             sample_idx, sample_id = get_random_sample(no_anno_df, dataset.get_id_column())
         else:
-           first_row = no_anno_df.iloc[no_anno_df.index[0]]
-           sample_idx = first_row['sample_index']
-           sample_id = first_row[dataset.get_id_column()]
+            first_row = no_anno_df.iloc[no_anno_df.index[0]]
+            sample_idx = first_row['sample_index']
+            sample_id = first_row[dataset.get_id_column()]
 
     return sample_idx, sample_id, no_anno_df, annotation_columns, total
 
@@ -408,13 +432,11 @@ def annotate(dsid=None, sample_idx=None):
 
         db.task_calculate_progress(task)
 
-        id_column = dataset.get_id_column()
-
         sample_idx, sample_id, df, annotation_columns, _ = get_sample_index(dbsession, dataset, session_user)
 
         sample_content = None
 
-        handle_set_annotation(dbsession, dataset, df, id_column)
+        handle_set_annotation(dbsession, dataset)
 
         random_sample, random_sample_id, _, _, _ = get_sample_index(dbsession, dataset, session_user, random_order=True)
 
@@ -493,7 +515,7 @@ def handle_tag_update(dbsession, request, dataset):
         if update_action == "rename_tag":
             old_name = list(set(original_tagmetadata.keys()) - set(new_tags))
             new_name = list(set(new_tags) - set(original_tagmetadata.keys()))
-            if old_name and new_name and len(old_name) and len(new_name):
+            if old_name and new_name and len(old_name) > 0 and len(new_name) > 0:
                 old_name = old_name[0]
                 new_name = new_name[0]
             else:
