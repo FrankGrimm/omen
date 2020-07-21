@@ -1,65 +1,68 @@
 {% extends "layout.html" %}
 {% block body %}
-  <h1>Create User</h1>
-  {% if not session['user'] %}
-      <p>Authentication required. <a href="{{ url_for('login') }}"><i class="mdi mdi-login"></i> login</a></p>
-  {% else %}
-
-{% if dataset %}
 <div class="row">
-
+  <h1 class="col-12">Create User</h1>
 </div>
 
-{% endif %}
+<div class="row">
+    <div class="col-12" style="margin-bottom: 3em">
+        You can create a user account by sharing an invitation (preferred method) or manually
+        specifying full account details below.<br />
+    </div>
+</div>
 
-<form>
-  <div class="form-group row">
-    <label for="newuser_email" class="col-4 col-form-label">E-Mail</label> 
-    <div class="col-8">
-      <div class="input-group">
-        <div class="input-group-prepend">
-          <div class="input-group-text">
-            <i class="mdi mdi-account-edit"></i>
-          </div>
-        </div> 
-        <input id="newuser_email" name="newuser_email" placeholder="user@domain.tld" type="email" autocapitalize="off" class="form-control" required="required">
-      </div>
+<div class="row">
+    <div class="col-12">
+        <h3>Account Creation via Invitation</h3>
     </div>
-  </div>
-  <div class="form-group row">
-      <label for="newuser_email" class="col-4 col-form-label"><i>Display Name</i></label> 
-    <div class="col-8">
-      <div class="input-group">
-        <div class="input-group-prepend">
-          <div class="input-group-text">
-            <i class="mdi mdi-account-edit"></i>
-          </div>
-        </div> 
-        <input id="newuser_displayname" name="newuser_displayname" placeholder="user name" type="text" class="form-control">
-      </div>
+</div>
+<div class="row">
+    <div class="col-12">Use the button below to generate unique invitation links. Note that these links:
+        <ul>
+            <li>Expire in 48 hours.</li>
+            <li>Are one time use. Please create one link per account.</li>
+        </ul>
     </div>
-  </div>
-  <div class="form-group row">
-      <label for="newuser_password" class="col-4 col-form-label"><i>Password (optional)</i></label> 
-    <div class="col-8">
-      <div class="input-group">
-        <div class="input-group-prepend">
-          <div class="input-group-text">
-            <i class="mdi mdi-account-key"></i>
-          </div>
-        </div> 
-        <input id="newuser_password" name="newuser_password" type="text" aria-describedby="newuser_passwordHelpBlock" class="form-control">
-      </div> 
-      <span id="newuser_passwordHelpBlock" class="form-text text-muted">If this is left blank, the user is asked to onboard with a time-restricted link.</span>
+</div>
+<div class="row">
+        <div class="col-4">
+            <button id="generateInvite" class="btn btn-success">Generate invite link</button>
+        </div>
+        <div class="col-8">
+            <div class="input-group">
+                <input id="inviteLink" name="inviteLink" autocomplete="off" type="text" class="form-control" readonly="readonly" placeholder="click the button to generate an invitation"> 
+                <div class="input-group-append">
+                    <button class="input-group-text btn btn-primary" id="copyInvite" autocomplete="off" title="Copy to Clipboard" disabled="disabled">
+                        <i class="mdi mdi-clipboard-multiple-outline"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+</div>
+<div class="createuser_invite_row"></div>
+<hr />
+<div class="row">
+    <div class="col-12">
+        <h3>Manual Account Creation</h3>
     </div>
-  </div> 
-  <div class="form-group row">
-    <div class="offset-4 col-8">
-      <button name="submit" type="submit" class="btn btn-primary">Create</button>
+</div>
+<div class="row">
+    <div class="col-12" style="margin-bottom: 2em;">Note that the user is not notified automatically.<br />
+        Please share the account details with them after creating an account.<br />
     </div>
-  </div>
-</form>
+</div>
 
+<div class="row">
+<div class="col-12">
+{% include "form_createuser.html" with context %}
+</div>
+</div>
 
-  {% endif %}
+{% endblock %}
+
+{% block addscript %}
+<script>
+    window.OMEN_BASE = "{{ url_for("index") }}";
+</script>
+<script src="{{ url_for("static", filename="createuser.js") }}"></script>
 {% endblock %}

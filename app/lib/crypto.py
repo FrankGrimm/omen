@@ -9,6 +9,8 @@ logging.debug("JWTTest\n%s\n%s", tk1,tk2)
 """
 import logging
 
+from datetime import datetime, timedelta
+
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -18,29 +20,57 @@ import jwt
 import app.lib.config as config
 
 
+class InvalidTokenException(Exception):
+    pass
+
+
+def validate(token, public_key):
+    if public_key is None or public_key.strip() == "":
+        raise InvalidTokenException("public key missing or malformed")
+
+    decoded_data = jwt_decode(token, public_key)
+    token_created = decoded_data.get("created", None)
+    if token_created is None:
+        raise InvalidTokenException("token is missing required field: created")
+    try:
+        token_timestamp = datetime.fromisoformat(token_created)
+    except ValueError as ve:
+        raise InvalidTokenException("failed to decode created attribute: %s" % ve)
+
+    max_age_hours = config.get_int("invite_max_age", 48)
+    token_age = (datetime.utcnow() - token_timestamp)
+    decoded_data["token_age"] = str(token_age)
+
+    cur_dt = datetime.utcnow()
+    if not cur_dt - timedelta(hours=max_age_hours) <= token_timestamp <= cur_dt:
+        raise InvalidTokenException("Token age %s exceeds maximum of %sh" % (token_age, max_age_hours))
+
+    return decoded_data
+
+
 def jwt_encode(payload, private_key):
     if private_key is None or private_key.strip() == "":
-        raise Exception("private key missing or malformed")
+        raise InvalidTokenException("private key missing or malformed")
     return jwt.encode(payload, private_key, algorithm="RS256").decode("utf-8")
 
 
 def jwt_decode(token, public_key):
     if public_key is None or public_key.strip() == "":
-        raise Exception("public key missing or malformed")
+        raise InvalidTokenException("public key missing or malformed")
     return jwt.decode(token, public_key, algorithm="RS256")
 
 
 def system_private_key():
     private_key = config.get("jwt_privkey", None)
     if private_key is None or private_key.strip() == "":
-        raise Exception("jwt_privkey configuration missing or malformed")
+        raise InvalidTokenException("jwt_privkey configuration missing or malformed")
     return private_key
 
 
 def system_public_key():
     public_key = config.get("jwt_pubkey", None)
     if public_key is None or public_key.strip() == "":
-        raise Exception("jwt_pubkey configuration missing or malformed")
+        raise InvalidTokenException("jwt_pubkey configuration missing or malformed")
     return public_key
 
 

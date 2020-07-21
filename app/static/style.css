@@ -442,6 +442,10 @@ table.dataframe tbody td {
     white-space: nowrap;
 }
 
+#inviteLink.generated {
+    color: black;
+}
+
 label.option_update_active {
     color: gray;
 }
@@ -981,6 +985,7 @@ h2 {
 
 h3 {
   font-size: 1.2em;
+  font-weight: bold;
 }
 
 .alert.mdi::before {
@@ -1121,3 +1126,6 @@ h3 {
 /* /SimpleMDE customization */
 
 
+.createuser_invite_row {
+    margin-bottom: 3em;
+}

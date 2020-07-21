@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<h1>Accept Invitation</h1>
+
+{% if session_user %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-warning">You are currently logged in. If you would like to accept another invitation, please log out of this session first.</div>
+    </div>
+</div>
+{% else %}
+
+{% endif %}
+
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info">
+            You have been invited to this system by {{invite_by.get_name()}}. In order to create your account, please fill in the details below.
+        </div>
+    </div>
+</div>
+<div class="row">
+<div class="col-12">
+{% include "form_createuser.html" with context %}
+</div>
+</div>
+{{session_user}}<br />
+{{invite_by}}<br />
+{{token_data}}
+
+{% endblock %}

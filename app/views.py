@@ -12,12 +12,15 @@ from functools import wraps
 from io import StringIO
 import math
 from collections import namedtuple
+import logging
 
 from markupsafe import Markup
 from werkzeug.utils import secure_filename
 from flask import flash, redirect, render_template, request, url_for, session, Response, abort
+from passlib.hash import scrypt
 
 import app.lib.config as config
+import app.lib.crypto as crypto
 from app.web import app, BASEURI, db
 
 
@@ -322,7 +325,88 @@ def show_datasets(dsid=None):
 @app.route(BASEURI + "/user/create", methods=["GET", "POST"])
 @login_required
 def createuser():
-    return render_template("createuser.html")
+    with db.session_scope() as dbsession:
+        session_user = db.User.by_id(dbsession, session['user'])
+
+        if request.method == 'POST' and request.json is not None:
+            req_action = request.json.get("action", "")
+            if req_action not in ["generate_invite", "do_create"]:
+                return abort(400, description="invalid action specified")
+
+            if req_action == "generate_invite":
+                invite_token = session_user.create_invite(dbsession)
+                invite_uri = url_for("accept_invite")
+                return {"token": invite_token, "uri": invite_uri, "by": session_user.uid}
+            # if request.json is not None and request.json.get("action", "") == "tageditor":
+
+        pending_invites = session_user.get_invites('pending')
+        return render_template("createuser.html", pending_invites=pending_invites)
+
+
+def get_session_user(dbsession):
+    session_user = None
+    if 'user' in session and session.get("user", None) is not None:
+        session_user = db.User.by_id(dbsession, session['user'])
+    return session_user
+
+
+@app.route(BASEURI + "/user/invite", methods=["GET", "POST"])
+def accept_invite():
+
+    invite_by = request.args.get("by", "").strip()
+    try:
+        invite_by = int(invite_by)
+    except ValueError:
+        return abort(400, description="invalid parameter format")
+
+    invite_token = request.args.get("token", "").strip()
+    if invite_token == "":
+        return abort(400, description="invalid request, token not found")
+
+    with db.session_scope() as dbsession:
+        session_user = get_session_user(dbsession)
+        by_user = db.User.by_id(dbsession, invite_by)
+        token_data = None
+
+        try:
+            token_data = by_user.validate_invite(dbsession, invite_token)
+        except crypto.InvalidTokenException as ite:
+            return abort(400, description="Invalid token (%s)" % ite)
+
+        if request.method == 'POST' and request.form is not None:
+            if request.form.get("action", "") != "docreate":
+                return abort(400, description="invalid form action")
+
+            email = request.form.get("newuser_email", None)
+            pw1 = request.form.get("newuser_password", None)
+            pw2 = request.form.get("newuser_password_confirm", None)
+            displayname = request.form.get("newuser_displayname", "")
+
+            if not email or not pw1 or not pw2:
+                flash("Missing email or password", "error")
+            elif pw1 != pw2:
+                flash("Password and confirmation do not match", "error")
+            elif len(pw1) < db.User.minimum_password_length():
+                flash("Passwords need to be at least "
+                      + str(db.User.minimum_password_length())
+                      + " characters long.", "error")
+            else:
+                pwhash = scrypt.hash(pw1)
+                del pw1
+                del pw2
+
+                logging.info("inserting new user")
+                inserted, created_userobj = db.User.insert_user(dbsession, email, pwhash, displayname=displayname)
+                if inserted:
+                    session_user.invalidate_invite(dbsession, token_data['uuid'], claimed_by=created_userobj)
+                    flash("Account created. Please log in.", "success")
+                    return redirect(url_for("login"))
+                flash("An account with this e-mail already exists.", "error")
+
+        return render_template("accept_invite.html",
+                               session_user=session_user,
+                               invite_by=by_user,
+                               token_data=token_data)
 
 def get_random_sample(df, id_column):
     no_anno = df[~(df.annotations != '')]
@@ -790,6 +874,7 @@ def new_dataset(dsid=None):
 
         return render_template('dataset_new.html', dataset=dataset, editmode=editmode, previewdf_alerts=import_alerts, previewdf=preview_df, db=db, ds_errors=ds_errors, dbsession=dbsession, can_import=can_import, has_upload_content=has_upload_content)
 
+
 @app.route(BASEURI + '/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
@@ -811,6 +896,7 @@ def settings():
 
                 try:
                     userobj.change_password(dbsession, req_pwc, req_pw1, req_pw2)
+                    userobj.invalidate_keys(dbsession)
                     flash("Password successfully changed.", "success")
                 except Exception as e:
                     acterror = "%s %s %s" % (e, userobj, session['user'])

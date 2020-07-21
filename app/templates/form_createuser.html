@@ -1,0 +1,63 @@
+
+<form method="POST" enctype="application/x-www-form-urlencoded">
+    <input type="hidden" name="action" value="docreate">
+    <div class="form-group row">
+        <label for="newuser_email" class="col-4 col-form-label">E-Mail</label> 
+        <div class="col-8">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <div class="input-group-text">
+                        <i class="mdi mdi-account-edit"></i>
+                    </div>
+                </div> 
+                <input id="newuser_email" name="newuser_email" placeholder="user@domain.tld" type="email" autocomplete="off" autocapitalize="off" class="form-control" required="required">
+            </div>
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="newuser_email" class="col-4 col-form-label"><i>Display Name</i></label> 
+        <div class="col-8">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <div class="input-group-text">
+                        <i class="mdi mdi-account-edit"></i>
+                    </div>
+                </div> 
+                <input id="newuser_displayname" name="newuser_displayname" placeholder="User Name" type="text" autocomplete="off" class="form-control">
+            </div>
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="newuser_password" class="col-4 col-form-label">Password</label> 
+        <div class="col-8">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <div class="input-group-text">
+                        <i class="mdi mdi-account-key"></i>
+                    </div>
+                </div> 
+                <input id="newuser_password" name="newuser_password" type="password" aria-describedby="newuser_passwordHelpBlock" class="form-control" required="required" placeholder="*****">
+            </div> 
+        </div>
+    </div> 
+    <div class="form-group row">
+        <label for="newuser_password" class="col-4 col-form-label">Password <i>(confirm)</i></label> 
+        <div class="col-8">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <div class="input-group-text">
+                        <i class="mdi mdi-account-key"></i>
+                    </div>
+                </div> 
+                <input id="newuser_password_confirm" name="newuser_password_confirm" type="password" aria-describedby="newuser_passwordHelpBlock" class="form-control" required="required" placeholder="*****">
+            </div> 
+        </div>
+    </div> 
+    <div class="form-group row">
+        <div class="offset-4 col-8">
+            <button name="submit" type="submit" class="btn btn-primary">Create Account</button>
+        </div>
+    </div>
+</form>
+
+
