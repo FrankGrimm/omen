@@ -27,8 +27,7 @@ from app.web import app, BASEURI, db
 def login_required(func):
     @wraps(func)
     def decorated_function(*args, **kwargs):
-        if not session or \
-                session.get("user", None) is None:
+        if not session or session.get("user", None) is None:
             return redirect(url_for("login", backto=request.url))
         return func(*args, **kwargs)
     return decorated_function
@@ -315,12 +314,13 @@ def show_datasets(dsid=None):
                 continue
             ds_errors[ds] = ds.check_dataset()
 
-        return render_template('dataset.html', my_datasets=my_datasets, \
-                                access_datasets=access_datasets, \
-                                dataset=dataset, \
-                                ds_errors=ds_errors, \
-                                dbsession=dbsession, \
-                                userobj=userobj)
+        return render_template('dataset.html', my_datasets=my_datasets,
+                               access_datasets=access_datasets,
+                               dataset=dataset,
+                               ds_errors=ds_errors,
+                               dbsession=dbsession,
+                               userobj=userobj)
+
 
 @app.route(BASEURI + "/user/create", methods=["GET", "POST"])
 @login_required
@@ -337,8 +337,8 @@ def createuser():
                 invite_token = session_user.create_invite(dbsession)
                 invite_uri = url_for("accept_invite")
                 return {"token": invite_token, "uri": invite_uri, "by": session_user.uid}
-            # if request.json is not None and request.json.get("action", "") == "tageditor":
 
+        session_user.purge_invites(dbsession)
         pending_invites = session_user.get_invites('pending')
         return render_template("createuser.html", pending_invites=pending_invites)
 
@@ -398,7 +398,7 @@ def accept_invite():
                 logging.info("inserting new user")
                 inserted, created_userobj = db.User.insert_user(dbsession, email, pwhash, displayname=displayname)
                 if inserted:
-                    session_user.invalidate_invite(dbsession, token_data['uuid'], claimed_by=created_userobj)
+                    by_user.invalidate_invite(dbsession, token_data['uuid'], claimed_by=created_userobj)
                     flash("Account created. Please log in.", "success")
                     return redirect(url_for("login"))
                 flash("An account with this e-mail already exists.", "error")
