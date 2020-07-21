@@ -326,11 +326,20 @@ def show_datasets(dsid=None):
 @login_required
 def createuser():
     with db.session_scope() as dbsession:
+        feature_user_invite = config.get_bool("feature_user_invite", True)
+        feature_user_manualcreate = config.get_bool("feature_user_manualcreate", True)
         session_user = db.User.by_id(dbsession, session['user'])
 
         if request.method == 'POST' and request.json is not None:
             req_action = request.json.get("action", "")
-            if req_action not in ["generate_invite", "do_create"]:
+
+            allowed_actions = set()
+            if feature_user_invite:
+                allowed_actions.add("generate_invite")
+            if feature_user_manualcreate:
+                allowed_actions.add("do_create")
+
+            if req_action not in allowed_actions:
                 return abort(400, description="invalid action specified")
 
             if req_action == "generate_invite":
@@ -339,8 +348,13 @@ def createuser():
                 return {"token": invite_token, "uri": invite_uri, "by": session_user.uid}
 
         session_user.purge_invites(dbsession)
+
         pending_invites = session_user.get_invites('pending')
-        return render_template("createuser.html", pending_invites=pending_invites)
+
+        return render_template("createuser.html",
+                               pending_invites=pending_invites,
+                               feature_user_invite=feature_user_invite,
+                               feature_user_manualcreate=feature_user_manualcreate)
 
 
 def get_session_user(dbsession):
@@ -352,6 +366,9 @@ def get_session_user(dbsession):
 
 @app.route(BASEURI + "/user/invite", methods=["GET", "POST"])
 def accept_invite():
+    feature_user_invite = config.get_bool("feature_user_invite", True)
+    if not feature_user_invite:
+        return abort(400, description="Invitations are disabled by the server configuration.")
 
     invite_by = request.args.get("by", "").strip()
     try:

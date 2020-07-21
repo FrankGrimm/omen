@@ -22,3 +22,5 @@ The gunicorn/production container supports all general options [documented here]
 | log_level              | debug / info                                             | Which [Python `logging`](https://docs.python.org/3/howto/logging.html) log level to use. Test instances are recommended to use `debug`, while production environments will likely prefer `info`. |
 | tag_orientation_cutoff | int, default: 5                                          | At which number of tags / labels to switch from horizontal display to the vertical layout. Note: This setting is likely to be removed in a future version.                                       |
 | invite_max_age         | int, default: 48                                         | Number of hours after which an invite link expires.  |
+| feature_user_invite    | boolean, default: true                                   | Determines if users are allowed to invite others. |
+| feature_user_manualcreate    | boolean, default: true                                   | Determines if users are allowed manually create other accounts by specifying full credentials. |

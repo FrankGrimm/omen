@@ -4,13 +4,24 @@
   <h1 class="col-12">Create User</h1>
 </div>
 
+{% if feature_user_invite and feature_user_manualcreate %}
 <div class="row">
     <div class="col-12" style="margin-bottom: 3em">
         You can create a user account by sharing an invitation (preferred method) or manually
         specifying full account details below.<br />
     </div>
 </div>
+{% endif %}
 
+{% if not feature_user_invite and not feature_user_manualcreate %}
+<div class="row">
+    <div class="col-12" style="margin-bottom: 3em">
+        User creation is disabled. Please ask your administrator to create accounts.
+    </div>
+</div>
+{% endif %}
+
+{% if feature_user_invite %}
 <div class="row">
     <div class="col-12">
         <h3>Account Creation via Invitation</h3>
@@ -41,6 +52,8 @@
 </div>
 <div class="createuser_invite_row"></div>
 <hr />
+{% endif %}
+{% if feature_user_manualcreate %}
 <div class="row">
     <div class="col-12">
         <h3>Manual Account Creation</h3>
@@ -53,10 +66,11 @@
 </div>
 
 <div class="row">
-<div class="col-12">
-{% include "form_createuser.html" with context %}
+    <div class="col-12">
+        {% include "form_createuser.html" with context %}
+    </div>
 </div>
-</div>
+{% endif %}
 
 {% endblock %}
 
