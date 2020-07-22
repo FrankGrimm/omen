@@ -492,7 +492,7 @@ def get_votes(dbsession, dataset, user_roles, session_user, sample_id):
     return anno_votes
 
 def get_annotation_dataframe(dbsession, dataset, session_user, min_sample_idx=None, random_order=False):
-    order_by = "usercol_value, dc.sample_index ASC NULLS LAST"
+    order_by = "dc.sample_index, usercol_value ASC NULLS LAST"
     if random_order:
         order_by = "random()"
 
