@@ -20,7 +20,6 @@ COPY ./app/migrations ./app/migrations
 COPY ./config.json ./app/app/
 COPY ./container/prestart.sh /app/prestart.sh
 COPY ./container/gunicorn_conf.py /app/gunicorn_conf.py
-COPY ./gunicorn_conf.py /gunicorn_conf.py
 
 WORKDIR /home/omenuser/app
 ENV FLASK_APP app/web.py
