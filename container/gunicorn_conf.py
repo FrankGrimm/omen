@@ -29,6 +29,7 @@ else:
 loglevel = use_loglevel
 workers = web_concurrency
 bind = use_bind
+timeout = 60 * 5
 keepalive = 120
 errorlog = "-"
 
