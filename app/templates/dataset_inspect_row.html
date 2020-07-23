@@ -19,7 +19,16 @@
         {% set css_votetag = "with_anno_vote" %}
     {% endif %}
 
-    <button class="btn df_inspect_changeaction df_inspect_votebtn with_anno_vote {{ css_btnclass }} {{ css_votetag }} {{ css_colortag }}" {% if votes and tag in votes and votes[tag]|length %}title="{{votes[tag]|length}} vote(s) by {{votes[tag]|join(", ")}}"{% endif %} data-sample="{{sample}}" data-tag="{{tag}}">
+    {% set votetitle = "" %}
+    {% if votes and tag in votes and votes[tag]|length %}
+        {% set votetitle_prefix = ' vote by ' %}
+        {% if votes[tag]|length > 1 %}
+            {% set votetitle_prefix = ' votes by ' %}
+        {% endif %}
+        {% set votetitle = votes[tag]|length|string + votetitle_prefix + votes[tag]|join(", ") %}
+    {% endif %}
+
+    <button class="btn df_inspect_changeaction df_inspect_votebtn with_anno_vote {{ css_btnclass }} {{ css_votetag }} {{ css_colortag }}" {% if votetitle %}title="{{votetitle}}"{% endif %} data-sample="{{sample}}" data-tag="{{tag}}">
 
     {% if tagmetadata.icon %}<i class="{{ tagmetadata.icon }}"> </i>{% endif %}
     {{ tag }} {% if votes and tag in votes and votes[tag]|length %}<span class="anno_vote badge badge-dark">{{votes[tag]|length}}</span>{% endif %}
