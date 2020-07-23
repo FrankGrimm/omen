@@ -616,7 +616,7 @@ def dataset_lookup_or_create(dbsession, dsid, editmode):
 TAGORDER_ACTIONS = ["update_taglist", "rename_tag", "delete_tag", "move_tag_down", "move_tag_up"]
 
 
-def handle_option_update(dbsession, dataset):
+def handle_option_update(dbsession, session_user, dataset):
 
     set_key = request.json.get("option_key", "")
     set_value = request.json.get("option_value", None)
@@ -632,11 +632,13 @@ def handle_option_update(dbsession, dataset):
     dbsession.commit()
     dbsession.flush()
 
+    db.Activity.create(dbsession, session_user, dataset, "update_option", "%s => %s" % (set_key, set_value))
+
     return {"action": "update_option",
             "set_key": set_key}
 
 
-def handle_tag_update(dbsession, request, dataset):
+def handle_tag_update(dbsession, session_user, request, dataset):
     update_action = request.json.get("tagaction", "")
 
     if update_action in TAGORDER_ACTIONS:
@@ -660,13 +662,19 @@ def handle_tag_update(dbsession, request, dataset):
                 db.fprint("RENAME_TAG", old_name, "=>", new_name, original_tagmetadata[old_name])
                 migrated_annotations = dataset.migrate_annotations(dbsession, old_name, new_name)
                 db.fprint("RENAME_TAG", migrated_annotations, "migrated from %s to %s" % (old_name, new_name))
+
+                db.Activity.create(dbsession,
+                                   session_user,
+                                   dataset,
+                                   "rename_tag",
+                                   "%s => %s" % (old_name, new_name))
     else:
         update_tag = request.json.get("tag", None)
         update_value = request.json.get("value", None)
-        if not update_value is None and update_value == "-":
+        if update_value is not None and update_value == "-":
             update_value = None
 
-        if not update_tag is None:
+        if update_tag is not None:
             if update_action == "change_tag_color":
                 dataset.update_tag_metadata(update_tag, {"color": update_value})
             elif update_action == "change_tag_icon":
@@ -742,11 +750,11 @@ def new_dataset(dsid=None):
 
             if request.json is not None and request.json.get("action", "") == "tageditor":
                 editmode = "tageditor"
-                handle_tag_update(dbsession, request, dataset)
+                handle_tag_update(dbsession, userobj, request, dataset)
 
             if request.json is not None and request.json.get("action", "") == "update_option":
                 editmode = "update_option"
-                return handle_option_update(dbsession, dataset)
+                return handle_option_update(dbsession, userobj, dataset)
 
             formaction = request.form.get("action", None)
             # print("--- " * 5)
