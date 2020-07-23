@@ -2,7 +2,7 @@
 [![Docker](https://github.com/FrankGrimm/omen/workflows/Docker/badge.svg)](https://github.com/FrankGrimm/omen/packages)
 
 
-# OMEN - A dockerized, collaborative, annotation platform
+# OMEN - A collaborative, annotation platform
 
 ![](https://frankgrimm.github.io/omen/img/omen-logo.small.png)
 
@@ -19,15 +19,15 @@ The upcoming v1.1.x release features:
 
 A simple annotation task with three labels. Each label is configured to use a background color and display an icon. Annotators can either click the label buttons or press a hot-key (numbers 1-3 - for quick access to up to 9 labels):
 
-![Annotation Overview](img/annotation-overview.gif)
+![Annotation Overview](docs/img/annotation-overview.gif)
 
 Users with the creator or owner role can access further management functionality, e.g. browsing the dataset, seeing the distribution of all annotations, and inspecting the inter-annotator agreement on the dataset overall:
 
-![Dataset Curation](img/dataset-curation-view.gif)
+![Dataset Curation](docs/img/dataset-curation-view.gif)
 
 Configuring a dataset is as easy as uploading a CSV file, choosing columns to identify samples and their content, and configuring the possible labels:
 
-![Dataset Creation](img/dataset-creation.gif)
+![Dataset Creation](docs/img/dataset-creation.gif)
 
 ## Getting started
 
@@ -47,7 +47,7 @@ Our standard deployment model uses **[Docker compose](https://docs.docker.com/co
 
 After pulling the image and configuring your preferred deployment method, make sure to:
 
-- a) Adjust your **[configuration](omen-configuration.md)** with the mandatory parameters (e.g. database connection and credentials)
+- a) Adjust your **[configuration](docs/omen-configuration.md)** with the mandatory parameters (e.g. database connection and credentials)
 - b) Provide it to the container by mapping a volume and expose the web server (running on port TCP/5000 by default) so you can reach the web application
 - c) Create a first user via the command line  and try to log in (by default at `http://yourhost.domain.tld:5000`). You will only have to do this once, additional users can be created in the application itself.
 
