@@ -191,6 +191,7 @@ def inspect_get_requested_sample():
         req_sample = request.json.get("single_row", "")
     return req_sample
 
+
 @app.route(BASEURI + "/dataset/<dsid>/inspect", methods=["GET", "POST"])
 @login_required
 def inspect_dataset(dsid=None):
@@ -321,27 +322,42 @@ def show_datasets(dsid=None):
                                dbsession=dbsession,
                                userobj=userobj)
 
+def get_request_action():
+    req_action = ""
+    if request.json is not None and "action" in request.json:
+        req_action = request.json.get("action", "")
+    if request.form is not None and "action" in request.form:
+        req_action = request.form.get("action", "")
+    return req_action
+
+def validate_newuser(email, pw1, pw2):
+    if not email or not pw1 or not pw2:
+        flash("Missing email or password", "warning")
+        return False
+    if pw1 != pw2:
+        flash("Password and confirmation do not match", "warning")
+        return False
+    if len(pw1) < db.User.minimum_password_length():
+        flash("Passwords need to be at least "
+              + str(db.User.minimum_password_length())
+              + " characters long.", "error")
+        return False
+    return True
 
 @app.route(BASEURI + "/user/create", methods=["GET", "POST"])
 @login_required
 def createuser():
     with db.session_scope() as dbsession:
-        feature_user_invite = config.get_bool("feature_user_invite", True)
-        feature_user_manualcreate = config.get_bool("feature_user_manualcreate", True)
         session_user = db.User.by_id(dbsession, session['user'])
 
-        if request.method == 'POST' and (request.json is not None or len(request.form) > 0):
-            req_action = ""
-            if request.json is not None and "action" in request.json:
-                req_action = request.json.get("action", "")
-            if request.form is not None and "action" in request.form:
-                req_action = request.form.get("action", "")
+        allowed_actions = set()
+        if config.get_bool("feature_user_invite", True):
+            allowed_actions.add("generate_invite")
+        if config.get_bool("feature_user_manualcreate", True):
+            allowed_actions.add("docreate")
 
-            allowed_actions = set()
-            if feature_user_invite:
-                allowed_actions.add("generate_invite")
-            if feature_user_manualcreate:
-                allowed_actions.add("docreate")
+        if request.method == 'POST' and (request.json is not None or len(request.form) > 0):
+            req_action = get_request_action()
 
             if req_action not in allowed_actions:
                 return abort(400, description="invalid action specified")
@@ -357,15 +373,7 @@ def createuser():
                 pw2 = request.form.get("newuser_password_confirm", None)
                 displayname = request.form.get("newuser_displayname", "")
 
-                if not email or not pw1 or not pw2:
-                    flash("Missing email or password", "warning")
-                elif pw1 != pw2:
-                    flash("Password and confirmation do not match", "warning")
-                elif len(pw1) < db.User.minimum_password_length():
-                    flash("Passwords need to be at least "
-                          + str(db.User.minimum_password_length())
-                          + " characters long.", "error")
-                else:
+                if validate_newuser(email, pw1, pw2):
                     pwhash = scrypt.hash(pw1)
                     del pw1
                     del pw2
@@ -374,6 +382,7 @@ def createuser():
                     inserted, created_userobj = db.User.insert_user(dbsession, email, pwhash, displayname=displayname)
                     if inserted:
                         flash("Account created.", "success")
+                        logging.info("%s created new account %s", session_user, created_userobj)
                         return redirect(url_for("createuser"))
                     flash("An account with this e-mail already exists.", "warning")
 
@@ -382,8 +391,8 @@ def createuser():
 
         return render_template("createuser.html",
                                pending_invites=pending_invites,
-                               feature_user_invite=feature_user_invite,
-                               feature_user_manualcreate=feature_user_manualcreate)
+                               feature_user_invite="generate_invite" in allowed_actions,
+                               feature_user_manualcreate="docreate" in allowed_actions)
 
 
 def get_session_user(dbsession):
@@ -395,8 +404,7 @@ def get_session_user(dbsession):
 
 @app.route(BASEURI + "/user/invite", methods=["GET", "POST"])
 def accept_invite():
-    feature_user_invite = config.get_bool("feature_user_invite", True)
-    if not feature_user_invite:
+    if not config.get_bool("feature_user_invite", True):
         return abort(400, description="Invitations are disabled by the server configuration.")
 
     invite_by = request.args.get("by", "").strip()
@@ -428,15 +436,7 @@ def accept_invite():
             pw2 = request.form.get("newuser_password_confirm", None)
             displayname = request.form.get("newuser_displayname", "")
 
-            if not email or not pw1 or not pw2:
-                flash("Missing email or password", "error")
-            elif pw1 != pw2:
-                flash("Password and confirmation do not match", "error")
-            elif len(pw1) < db.User.minimum_password_length():
-                flash("Passwords need to be at least "
-                      + str(db.User.minimum_password_length())
-                      + " characters long.", "error")
-            else:
+            if validate_newuser(email, pw1, pw2):
                 pwhash = scrypt.hash(pw1)
                 del pw1
                 del pw2
@@ -596,6 +596,7 @@ def annotate(dsid=None, sample_idx=None):
                                curanno=curanno,
                                votes=anno_votes)
 
+
 def dataset_lookup_or_create(dbsession, dsid, editmode):
     if dsid is None:
         dataset = db.Dataset()
@@ -613,6 +614,7 @@ def dataset_lookup_or_create(dbsession, dsid, editmode):
 
 
 TAGORDER_ACTIONS = ["update_taglist", "rename_tag", "delete_tag", "move_tag_down", "move_tag_up"]
+
 
 def handle_option_update(dbsession, dataset):
 
@@ -632,6 +634,7 @@ def handle_option_update(dbsession, dataset):
 
     return {"action": "update_option",
             "set_key": set_key}
+
 
 def handle_tag_update(dbsession, request, dataset):
     update_action = request.json.get("tagaction", "")
@@ -699,6 +702,7 @@ def dataset_overview_json(dsid):
                 }
 
         return dsoverview
+
 
 @app.route(BASEURI + "/dataset/<dsid>/edit", methods=['GET', 'POST'])
 @app.route(BASEURI + "/dataset/create", methods=['GET', 'POST'])

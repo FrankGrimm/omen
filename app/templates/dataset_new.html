@@ -343,23 +343,38 @@
     <h3>Manage Access</h3>
 
     <div class="row seprow">
-        <div class="col-12 col-md-8">Manage users who are allowed to add annotations for this dataset:</div>
-        <div class="col-12 col-md-4"><a href="{{ url_for("createuser") }}" class="btn btn-primary">
-                <span class="">create new</span> <i class="mdi mdi-account-plus"></i>
-            </a>
+        <div class="col-12 col-md-8" style="line-height: 2.5rem;">Manage users who are allowed to add annotations for this dataset:</div>
+        <div class="col-12 col-md-4">
+            <div class="btn-group">
+                <div class="dropdown">
+                    <button class="btn btn-secondary dropdown-toggle" id="adduser_to_dataset" data-toggle="dropdown">
+                        <span class="">Add User</span> <i class="mdi mdi-account"></i>
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="adduser_to_dataset">
+                    {% for userobj in db.User.userlist(dbsession) if dataset.get_roles(dbsession, userobj)|length == 0 %}
+                        <button class="dropdown-item adduser_btn" data-userid="{{userobj.uid}}">{{ userobj.get_name() }}</button>
+                    {% else %}
+                        <a class="dropdown-item" href="#" disabled>All users already added.</a>
+                    {% endfor %}
+                    </div>
+                </div>
+                <a href="{{ url_for("createuser") }}" class="btn btn-primary">
+                    <span class="">Create New User</span> <i class="mdi mdi-account-plus"></i>
+                </a>
             </div>
+        </div>
     </div>
     <div class="row seprow">
         <ul class="col-12 dsacl" id="dsacl">
         {% for userobj in db.User.userlist(dbsession) %}
-            <li class="row">
+            {% set dsroles = dataset.get_roles(dbsession, userobj) %}
+            <li class="row userlist_row {% if dsroles|length == 0 %} d-none{% endif %}" data-userid="{{userobj.uid}}">
                 
                 <span class="col-1" aclusericon"><i title="{{userobj.uid}}" class="mdi mdi-account" style="margin-top: 0.5em;"></i></span>
                     
-                &nbsp; <span class="col-4 aclusermail">{{ userobj.get_name() }} ({{userobj.email}})</span>
+                &nbsp; <span class="col-4 aclusermail">{{ userobj.get_name() }}</span>
 
                 <div class="col-6">
-                    {% set dsroles = dataset.get_roles(dbsession, userobj) %}
                     {% if userobj.uid == dataset.owner_id %}
                         <span class="acluserowner">owner</span>
                     {% else %}
@@ -400,6 +415,7 @@
             {% endif %}
         {% endfor %}
         </ul>
+
     </div>
 
 {% else %}

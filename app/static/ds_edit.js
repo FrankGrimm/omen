@@ -320,6 +320,44 @@ function initLabelAttributes() {
     });
 }
 
+function initUserListButton(btn) {
+    btn.addEventListener("click", function() {
+        const btn_uid = btn.dataset.userid;
+        console.log("add", btn_uid);
+
+        let found_match = false;
+        document.querySelectorAll(".userlist_row").forEach((row) => {
+            if (row.dataset.userid != btn_uid) {
+                return;
+            }
+            // move matching item to the bottom of the list, right above owner
+            const rowParent = row.parentNode;
+            row.remove();
+            rowParent.insertBefore(row, rowParent.lastElementChild);
+
+            // show matching item
+            row.classList.remove("d-none");
+
+            found_match = true;
+        });
+
+        if (found_match) {
+            btn.classList.add("d-none");
+        }
+
+        const remaining_users = [...document.querySelectorAll(".userlist_row")]
+                                    .filter(r => r.classList.contains("d-none")).length;
+        if (remaining_users === 0) {
+            document.getElementById("adduser_to_dataset").setAttribute("disabled", "disabled")
+        }
+
+    });
+}
+
+function initUserListEditor() {
+    document.querySelectorAll(".adduser_btn").forEach(initUserListButton);
+}
+
 document.addEventListener("DOMContentLoaded",function(){
 
     initializeTagEditor();
@@ -380,5 +418,6 @@ document.addEventListener("DOMContentLoaded",function(){
 
     initLabelAttributes();
     initOptions();
+    initUserListEditor();
 });
 
