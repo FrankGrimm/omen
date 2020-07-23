@@ -342,9 +342,9 @@
 
     <h3>Manage Access</h3>
 
-    <div class="row seprow">
-        <div class="col-12 col-md-8" style="line-height: 2.5rem;">Manage users who are allowed to add annotations for this dataset:</div>
-        <div class="col-12 col-md-4">
+    <div class="row seprow userlist_header">
+        <div>Manage users who are allowed to add annotations for this dataset:</div>
+        <div>
             <div class="btn-group">
                 <div class="dropdown">
                     <button class="btn btn-secondary dropdown-toggle" id="adduser_to_dataset" data-toggle="dropdown">
@@ -365,56 +365,55 @@
         </div>
     </div>
     <div class="row seprow">
-        <ul class="col-12 dsacl" id="dsacl">
+        <ul class="dsacl" id="dsacl">
         {% for userobj in db.User.userlist(dbsession) %}
             {% set dsroles = dataset.get_roles(dbsession, userobj) %}
             <li class="row userlist_row {% if dsroles|length == 0 %} d-none{% endif %}" data-userid="{{userobj.uid}}">
-                
-                <span class="col-1" aclusericon"><i title="{{userobj.uid}}" class="mdi mdi-account" style="margin-top: 0.5em;"></i></span>
-                    
-                &nbsp; <span class="col-4 aclusermail">{{ userobj.get_name() }}</span>
+               
+                <div class="userlist_userinfo">
+                    <span class="aclusericon"><i title="{{userobj.uid}}" class="mdi mdi-account" style="margin-top: 0.5em;"></i></span>
+                    &nbsp;
+                    <span class="aclusermail">{{ userobj.get_name() }}</span>
+                </div>
 
-                <div class="col-6">
-                    {% if userobj.uid == dataset.owner_id %}
-                        <span class="acluserowner">owner</span>
-                    {% else %}
+                <div class="userlist_details">
+                    <div class="userlist_role_setting">
+                        {% if userobj.uid == dataset.owner_id %}
+                            <span class="acluserowner">owner</span>
+                        {% else %}
 
-                    {% if 'annotator' in dsroles and not 'curator' in dsroles %}
-                    <a href="#" class="toggleacl btn btn-sm btn-outline-success" data-roleid="annotator" data-userid="{{userobj.uid}}">
-                            <span class="">annotator</span>
-                            <i class="far fa-check-square"></i>
-                        </a>
-                    {% else %}
-                    <a href="#" class="toggleacl btn btn-sm btn-outline-primary" data-roleid="annotator" data-userid="{{userobj.uid}}">
-                            <span class="">make annotator </span>
-                            <i class="far fa-square"></i>
-                        </a>
-                    {% endif %}
+                            {% if 'annotator' in dsroles and not 'curator' in dsroles %}
+                                <a href="#" class="toggleacl btn btn-sm btn-outline-success" data-roleid="annotator" data-userid="{{userobj.uid}}">
+                                    <span class="">annotator</span>
+                                    <i class="far fa-check-square"></i>
+                                </a>
+                            {% else %}
+                                <a href="#" class="toggleacl btn btn-sm btn-outline-primary" data-roleid="annotator" data-userid="{{userobj.uid}}">
+                                    <span class="">make annotator </span>
+                                    <i class="far fa-square"></i>
+                                </a>
+                            {% endif %}
 
-                    {% if 'curator' in dsroles %}
-                    <a href="#" class="toggleacl btn btn-sm btn-outline-success" data-roleid="curator" data-userid="{{userobj.uid}}">
-                            <span class="">curator</span>
-                            <i class="far fa-check-square"></i>
-                        </a>
-                    {% else %}
-                    <a href="#" class="toggleacl btn btn-sm btn-outline-primary" data-roleid="curator" data-userid="{{userobj.uid}}">
-                            <span class="">make curator </span>
-                            <i class="far fa-square"></i>
-                        </a>
-                    {% endif %}
+                            {% if 'curator' in dsroles %}
+                                <a href="#" class="toggleacl btn btn-sm btn-outline-success" data-roleid="curator" data-userid="{{userobj.uid}}">
+                                    <span class="">curator</span>
+                                    <i class="far fa-check-square"></i>
+                                </a>
+                            {% else %}
+                                <a href="#" class="toggleacl btn btn-sm btn-outline-primary" data-roleid="curator" data-userid="{{userobj.uid}}">
+                                    <span class="">make curator </span>
+                                    <i class="far fa-square"></i>
+                                </a>
+                            {% endif %}
 
-                    {% endif %}
+                        {% endif %}
+                    </div>
+                    <div class="userlist_progress"> 
+                        {% set task = dataset.gettask(dbsession, userobj) %}
+                        {{ macros.render_progress(task, addclass="singleprocess") }}
+                    </div>
                 </div>
             </li>
-
-            {% if userobj.uid == dataset.owner or userobj.uid|string in dataset.dsmetadata.acl %}
-            {% if dsroles|length > 0 %}
-                <li>
-                    {% set task = dataset.gettask(dbsession, userobj) %}
-                    {{ macros.render_progress(task, addclass="singleprocess") }}
-                </li>
-            {% endif %}
-            {% endif %}
         {% endfor %}
         </ul>
 

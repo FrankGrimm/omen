@@ -330,12 +330,9 @@ ul.dslist {
 
 ul.dsacl {
     list-style-type: none;
-}
-ul.dsacl li {
-    height: 2em;
-    padding: 0.2em 0;
-    margin: 0.3em;
-    line-height: 2em;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }
 
 .sidemeta {
@@ -1150,3 +1147,38 @@ div.alert-timer {
     margin: 0;
 }
 
+.userlist_header {
+    display: flex;
+    flex-direction: row;
+    line-height: 2.5rem;
+    justify-content: space-between;
+}
+.userlist_row {
+    display: flex;
+    width: 100%;
+    flex-direction: row;
+    flex-grow: 1;
+    justify-content: flex-start;
+    padding: 0.2em 0;
+    margin: 0.3em 0.3em 1em 0.3em;
+    line-height: 2em;
+}
+.userlist_userinfo {
+    margin-right: 2rem;
+    min-width: 12rem;
+}
+
+.userlist_details {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.userlist_role_setting {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;   
+}
+
+.userlist_progress {
+}
