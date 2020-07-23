@@ -287,3 +287,6 @@ class User(Base):
 
     def __str__(self):
         return "[User #%s, %s]" % (self.uid, self.email)
+
+    def activity_target(self):
+        return "USER:%s" % self.dataset_id

@@ -19,6 +19,7 @@ from io import StringIO
 from app.lib.database_internals import Base
 from app.lib.models.datasetcontent import DatasetContent
 from app.lib.models.user import User
+from app.lib.models.activity import Activity
 from app.lib.models.annotation import Annotation
 import app.lib.iaa as iaa
 
@@ -75,6 +76,9 @@ class Dataset(Base):
 
     def __repr__(self):
         return "<Dataset (%s)>" % self.get_name()
+
+    def activity_target(self):
+        return "DATASET:%s" % self.dataset_id
 
     def get_name(self):
         if self.dsmetadata is None:
@@ -819,7 +823,7 @@ class Dataset(Base):
             curacl = {}
         return curacl
 
-    def import_content(self, dbsession, filename, dry_run):
+    def import_content(self, dbsession, session_user, filename, dry_run):
         success = False
         errors = []
         preview_df = None
@@ -855,14 +859,14 @@ class Dataset(Base):
                 errors.append("ID column not defined.")
                 success = False
             elif not self.get_id_column() in df.columns:
-                errors.append("ID column '%s' not found in dataset columns (%s)." % \
-                        (self.get_id_column(), ", ".join(map(str, df.columns))))
+                errors.append("ID column '%s' not found in dataset columns (%s)." %
+                              (self.get_id_column(), ", ".join(map(str, df.columns))))
             if self.get_text_column() is None:
                 errors.append("Text column not defined.")
                 success = False
             elif not self.get_text_column() in df.columns:
-                errors.append("Text column '%s' not found in dataset columns (%s)." % \
-                        (self.get_text_column(), ", ".join(map(str, df.columns))))
+                errors.append("Text column '%s' not found in dataset columns (%s)." %
+                              (self.get_text_column(), ", ".join(map(str, df.columns))))
 
             import_count = 0
             merge_count = 0
@@ -872,7 +876,7 @@ class Dataset(Base):
                     id_column = self.get_id_column()
                     text_column = self.get_text_column()
 
-                    logging.debug("[import] %s, sample count before: %s" % (self, len(self.dscontent)))
+                    logging.debug("[import] %s, sample count before: %s", self, len(self.dscontent))
                     for index, row in df.iterrows():
                         sample_id = row[id_column]
                         if sample_id is None:
@@ -916,7 +920,7 @@ class Dataset(Base):
                             import_count += 1
 
                     dbsession.flush()
-                    logging.debug("[import] %s, sample count after: %s" % (self, len(self.dscontent)))
+                    logging.debug("[import] %s, sample count after: %s", self, len(self.dscontent))
                     # tmpsample = DatasetContent()
                     # tmpds = dataset_by_id(dbsession, 1)
                     # tmpsample.dataset = tmpds
@@ -934,6 +938,10 @@ class Dataset(Base):
                 flash("Imported %s samples (%s merged)" % (import_count, merge_count), "success")
             if skip_count > 0:
                 flash("Skipped %s samples with empty ID or text" % skip_count, "warning")
+
+            Activity.create(dbsession, session_user, self, "import_complete",
+                            "total: %s, merged: %s, skipped: %s" %
+                            (import_count, merge_count, skip_count))
 
         else:
             errors.append("temporary file %s does not exist anymore" % filename)

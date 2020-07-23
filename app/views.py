@@ -729,7 +729,7 @@ def new_dataset(dsid=None):
 
         dbsession.add(dataset)
 
-        if not dataset.owner is userobj:
+        if dataset.owner is not userobj:
             raise Exception("You cannot modify datasets you do not own.")
 
         if dataset.dataset_id is None:
@@ -743,7 +743,6 @@ def new_dataset(dsid=None):
             if request.json is not None and request.json.get("action", "") == "tageditor":
                 editmode = "tageditor"
                 handle_tag_update(dbsession, request, dataset)
-                # data: JSON.stringify({"action": "tageditor", "action": tag_action, "tag": current_tag, "value": tag_value}),
 
             if request.json is not None and request.json.get("action", "") == "update_option":
                 editmode = "update_option"
@@ -756,23 +755,24 @@ def new_dataset(dsid=None):
             # print("files", request.files)
             # print("--- " * 5)
 
-            if not formaction is None and formaction == 'change_name':
+            if formaction is not None and formaction == 'change_name':
                 dsname = request.form.get('dataset_name', None)
-                if not dsname is None:
+                if dsname is not None:
                     dsname = dsname.strip()
                     if dsname != '':
                         dataset.dsmetadata['name'] = dsname
 
-            if not formaction is None and formaction == 'change_description':
+            if formaction is not None and formaction == 'change_description':
                 ds_description = request.form.get('setdescription', None)
-                if not ds_description is None:
+                if ds_description is not None:
                     ds_description = ds_description.strip()
                     dataset.dsmetadata['description'] = ds_description
 
-            if not formaction is None and formaction == 'delete_dataset' and \
+            if formaction is not None and formaction == 'delete_dataset' and \
                     request.form.get("confirmation", "") == "delete_dataset_confirmed" and \
-                    not dataset is None and not dataset.dataset_id is None:
+                    dataset is not None and dataset.dataset_id is not None:
                 db.fprint("User %s triggers delete on dataset %s" % (userobj, dataset))
+                db.Activity.create(dbsession, userobj, dataset, "event", "deleted")
                 dbsession.delete(dataset)
 
                 dbsession.commit()
@@ -780,7 +780,7 @@ def new_dataset(dsid=None):
                 flash("Dataset was deleted successfully.", "success")
                 return redirect(url_for("show_datasets"))
 
-            if not formaction is None:
+            if formaction is not None:
                 if formaction == "change_delimiter":
                     newdelim = dataset.dsmetadata.get("sep", ",")
                     if request.form.get("comma", "") != "":
@@ -835,7 +835,7 @@ def new_dataset(dsid=None):
 
                 # move uploaded file content to temporary file and store details in the dataset metadata
                 if formaction == 'upload_file':
-                    if not request.files is None and 'upload_file' in request.files:
+                    if request.files is not None and 'upload_file' in request.files:
                         fileobj = request.files['upload_file']
                         if fileobj and fileobj.filename:
                             dataset.dsmetadata['upload_filename'] = secure_filename(fileobj.filename)
@@ -847,7 +847,8 @@ def new_dataset(dsid=None):
                             with os.fdopen(tmp_handle, 'wb') as tmpfile:
                                 fileobj.save(tmpfile)
                             dataset.dsmetadata["upload_tempfile"] = tmp_filename
-
+                            db.Activity.create(dbsession, userobj, dataset, "uploaded_file",
+                                               "%s, %s" % (secure_filename(fileobj.filename), fileobj.mimetype))
 
             dataset.update_size()
             dataset.dirty(dbsession)
@@ -883,9 +884,10 @@ def new_dataset(dsid=None):
                         request.form.get("action", "") == "do_import":
                     import_dry_run = False
 
-                import_success, import_errors, preview_df = dataset.import_content(dbsession, tmp_filename, dry_run=import_dry_run)
-                db.fprint("[info] import dry run status, dataset: %s, tempfile: %s, success: %s" % \
-                        (dataset, tmp_filename, import_success))
+                import_success, import_errors, preview_df = dataset.import_content(dbsession, userobj, tmp_filename,
+                                                                                   dry_run=import_dry_run)
+                db.fprint("[info] import dry run status, dataset: %s, tempfile: %s, success: %s" %
+                          (dataset, tmp_filename, import_success))
 
                 if os.path.exists(tmp_filename) and not import_dry_run:
                     db.fprint("[info] removing import file for dataset %s after import: %s" % (dataset, tmp_filename))
@@ -934,10 +936,16 @@ def settings():
             act = request.form.get("action", None)
 
             if act == 'change_displayname':
+                previous_displayname = userobj.displayname or ""
                 userobj.displayname = request.form.get("new_displayname", userobj.displayname) or ""
                 dbsession.add(userobj)
                 session['user_displayname'] = userobj.get_name()
                 flash("Your display name was changed successfully.", "success")
+                db.Activity.create(dbsession,
+                                   userobj,
+                                   userobj,
+                                   "event",
+                                   "setting_changed:display name '%s' => '%s'" % (previous_displayname, userobj.get_name()))
 
             if act == 'change_password':
                 req_pwc = request.form.get("curpassword", None)
@@ -948,6 +956,7 @@ def settings():
                     userobj.change_password(dbsession, req_pwc, req_pw1, req_pw2)
                     userobj.invalidate_keys(dbsession)
                     flash("Password successfully changed.", "success")
+                    db.Activity.create(dbsession, userobj, userobj, "event", "password_changed")
                 except Exception as e:
                     acterror = "%s %s %s" % (e, userobj, session['user'])
                     db.fprint(acterror)
@@ -979,6 +988,7 @@ def login(backto=None):
                         req_user_obj.purge_invites(dbsession)
                         loginerror = None
 
+                        db.Activity.create(dbsession, req_user_obj, req_user_obj, "event", "login")
                         return redirect(url_for('index'))
         else:
             return redirect(url_for('index'))

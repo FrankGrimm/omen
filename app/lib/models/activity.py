@@ -5,7 +5,8 @@ from sqlalchemy import Column, Integer, String, desc, func, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import DateTime
 
-# import logging
+import logging
+import json
 
 from app.lib.database_internals import Base
 
@@ -43,6 +44,37 @@ class Activity(Base):
 
         qry = qry.order_by(desc(Activity.created))
         return qry.all()
+
+    @staticmethod
+    def to_activity_target(target):
+        if target is None:
+            raise ValueError("target cannot be null")
+
+        if isinstance(target, str):
+            return target
+
+        try:
+            return target.activity_target()
+        except AttributeError:
+            return str(target)
+
+    @staticmethod
+    def create(dbsession, owner, target, scope, content):
+        target = Activity.to_activity_target(target)
+        if not isinstance(content, str):
+            content = json.dumps(content)
+
+        log_activity = Activity()
+        log_activity.owner = owner
+        log_activity.target = target
+        log_activity.scope = scope
+        log_activity.content = content
+
+        dbsession.add(log_activity)
+        logging.debug("activity created for target %s", target)
+
+        dbsession.flush()
+        return log_activity
 
     def __str__(self):
         return "[Activity #%s (%s) %s => %s]" % (self.event_id, self.owner, self.target, self.scope)

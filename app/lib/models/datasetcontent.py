@@ -2,7 +2,7 @@
 DatasetContent entity that holds information on imported samples.
 """
 
-from sqlalchemy import Column, Integer, String, JSON, ForeignKey, and_, ForeignKeyConstraint
+from sqlalchemy import Column, Integer, String, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.lib.database_internals import Base
@@ -30,3 +30,5 @@ class DatasetContent(Base):
                 self.sample
                 )
 
+    def activity_target(self):
+        return "SAMPLE:%s" % self.sample_index
