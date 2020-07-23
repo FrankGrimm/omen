@@ -670,6 +670,16 @@ footer {
     width: 100%;
 }
 
+footer div {
+    margin-left: 2rem;
+    line-height: 2em;
+}
+
+footer img {
+    height: 2em;
+    margin-top: -0.3em;
+}
+
 footer a {
     color: var(--theme_fg_link);
 }

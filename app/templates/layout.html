@@ -65,7 +65,13 @@
                 {% block body %}{% endblock %}
             </div>
 
-            <footer>&copy; {{ cur_year }} - <a href="https://github.com/FrankGrimm/omen">OMEN | {{ product_name }} v{{ app_version}}</a>
+            <footer>
+                <div>
+                    <img src="{{ url_for("static", filename="img/logo.png") }}" alt="OMEN" class="footer_logo" />
+                </div>
+                <div>
+                    &copy; {{ cur_year }} - <a href="https://github.com/FrankGrimm/omen">OMEN | {{ product_name }} v{{ app_version}}</a>
+                </div>
 </footer>
         </main>
 </div>
