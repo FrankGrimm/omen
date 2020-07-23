@@ -891,7 +891,7 @@ div.df_pagination a:hover {
 }
 
 .df_inspect_changebtn {
-    min-width: 4rem !important;
+    min-width: 10rem !important;
     width: 80%;
 }
 
@@ -902,9 +902,14 @@ div.df_pagination a:hover {
     flex-grow: 0;
 }
 
-
+.df_inspect_col_sel {
+    display: flex;
+}
 .df_inspect_col_content {
     display: flex;
+    width: 100%;
+    margin: 0;
+    padding: 0.5em;
     flex-grow: 1;
     margin-bottom: 1em;
     flex-direction: column;
@@ -930,8 +935,14 @@ div.df_pagination a:hover {
     min-width: 2em;
 }
 
+.df_inspect_table {
+    width: 100%;
+    padding: 0;
+    margin: 1em 0 0 1em;
+}
+
 .df_inspect_table_row {
-    padding: 0.5em 0 0.3em 0;
+    padding: 1em;
     margin-bottom: 0.2em;
     min-height: 2.5em;
     border-bottom: 1px solid black;
@@ -947,10 +958,6 @@ div.df_pagination a:hover {
     flex-grow: 10;
     flex-shrink: 0;
 }
-.df_inspect_table_row > .df_inspect_textcol {
-    flex-grow: 10;
-    flex-shrink: 0;
-}
 
 .df_inspect_userannos {
     display: flex;
@@ -963,11 +970,6 @@ div.df_pagination a:hover {
     display: flex;
     flex-shrink: 1;
     flex-grow: 1;
-}
-
-.df_inspect_idcol {
-    width: 10%;
-    padding: 0 1em;
 }
 
 .df_inspect_votebtn {
@@ -1117,7 +1119,15 @@ h3 {
 }
 /* /section for materialdesignicons.com */
 
-@media only screen and (max-width: 1200px) {
+@media only screen and (max-width: 1000px) {
+
+    .df_inspect_table {
+        margin: 1em 0;
+        padding: 0;
+    }
+    .df_inspect_table_row {
+        flex-direction: column;
+    }
     .navbar-brand {
         margin-left: 0;
     }
