@@ -4,7 +4,7 @@
 
 # OMEN - A collaborative, annotation platform
 
-![](https://frankgrimm.github.io/omen/img/omen-logo.small.png)
+![](docs/img/omen-logo.small.png)
 
 ## Introduction
 
