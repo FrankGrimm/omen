@@ -408,10 +408,12 @@
             </li>
 
             {% if userobj.uid == dataset.owner or userobj.uid|string in dataset.dsmetadata.acl %}
+            {% if dsroles|length > 0 %}
                 <li>
                     {% set task = dataset.gettask(dbsession, userobj) %}
                     {{ macros.render_progress(task, addclass="singleprocess") }}
                 </li>
+            {% endif %}
             {% endif %}
         {% endfor %}
         </ul>
