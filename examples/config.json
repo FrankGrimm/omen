@@ -4,5 +4,8 @@
     "flask_secret": "RFT$@#UJ(!19",
     "db_debug_disabled": true,
     "tag_orientation_cutoff": 5,
-    "log_level": "INFO"
+    "log_level": "INFO",
+    "invite_max_age": 48,
+    "feature_user_invite": true,
+    "feature_user_manualcreate": true
 }
