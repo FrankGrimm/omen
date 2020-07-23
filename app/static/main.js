@@ -133,6 +133,68 @@ function initMarkdownContent() {
     });
 }
 
+function alertMouseEnter() {
+    const elem = this;
+    if (elem._timerActive) {
+        clearTimeout(elem._timerActive);
+        clearInterval(elem._progressUpdateInterval);
+        elem._progressUpdateInterval = null;
+        elem._timerActive = null;
+    }
+}
+function alertMouseOver() {
+}
+function alertMouseLeave() {
+    const elem = this;
+    if (!elem._timerActive) {
+        elem._timerStarted = timestamp();
+        elem._timerActive = setTimeout(dismissAlert, elem._timerDuration, elem);
+        elem._progressUpdateInterval = setInterval(updateAlertProgress, 100, elem);
+    }
+}
+function updateAlertProgress(elem) {
+    if (!elem || !elem._timerActive || !elem.domProgress) {
+        return;
+    }
+    const remaining = elem._timerDuration - (timestamp() - elem._timerStarted);
+    const progress = Math.max(0.0, Math.min(100.0, 100.0 - remaining / elem._timerDuration * 100.0));
+    const targetStyle = elem.domProgress.querySelector(".progress-bar").style;
+    if (targetStyle.width != progress + "%") {
+        targetStyle.width = progress + "%";
+    }
+
+    if (progress >= 100.0) {
+        clearInterval(elem._progressUpdateInterval);
+    }
+}
+function dismissAlert(elem) {
+    $(elem).alert('close');
+}
+function timestamp() {
+    return (new Date()).getTime();
+}
+
+function initAlerts() {
+    const alerts = document.querySelectorAll(".alert-dismissable");
+    const alertTimeout = 5000; // ms, doubled for warning/error/danger categories
+
+    alerts.forEach(alertElem => {
+        const alertCategory = alertElem.dataset.alertcategory;
+        const currentAlertTimeout = ["warning", "error", "danger"].indexOf(alertCategory) === -1 ? 
+                                                                    alertTimeout : alertTimeout * 2;
+
+        alertElem.domProgress = alertElem.querySelector(".alert-timer");
+        alertElem.addEventListener("mouseenter", alertMouseEnter);
+        alertElem.addEventListener("mouseleave", alertMouseLeave);
+        alertElem.addEventListener("mouseover", alertMouseOver);
+
+        alertElem._timerDuration = currentAlertTimeout;
+        alertElem._timerStarted = timestamp();
+        alertElem._timerActive = setTimeout(dismissAlert, alertElem._timerDuration, alertElem);
+        alertElem._progressUpdateInterval = setInterval(updateAlertProgress, 100, alertElem);
+    });
+}
+
 window.addEventListener('DOMContentLoaded', (event) => {
 
     initSidebar();
@@ -143,5 +205,6 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
     initMarkdownEditors();
     initMarkdownContent();
+    initAlerts();
 
 });
