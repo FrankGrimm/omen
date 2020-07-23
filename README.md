@@ -43,7 +43,7 @@ Note that pulling images, even public ones, from GitHub's infrastructure require
 
 To pull the image using the **command line**: `docker pull docker.pkg.github.com/frankgrimm/omen/omen-prod:latest`
 
-Our standard deployment model uses **[Docker compose](https://docs.docker.com/compose/)**. An example `docker-compose.yml` configuration that sets up a database and OMEN instance can be found in the [`examples/`](https://github.com/FrankGrimm/omen/tree/docs/examples) directory of the repository. Note that this example requires mapping the database files to a volume in order to be retained when the infrastructure is restarted.
+Our standard deployment model uses **[Docker compose](https://docs.docker.com/compose/)**. An example `docker-compose.yml` configuration that sets up a database and OMEN instance can be found in the [`examples/`](https://github.com/FrankGrimm/omen/tree/master/examples) directory of the repository. Note that this example requires mapping the database files to a volume in order to be retained when the infrastructure is restarted.
 
 After pulling the image and configuring your preferred deployment method, make sure to:
 
