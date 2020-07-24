@@ -13,7 +13,7 @@
           Jump straight back in:
           <div class="list-group">
             {% for task in tasks %}
-                <a class="list-group-item list-group-item-action" href="{{ url_for('annotate', dsid=task.id) }}">
+            <a class="list-group-item list-group-item-action {% if not task.can_annotate %} disabled{% endif %}" href="{{ url_for('annotate', dsid=task.id) }}" {% if not task.can_annotate %} disabled{% endif %}>
                     {% set task_state_icon = "mdi-checkbox-multiple-blank-outline" %}
 
                     {% if 'owner' in task.user_roles%}

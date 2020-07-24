@@ -415,7 +415,7 @@
                         {% endif %}
                     </div>
                     <div class="userlist_progress"> 
-                        {% set task = dataset.gettask(dbsession, userobj) %}
+                        {% set task = dataset.get_task(dbsession, userobj) %}
                         {{ macros.render_progress(task, addclass="singleprocess") }}
                     </div>
                 </div>

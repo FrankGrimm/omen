@@ -105,20 +105,6 @@ class Dataset(Base):
             return None
         return idcolumn
 
-    def get_task(self, dbsession, foruser):
-        task = {"id": self.dataset_id,
-                "name": self.get_name(),
-                "dataset": self,
-                "progress": 0,
-                "size": self.get_size(),
-                "annos": self.annocount(dbsession, foruser),
-                "annos_today": self.annocount_today(dbsession, foruser)
-                }
-        task_calculate_progress(task)
-        #if task["progress"] > 100.0 and not self.dsmetadata.get("allow_restart_annotation", False):
-        task["can_annotate"] = task["progress"] < 100.0 or self.dsmetadata.get("allow_restart_annotation", False)
-        return task
-
     def get_roles(self, dbsession, user_obj):
         if isinstance(user_obj, str):
             user_obj = int(user_obj)
@@ -188,32 +174,27 @@ class Dataset(Base):
                 return True
         return False
 
-    def gettask(self, dbsession, for_user):
+    def get_task(self, dbsession, for_user):
         if not self.accessible_by(dbsession, for_user):
             return None
         if not isinstance(for_user, User):
-            raise Exception("dataset::gettask - argument for_user needs to be of type User")
+            raise Exception("dataset::get_task - argument for_user needs to be of type User")
 
-        dsid = self.dataset_id
         check_result = self.check_dataset()
         if check_result is not None and len(check_result) > 0:
             return None
 
-        dsname = self.get_name()
-        task = {"id": dsid, "name": dsname,
+        task = {"id": self.dataset_id,
+                "name": self.get_name(),
                 "dataset": self,
                 "progress": 0,
-                "size": self.dsmetadata.get("size", -1) or -1,
                 "user_roles": self.get_roles(dbsession, for_user),
+                "size": self.get_size(),
                 "annos": self.annocount(dbsession, for_user),
                 "annos_today": self.annocount_today(dbsession, for_user)
                 }
-
-        if task['size'] and task['size'] > 0 and task['annos'] and task['annos'] > 0:
-            task['progress'] = round(task['annos'] / task['size'] * 100.0)
-            task['progress_today'] = round(task['annos_today'] / task['size'] * 100.0)
-            task['progress_beforetoday'] = task['progress'] - task['progress_today']
-
+        task_calculate_progress(task)
+        task["can_annotate"] = task["progress"] < 100.0 or self.dsmetadata.get("allow_restart_annotation", False)
         return task
 
     def dirty(self, dbsession):
