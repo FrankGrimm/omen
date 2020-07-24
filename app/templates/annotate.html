@@ -7,6 +7,19 @@ Annotate &quot;<span class="annometa">{{ task.name }}</span>&quot;
 
 {{ macros.render_progress(task, addclass="annoprogress") }}
 
+{% if all_done %}
+<div class="row">
+<div class="d-flex col-12">
+    <h3>Task complete!<h3>
+</div>
+</div>
+
+<div class="row">
+<div class="d-flex col-12">
+    You have completely annotated this dataset or work package.</div>
+</div>
+</div>
+{% else %}
 <div class="row">
 <div id="anno_actions" class="d-flex col-12">
     {% set add_classes = "" %}
@@ -54,6 +67,8 @@ Annotate &quot;<span class="annometa">{{ task.name }}</span>&quot;
         <span class="sample_metadata">ID: {{sample_id}}</span>
     </div>
 </div>
+
+{% endif %}
 
 <br />
 <br />

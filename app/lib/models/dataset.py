@@ -58,7 +58,7 @@ class Dataset(Base):
 
     persisted = False
     _cached_df = None
-    valid_option_keys = set(["hide_votes", "annotators_can_comment"])
+    valid_option_keys = set(["hide_votes", "annotators_can_comment", "allow_restart_annotation"])
 
     def get_option(self, key, default_value=False):
         return bool(self.dsmetadata.get(key, default_value))
@@ -360,17 +360,17 @@ class Dataset(Base):
             return iaa_result
 
     def annotations(self, dbsession, page=1, page_size=50, foruser=None,
-            user_column=None, restrict_view=None, only_user=False, with_content=True,
-            query=None, order_by=None, min_sample_index=None,
-            tags_include=None, tags_exclude=None):
+                    user_column=None, restrict_view=None, only_user=False, with_content=True,
+                    query=None, order_by=None, min_sample_index=None,
+                    tags_include=None, tags_exclude=None):
 
         foruser = User.by_id(dbsession, foruser)
         user_roles = self.get_roles(dbsession, foruser)
 
-        if not 'annotator' in user_roles and \
-                not 'curator' in user_roles:
-            raise Exception("Unauthorized, user %s does not have role 'curator'. Active roles: %s" \
-                                % (foruser, user_roles))
+        if 'annotator' not in user_roles and \
+                'curator' not in user_roles:
+            raise Exception("Unauthorized, user %s does not have role 'curator'. Active roles: %s"
+                            % (foruser, user_roles))
 
         if user_column is None:
             user_column = "annotation"
@@ -563,12 +563,13 @@ class Dataset(Base):
         for tag in self.get_taglist():
             anno_votes[tag] = []
 
-        for anno in dbsession.query(Annotation).filter_by( \
-                dataset_id=self.dataset_id, sample=sample_id).all():
+        for anno in dbsession.query(Annotation).filter_by(
+                dataset_id=self.dataset_id,
+                sample=sample_id).all():
 
-            if not exclude_user is None and exclude_user is anno.owner:
+            if exclude_user is not None and exclude_user is anno.owner:
                 continue
-            if anno.data is None or not 'value' in anno.data or anno.data['value'] is None or \
+            if anno.data is None or 'value' not in anno.data or anno.data['value'] is None or \
                     not anno.data['value'] in self.get_taglist():
                 continue
             anno_votes[anno.data['value']].append(anno.owner)
@@ -586,9 +587,8 @@ class Dataset(Base):
         for anno in annores:
             resdict['uid'].append(anno.owner_id)
             resdict['sample'].append(anno.sample)
-            resdict['annotation'].append(anno.data['value'] \
-                    if 'value' in anno.data and not anno.data['value'] is None
-                    else None)
+            resdict['annotation'].append(anno.data['value']
+                                         if 'value' in anno.data and anno.data['value'] is not None else None)
 
         return resdict
 
@@ -598,9 +598,10 @@ class Dataset(Base):
         anno_obj_data = {}
 
         anno_obj = dbsession.query(Annotation).filter_by(owner_id=user_obj.uid,
-                        dataset_id=self.dataset_id, sample=sample).one_or_none()
+                                                         dataset_id=self.dataset_id,
+                                                         sample=sample).one_or_none()
 
-        if not anno_obj is None:
+        if anno_obj is not None:
             anno_obj_data = anno_obj.data or {}
 
         return {
@@ -613,6 +614,9 @@ class Dataset(Base):
         return qry.one_or_none()
 
     def get_next_sample(self, dbsession, sample_index, user_obj, exclude_annotated=True):
+        if sample_index is None:
+            return None, None
+
         sample_index = int(sample_index)
 
         sql = ""
@@ -660,16 +664,19 @@ class Dataset(Base):
                          dbsession.bind,
                          params=params)
 
-        if df.shape[0] == 0 and exclude_annotated:
+        if df.shape[0] == 0 and exclude_annotated and self.dsmetadata.get("allow_restart_annotation", False):
             return self.get_next_sample(dbsession, sample_index, user_obj, exclude_annotated=False)
-        elif df.shape[0] > 0:
+
+        if df.shape[0] > 0:
             first_row = df.iloc[df.index[0]]
             return first_row["sample_index"], first_row["sample"]
-        else:
-            # empty dataset
-            return None, None
+        # empty dataset
+        return None, None
 
     def get_prev_sample(self, dbsession, sample_index, user_obj, exclude_annotated=True):
+        if sample_index is None:
+            return None, None
+
         sample_index = int(sample_index)
 
         sql = ""
@@ -1098,8 +1105,8 @@ def task_calculate_progress(task):
         return
 
     if task['size'] and task['size'] > 0 and task['annos'] and task['annos'] > 0:
-        task['progress'] = round(task['annos'] / task['size'] * 100.0)
-        task['progress_today'] = round(task['annos_today'] / task['size'] * 100.0)
+        task['progress'] = min(round(task['annos'] / task['size'] * 100.0), 100.0)
+        task['progress_today'] = min(round(task['annos_today'] / task['size'] * 100.0), 100.0)
         task['progress_beforetoday'] = task['progress'] - task['progress_today']
 
 

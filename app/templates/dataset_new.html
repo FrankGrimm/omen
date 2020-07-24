@@ -270,25 +270,31 @@
         </form>
     </div>
 
+    {% macro render_option(option, title, help_text="", title_left="") -%}
     <div class="row seprow">
         <form method="post">
             <input type="hidden" name="action" value="change_ds_option">
 
             <div class="form-group row">
-                <label for="annoorder" class="col-12 col-md-3 col-form-label">
-                    <div class="">Miscellaneous Options:</div>
+                <label for="cb_option_{{ option }}_0" class="col-12 col-md-3 col-form-label">
+                    {% if title_left %}<div>{{title_left}}</div>{% endif %}
                 </label> 
                 <div class="col-12 col-md-9">
                     <div class="custom-control custom-checkbox custom-control-inline">
-                        <input name="cb_option_hide_votes" id="cb_option_hide_votes_0" type="checkbox" class="custom-control-input cb_inspect_option" value="hide_votes" autocomplete="off" {% if dataset.dsmetadata.hide_votes %} checked{% endif %} > 
-                        <label for="cb_option_hide_votes_0" class="custom-control-label">Hide votes during annotation</label>
+                        <input name="cb_option_{{ option }}" id="cb_option_{{ option }}_0" type="checkbox" class="custom-control-input cb_inspect_option" value="{{ option }}" autocomplete="off" {% if dataset.dsmetadata[option] %} checked{% endif %} > 
+                        <label for="cb_option_{{ option }}_0" class="custom-control-label">{{ title }}</label>
                     </div> 
-                    <span id="cb_option_hide_votesHelpBlock" class="form-text text-muted">Activating this option hides votes to users with owner or curator roles during annotation.</span>
-
+                    {% if help_text %}
+                    <span id="cb_option_{{ option }}HelpBlock" class="form-text text-muted">{{ help_text }}</span>
+                    {% endif %}
                 </div>
             </div> 
         </form>
     </div>
+    {%- endmacro %}
+
+    {{ render_option("hide_votes", title="Hide votes during annotation", help_text="Activating this option hides votes to users with owner or curator roles during annotation.", title_left="Miscellaneous Options:") }}
+    {{ render_option("allow_restart_annotation", title="Restart annotation after dataset annotation or work package is completed.", help_text="Enabling this option will allow users to reannotate the whole dataset (or work package) once they finish their first pass. Otherwise (default), a finished task is disabled.") }}
 
     <div class="row seprow">
         <form method="post" id="tag_editor_container">

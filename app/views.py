@@ -467,11 +467,12 @@ def get_random_sample(df, id_column):
     sample_id = sample_row[id_column].values[0]
     return sample_idx, sample_id
 
+
 def handle_set_annotation(dbsession, dataset):
     set_sample_idx = None
     set_sample_value = None
     try:
-        if not request.args.get("set_sample_idx", None) is None:
+        if request.args.get("set_sample_idx", None) is not None:
             set_sample_idx = str(int(request.args.get("set_sample_idx", None)))
     except ValueError:
         pass
@@ -482,7 +483,11 @@ def handle_set_annotation(dbsession, dataset):
     if set_sample_idx is not None and set_sample_value is not None:
         dataset.setanno(dbsession, session['user'], set_sample_idx, set_sample_value)
 
+
 def get_votes(dbsession, dataset, user_roles, session_user, sample_id):
+    if sample_id is None:
+        return None
+
     anno_votes = None
     if 'curator' in user_roles:
         anno_votes = dataset.get_anno_votes(dbsession, sample_id=sample_id,
@@ -491,28 +496,32 @@ def get_votes(dbsession, dataset, user_roles, session_user, sample_id):
             anno_votes[tag] = [annouser.get_name() for annouser in anno_votes[tag]]
     return anno_votes
 
+
 def get_annotation_dataframe(dbsession, dataset, session_user, min_sample_idx=None, random_order=False):
     order_by = "dc.sample_index, usercol_value ASC NULLS LAST"
     if random_order:
         order_by = "random()"
 
-    no_anno_df, annotation_columns, total = dataset.annotations(dbsession, foruser=session_user,
-                                        user_column="annotations",
-                                        restrict_view="untagged",
-                                        page_size=10,
-                                        only_user=True,
-                                        min_sample_index=min_sample_idx,
-                                        order_by=order_by)
+    no_anno_df, annotation_columns, total = dataset.annotations(dbsession,
+                                                                foruser=session_user,
+                                                                user_column="annotations",
+                                                                restrict_view="untagged",
+                                                                page_size=10,
+                                                                only_user=True,
+                                                                min_sample_index=min_sample_idx,
+                                                                order_by=order_by)
     if no_anno_df.empty:
-        no_anno_df, annotation_columns, total = dataset.annotations(dbsession, foruser=session_user,
-                                    user_column="annotations",
-                                    restrict_view="tagged",
-                                    page_size=10,
-                                    only_user=True,
-                                    min_sample_index=min_sample_idx,
-                                    order_by=order_by)
-
+        if dataset.dsmetadata.get("allow_restart_annotation", False):
+            no_anno_df, annotation_columns, total = dataset.annotations(dbsession,
+                                                                        foruser=session_user,
+                                                                        user_column="annotations",
+                                                                        restrict_view="tagged",
+                                                                        page_size=10,
+                                                                        only_user=True,
+                                                                        min_sample_index=min_sample_idx,
+                                                                        order_by=order_by)
     return no_anno_df, annotation_columns, total
+
 
 def get_sample_index(dbsession, dataset, session_user, random_order=False):
     sample_idx = None
@@ -522,25 +531,31 @@ def get_sample_index(dbsession, dataset, session_user, random_order=False):
         try:
             if not request.args.get("sample_idx", None) is None:
                 sample_idx = int(request.args.get("sample_idx", None))
+
         except ValueError:
             pass
 
-        no_anno_df, annotation_columns, total = get_annotation_dataframe(dbsession, dataset,
-                session_user, min_sample_idx=sample_idx, random_order=False)
+        no_anno_df, annotation_columns, total = get_annotation_dataframe(dbsession,
+                                                                         dataset,
+                                                                         session_user,
+                                                                         min_sample_idx=sample_idx,
+                                                                         random_order=False)
     else:
-        no_anno_df, annotation_columns, total = get_annotation_dataframe(dbsession, dataset,
-                session_user, random_order=True)
+        no_anno_df, annotation_columns, total = get_annotation_dataframe(dbsession,
+                                                                         dataset,
+                                                                         session_user,
+                                                                         random_order=True)
 
-    # note that the random sample currently only gathers a sample from the first/current page
+    if no_anno_df.empty:
+        return sample_idx, sample_id, no_anno_df, annotation_columns, total
+
     if sample_idx is None:
-
         if dataset.dsmetadata.get("annoorder", "sequential") == 'random':
             sample_idx, sample_id = get_random_sample(no_anno_df, dataset.get_id_column())
         else:
             first_row = no_anno_df.iloc[no_anno_df.index[0]]
             sample_idx = first_row['sample_index']
             sample_id = first_row[dataset.get_id_column()]
-
     return sample_idx, sample_id, no_anno_df, annotation_columns, total
 
 
@@ -560,8 +575,6 @@ def annotate(dsid=None, sample_idx=None):
 
         task = dataset.get_task(dbsession, session_user)
 
-        db.task_calculate_progress(task)
-
         sample_idx, sample_id, df, annotation_columns, _ = get_sample_index(dbsession, dataset, session_user)
 
         sample_content = None
@@ -570,23 +583,52 @@ def annotate(dsid=None, sample_idx=None):
 
         random_sample, random_sample_id, _, _, _ = get_sample_index(dbsession, dataset, session_user, random_order=True)
 
-        sample = dataset.sample_by_index(dbsession, sample_idx)
-        sample_content = sample.content
-        sample_id = sample.sample
+        sample = dataset.sample_by_index(dbsession, sample_idx) if sample_idx is not None else None
+        sample_content = sample.content if sample is not None else None
+        sample_id = sample.sample if sample is not None else None
 
         sample_prev, _ = dataset.get_prev_sample(dbsession, sample_idx, session_user)
         sample_next, _ = dataset.get_next_sample(dbsession, sample_idx, session_user)
 
-        curanno_data = dataset.getanno(dbsession, session_user, sample_id)
+        curanno_data = dataset.getanno(dbsession, session_user, sample_id) if sample_id is not None else None
         curanno = None
-        if curanno_data and 'data' in curanno_data and \
-                'value' in curanno_data['data']:
+        if curanno_data and 'data' in curanno_data and 'value' in curanno_data['data']:
             curanno = curanno_data['data']['value']
 
         anno_votes = get_votes(dbsession, dataset, user_roles, session_user, sample_id)
 
+        annotation_tasks = db.annotation_tasks(dbsession, session['user'])
+
+        if "set_sample_idx" in request.args and df is not None and not df.empty:
+            if task["annos"] < task["size"]:
+                task["annos"] += 1
+            if task["annos_today"] < task["size"]:
+                task["annos_today"] += 1
+
+            for atask in annotation_tasks:
+                if atask["id"] != task["id"]:
+                    continue
+                if atask["annos"] < atask["size"]:
+                    atask["annos"] += 1
+                if atask["annos_today"] < atask["size"]:
+                    atask["annos_today"] += 1
+
+        db.task_calculate_progress(task)
+
+        all_done = sample_idx is None or df is None or df.empty
+        if not all_done:
+            all_done = task['progress'] >= 100.0
+        if all_done:
+            flash("Task complete! You have annotated all samples in this task", "success")
+
+        if dataset.dsmetadata.get("allow_restart_annotation", False) or \
+           "sample_idx" in request.args:
+            all_done = False
+
         return render_template("annotate.html", dataset=dataset,
                                task=task,
+                               tasks=annotation_tasks,
+                               all_done=all_done,
                                sample_id=sample_id,
                                sample_idx=sample_idx,
                                sample_content=sample_content,
