@@ -50,7 +50,7 @@ function initPopovers() {
             $elem.popover("hide");
         });
         $elem.hover(function() {
-            if ($elem.is(":disabled")) {
+            if ($elem.is(":disabled") && (!elem.dataset.trigger || elem.dataset.trigger !== "hover")) {
                 $elem.popover("hide");
             }
         }, function() {

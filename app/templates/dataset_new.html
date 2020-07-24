@@ -237,7 +237,15 @@
         <div class="btn-toolbar col-12">
             <div class="btn-group">
                 <a class="btn btn-primary" href="{{ url_for("download", dsid=dataset.dataset_id) }}"><i class="mdi mdi-download"></i> Download</a> 
-                <a class="btn btn-secondary" href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id) }}"><i class="mdi mdi-table-search"></i> View</a> 
+
+                {% set action_add = "" %}
+                {% set action_add_title = "" %}
+                {% if 'curator' not in userroles %}
+                    {% set action_add = " disabled" %}
+                    {% set action_add_title = "Requires 'Curator' role." %}
+                {% endif %}
+
+                <a class="btn btn-secondary {{ action_add }}" {% if action_add_title %}data-trigger="hover" data-toggle="popover" title="{{ action_add_title }}"{% endif %} href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id) }}" {{ action_add }}><i class="mdi mdi-table-search"></i> View</a> 
             </div>
 
         </div>

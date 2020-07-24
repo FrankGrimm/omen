@@ -971,10 +971,26 @@ def new_dataset(dsid=None):
             # redirect to edit URI once dataset has been persisted
             return redirect(url_for('new_dataset', dsid=dataset.dataset_id))
 
-        if editmode == "tageditor":
-            return render_template('tag_editor.html', dataset=dataset, editmode=editmode, previewdf_alerts=import_alerts, previewdf=preview_df, db=db, ds_errors=ds_errors, dbsession=dbsession, can_import=can_import, has_upload_content=has_upload_content)
+        userroles = dataset.get_roles(dbsession, userobj)
 
-        return render_template('dataset_new.html', dataset=dataset, editmode=editmode, previewdf_alerts=import_alerts, previewdf=preview_df, db=db, ds_errors=ds_errors, dbsession=dbsession, can_import=can_import, has_upload_content=has_upload_content)
+        template = "dataset_new.html"
+
+        if editmode == "tageditor":
+            template = "tag_editor.html"
+
+            # return render_template('tag_editor.html', dataset=dataset, editmode=editmode, previewdf_alerts=import_alerts, previewdf=preview_df, db=db, ds_errors=ds_errors, dbsession=dbsession, can_import=can_import, has_upload_content=has_upload_content)
+
+        return render_template(template,
+                               dataset=dataset,
+                               editmode=editmode,
+                               previewdf_alerts=import_alerts,
+                               previewdf=preview_df,
+                               db=db,
+                               ds_errors=ds_errors,
+                               dbsession=dbsession,
+                               can_import=can_import,
+                               has_upload_content=has_upload_content,
+                               userroles=userroles)
 
 
 @app.route(BASEURI + '/settings', methods=['GET', 'POST'])
