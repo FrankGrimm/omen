@@ -381,37 +381,38 @@
                     &nbsp;
                     <span class="aclusermail">{{ userobj.get_name() }}</span>
                 </div>
-
                 <div class="userlist_details">
                     <div class="userlist_role_setting">
-                        {% if userobj.uid == dataset.owner_id %}
-                            <span class="acluserowner">owner</span>
+
+                        {% if 'owner' in dsroles %}
+                        <a href="#" class="toggleacl btn btn-sm btn-outline-success acluserowner disabled" data-roleid="owner" disabled data-userid="{{userobj.uid}}">
+                            <span class="">owner</span>
+                            <i class="far fa-check-square"></i>
+                        </a>
+                        {% endif %}
+
+                        {% if 'annotator' in dsroles  %}
+                            <a href="#" class="toggleacl btn btn-sm btn-outline-success" data-roleid="annotator" data-userid="{{userobj.uid}}">
+                                <span class="">annotator</span>
+                                <i class="far fa-check-square"></i>
+                            </a>
                         {% else %}
+                            <a href="#" class="toggleacl btn btn-sm btn-outline-primary" data-roleid="annotator" data-userid="{{userobj.uid}}">
+                                <span class="">make annotator </span>
+                                <i class="far fa-square"></i>
+                            </a>
+                        {% endif %}
 
-                            {% if 'annotator' in dsroles and not 'curator' in dsroles %}
-                                <a href="#" class="toggleacl btn btn-sm btn-outline-success" data-roleid="annotator" data-userid="{{userobj.uid}}">
-                                    <span class="">annotator</span>
-                                    <i class="far fa-check-square"></i>
-                                </a>
-                            {% else %}
-                                <a href="#" class="toggleacl btn btn-sm btn-outline-primary" data-roleid="annotator" data-userid="{{userobj.uid}}">
-                                    <span class="">make annotator </span>
-                                    <i class="far fa-square"></i>
-                                </a>
-                            {% endif %}
-
-                            {% if 'curator' in dsroles %}
-                                <a href="#" class="toggleacl btn btn-sm btn-outline-success" data-roleid="curator" data-userid="{{userobj.uid}}">
-                                    <span class="">curator</span>
-                                    <i class="far fa-check-square"></i>
-                                </a>
-                            {% else %}
-                                <a href="#" class="toggleacl btn btn-sm btn-outline-primary" data-roleid="curator" data-userid="{{userobj.uid}}">
-                                    <span class="">make curator </span>
-                                    <i class="far fa-square"></i>
-                                </a>
-                            {% endif %}
-
+                        {% if 'curator' in dsroles %}
+                            <a href="#" class="toggleacl btn btn-sm btn-outline-success" data-roleid="curator" data-userid="{{userobj.uid}}">
+                                <span class="">curator</span>
+                                <i class="far fa-check-square"></i>
+                            </a>
+                        {% else %}
+                            <a href="#" class="toggleacl btn btn-sm btn-outline-primary" data-roleid="curator" data-userid="{{userobj.uid}}">
+                                <span class="">make curator </span>
+                                <i class="far fa-square"></i>
+                            </a>
                         {% endif %}
                     </div>
                     <div class="userlist_progress"> 

@@ -1,5 +1,6 @@
 
-function setACLstatus($elem, elemrole, newrole) {
+function setACLstatus($elem, elemrole, newroles) {
+    console.log("newroles-setacl", newroles);
     // remove icons
     let $icocheck = $elem.find(".fa-check-square");
     if ($icocheck && $icocheck.length) {
@@ -10,7 +11,7 @@ function setACLstatus($elem, elemrole, newrole) {
         $icosquare.remove();
     }
 
-    if (!newrole || elemrole !== newrole) {
+    if (newroles.indexOf(elemrole) < 0) {
         $elem.addClass("btn-outline-primary");
         $elem.removeClass("btn-outline-success");
         $newi = $('<i class="far fa-square"></i>');
@@ -25,29 +26,14 @@ function setACLstatus($elem, elemrole, newrole) {
     }
 }
 
-function updateACL(foruser, annoaction, newrole) {
+function updateACL(foruser, annoaction, newroles) {
     $("a.toggleacl").each(function(idx, elem) {
         const $elem = $(elem);
         if ($elem.data("userid") != foruser) { return; }
+
         const elemrole = $elem.data("roleid");
-
-        setACLstatus($elem, elemrole, newrole);
-
-        console.log("updateACL", elem, "elemrole", elemrole, "newrole", newrole);
-        if (annoaction === "add_role") {
-            if (elemrole === 'curator') {
-                if (newrole === 'curator') {
-                    console.log("elemrole", elemrole, "show");
-                    $elem.show();
-                }
-            }
-            if (elemrole === 'annotator') {
-                if (newrole === 'annotator') {
-                    console.log("elemrole", elemrole, "show");
-                    $elem.show();
-                }
-            }
-        }
+        console.log(elemrole, newroles)
+        setACLstatus($elem, elemrole, newroles);
     });
 }
     
@@ -395,15 +381,14 @@ document.addEventListener("DOMContentLoaded",function(){
             url: $(location).attr("href"),
             data: {"action": annoaction, "annouser": annouser, "annorole": annorole},
             dataType: "html",
-            success: function() {
+            success: function(data) {
+                data = JSON.parse(data);
                 $tgt.toggleClass("btn-outline-primary");
                 $tgt.toggleClass("btn-outline-success");
                 $tgt.append($newi);
                 
-                if (annoaction == "add_role") {
-                    updateACL(annouser, annoaction, annorole);
-                } else {
-                    updateACL(annouser, annoaction, null);
+                if (annoaction === "add_role" || annoaction === "rem_role") {
+                    updateACL(annouser, annoaction, data.new_roles);
                 }
             },
             error: function(jqXHR, textstatus, err) {

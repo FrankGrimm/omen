@@ -866,8 +866,9 @@ def new_dataset(dsid=None):
                         not request.form.get("annorole", None) is None:
                     annouser = request.form.get("annouser", None)
                     annorole = request.form.get("annorole", None)
-                    if db.User.is_valid_role(annorole):
-                        dataset.set_role(dbsession, annouser, annorole)
+                    dataset.set_role(dbsession, annouser, annorole)
+
+                    return {"action": formaction, "new_roles": list(dataset.get_roles(dbsession, annouser))}
 
                 if formaction == 'rem_role' and \
                         not request.form.get("annouser", None) is None and \
@@ -875,9 +876,8 @@ def new_dataset(dsid=None):
                     annouser = request.form.get("annouser", None)
                     annorole = request.form.get("annorole", None)
                     if annorole in dataset.get_roles(dbsession, annouser):
-                        dataset.set_role(dbsession, annouser, None)
-                    else:
-                        db.fprint("failed to remove role %s from user %s: not in active roles" % (annorole, annouser))
+                        dataset.set_role(dbsession, annouser, annorole, remove=True)
+                    return {"action": formaction, "new_roles": list(dataset.get_roles(dbsession, annouser))}
 
                 if formaction == 'change_taglist' and not request.form.get("settaglist", None) is None:
                     newtags = request.form.get("settaglist", None).split("\n")
@@ -964,10 +964,10 @@ def new_dataset(dsid=None):
             preview_df = dataset.page(dbsession, page_size=10, extended=True)
 
         ds_errors = None
-        if not dataset is None:
+        if dataset is not None:
             ds_errors = dataset.check_dataset()
 
-        if editmode == 'create' and not dataset.dataset_id is None:
+        if editmode == 'create' and dataset.dataset_id is not None:
             # redirect to edit URI once dataset has been persisted
             return redirect(url_for('new_dataset', dsid=dataset.dataset_id))
 

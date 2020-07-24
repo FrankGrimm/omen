@@ -117,17 +117,14 @@ class Dataset(Base):
         if user_obj.uid == self.owner_id:
             # add all roles for owned datasets
             roles.append("owner")
-            roles.append("annotator")
-            roles.append("curator")
-        else:
-            curacl = self.get_acl()
-            uid = str(user_obj.uid)
-            if uid in curacl and not curacl[uid] is None:
-                if curacl[uid] == "annotator":
-                    roles.append("annotator")
-                elif curacl[uid] == "curator":
-                    roles.append("curator")
-                    roles.append("annotator")
+
+        curacl = self.get_acl()
+        uid = str(user_obj.uid)
+        if uid in curacl and not curacl[uid] is None:
+            if "annotator" in curacl[uid]:
+                roles.append("annotator")
+            if "curator" in curacl[uid]:
+                roles.append("curator")
 
         return set(roles)
 
@@ -785,26 +782,37 @@ class Dataset(Base):
     def annocount(self, dbsession, uid):
         if isinstance(uid, User):
             uid = uid.uid
-        val = dbsession.query(Annotation).filter_by(\
+        val = dbsession.query(Annotation).filter_by(
                 dataset_id=self.dataset_id,
                 owner_id=uid).count()
         return val
 
-    def set_role(self, dbsession, uid, role):
+    def set_role(self, dbsession, uid, role, remove=False):
+        if not User.is_valid_role(role):
+            return False
+
         if uid is None:
             return False
 
         if not isinstance(uid, str):
             uid = str(uid)
-        if uid == self.owner_id:
-            return False
 
         curacl = self.get_acl()
-        if uid not in curacl:
-            curacl[uid] = None
+        if uid not in curacl or curacl[uid] is None:
+            curacl[uid] = []
 
-        logging.info("changing role for user %s from %s to %s" % (uid, curacl[uid], role))
-        curacl[uid] = role
+        if not remove:
+            if role in curacl[uid]:
+                logging.debug("skipping role change for user %s, %s already present" % (uid, role))
+            else:
+                logging.info("changing role for user %s: %s add role %s" % (uid, ", ".join(curacl[uid]), role))
+                curacl[uid].append(role)
+        else:
+            if role not in curacl[uid]:
+                logging.debug("skipping role change for user %s, %s not present" % (uid, role))
+            else:
+                logging.info("changing role for user %s: %s remove role %s" % (uid, ", ".join(curacl[uid]), role))
+                curacl[uid].remove(role)
 
         self.dsmetadata['acl'] = curacl
         self.dirty(dbsession)
@@ -814,6 +822,13 @@ class Dataset(Base):
         curacl = self.dsmetadata.get("acl", {})
         if not curacl:
             curacl = {}
+        for uid, useracl in curacl.items():
+            if not isinstance(useracl, list):
+                if useracl is None:
+                    curacl[uid] = []
+                else:
+                    curacl[uid] = [useracl]
+            curacl[uid] = list(filter(lambda n: n is not None, curacl[uid]))
         return curacl
 
     def import_content(self, dbsession, session_user, filename, dry_run):
@@ -1069,17 +1084,9 @@ def accessible_datasets(dbsession, user_id, include_owned=False):
         res = my_datasets(dbsession, user_id)
 
     for ds in all_datasets(dbsession):
-        if not ds.dsmetadata:
-            continue
-        if 'acl' not in ds.dsmetadata:
-            continue
-        dsacl = ds.dsmetadata['acl']
-        uid = str(user_obj.uid)
+        dsacl = ds.get_roles(dbsession, user_obj)
 
-        if uid not in dsacl:
-            continue
-        if dsacl[uid] is None or \
-                dsacl[uid] == '':
+        if dsacl is None or len(dsacl) == 0:
             continue
         res[str(ds.dataset_id)] = ds
 
