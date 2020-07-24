@@ -59,28 +59,29 @@
         <ul class="nav flex-column mb-2">
             {% for sbtask in tasks %}
             {% set is_active_task = request.url_rule.endpoint == 'annotate' and task and task.id == sbtask.id %}
-            <li class="nav-item{% if is_active_task %} nav-active-task{% endif %}">
-
-                <a class="nav-link nav-taskinfo{% if is_active_task %} active{% else %}{% if sbtask.progress >= 100.0 %} nav-taskinfo-completed{% endif %}{% endif %}" href="{{ url_for('annotate', dsid=sbtask.id) }}">
-                    {{sbtask.name}} {% if not is_active_task %}<span class="sidemeta">{{sbtask.annos}}/{{sbtask.size}}</span>{% endif %}
-                </a>
-                {% if is_active_task %}
-                
-                    <p class="navbar-text nav-active-task-data d-none d-md-block row">
-                    <strong>Annotations:</strong>
-                    <span>{{ task.annos }} / {{ task.size }}</span>
-                    </p>
-                    {% if task.annos_today %}
-                    <p class="navbar-text nav-active-task-data d-none d-md-block row">
-                    <strong>Today:</strong>
-                    <span>{{ task.annos_today }}</span>
-                    </p>
+            {% if is_active_task or sbtask.can_annotate %}
+                <li class="nav-item{% if is_active_task %} nav-active-task{% endif %}">
+                    <a class="nav-link nav-taskinfo{% if is_active_task %} active{% else %}{% if sbtask.progress >= 100.0 %} nav-taskinfo-completed{% endif %}{% endif %}" href="{{ url_for('annotate', dsid=sbtask.id) }}">
+                        {{sbtask.name}} {% if not is_active_task %}<span class="sidemeta">{{sbtask.annos}}/{{sbtask.size}}</span>{% endif %}
+                    </a>
+                    {% if is_active_task %}
+                    
+                        <p class="navbar-text nav-active-task-data d-none d-md-block row">
+                        <strong>Annotations:</strong>
+                        <span>{{ task.annos }} / {{ task.size }}</span>
+                        </p>
+                        {% if task.annos_today %}
+                        <p class="navbar-text nav-active-task-data d-none d-md-block row">
+                        <strong>Today:</strong>
+                        <span>{{ task.annos_today }}</span>
+                        </p>
+                        {% endif %}
+                        {{ macros.render_progress(sbtask, addclass="sideprogress-active") }}
+                    {% else %}
+                        {{ macros.render_progress(sbtask, addclass="sideprogress") }}
                     {% endif %}
-                    {{ macros.render_progress(sbtask, addclass="sideprogress-active") }}
-                {% else %}
-                    {{ macros.render_progress(sbtask, addclass="sideprogress") }}
+                </li>
                 {% endif %}
-            </li>
             {% else %}
             <li class="nav-item"><i class="nav-link">all done</i></li>
             {% endfor %}

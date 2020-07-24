@@ -114,6 +114,9 @@ class Dataset(Base):
                 "annos": self.annocount(dbsession, foruser),
                 "annos_today": self.annocount_today(dbsession, foruser)
                 }
+        task_calculate_progress(task)
+        #if task["progress"] > 100.0 and not self.dsmetadata.get("allow_restart_annotation", False):
+        task["can_annotate"] = task["progress"] < 100.0 or self.dsmetadata.get("allow_restart_annotation", False)
         return task
 
     def get_roles(self, dbsession, user_obj):
@@ -1119,18 +1122,7 @@ def annotation_tasks(dbsession, for_user):
         if check_result is not None and len(check_result) > 0:
             continue
 
-        dsname = dataset.get_name()
-        task = {"id": int(dsid), "name": dsname,
-                "dataset": dataset,
-                "progress": 0,
-                "size": dataset.dsmetadata.get("size", -1) or -1,
-                "user_roles": dataset.get_roles(dbsession, for_user),
-                "annos": dataset.annocount(dbsession, for_user),
-                "annos_today": dataset.annocount_today(dbsession, for_user)
-                }
-
-        task_calculate_progress(task)
-
+        task = dataset.get_task(dbsession, for_user)
         tasks.append(task)
 
     # make sure completed tasks are pushed to the bottom of the list
