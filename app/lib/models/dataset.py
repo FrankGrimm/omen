@@ -177,6 +177,8 @@ class Dataset(Base):
     def get_task(self, dbsession, for_user):
         if not self.accessible_by(dbsession, for_user):
             return None
+        if isinstance(for_user, int):
+            for_user = User.by_id(dbsession, for_user)
         if not isinstance(for_user, User):
             raise Exception("dataset::get_task - argument for_user needs to be of type User")
 
