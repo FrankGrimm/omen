@@ -1112,8 +1112,10 @@ def annotation_tasks(dbsession, for_user):
         if check_result is not None and len(check_result) > 0:
             continue
 
-        task = dataset.get_task(dbsession, for_user)
-        tasks.append(task)
+        dsroles = dataset.get_roles(dbsession, for_user)
+        if 'annotator' in dsroles or 'curator' in dsroles:
+            task = dataset.get_task(dbsession, for_user)
+            tasks.append(task)
 
     # make sure completed tasks are pushed to the bottom of the list
     tasks.sort(key=lambda task: (task["progress"] >= 100.0, task["name"]))
