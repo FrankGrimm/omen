@@ -13,6 +13,8 @@ from sqlalchemy import Column, Integer, String, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.attributes import flag_dirty, flag_modified
 
+from flask import flash
+
 from app.lib.database_internals import Base
 import app.lib.config as config
 import app.lib.crypto as crypto
@@ -44,6 +46,21 @@ class User(Base):
     @staticmethod
     def userlist(dbsession):
         return dbsession.query(User).all()
+
+    @staticmethod
+    def validate_newuser(email, pw1, pw2):
+        if not email or not pw1 or not pw2:
+            flash("Missing email or password", "warning")
+            return False
+        if pw1 != pw2:
+            flash("Password and confirmation do not match", "warning")
+            return False
+        if len(pw1) < User.minimum_password_length():
+            flash("Passwords need to be at least "
+                  + str(User.minimum_password_length())
+                  + " characters long.", "error")
+            return False
+        return True
 
     @staticmethod
     def create_user(dbsession, email=None):

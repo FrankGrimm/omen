@@ -4,7 +4,7 @@ Main dataset entity
 from sqlalchemy import Column, Integer, String, JSON, ForeignKey, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.attributes import flag_dirty, flag_modified
-from flask import flash
+from flask import flash, session
 
 import pandas as pd
 import numpy as np
@@ -717,7 +717,7 @@ class Dataset(Base):
             return None, None
 
     def setanno(self, dbsession, uid, sample_index, value):
-        user_obj = User.by_id(dbsession, uid)
+        user_obj = User.by_id(dbsession, uid) if not isinstance(uid, User) else uid
 
         if user_obj is None:
             raise Exception("setanno() requires a user object or id")
@@ -1073,6 +1073,26 @@ def my_datasets(dbsession, user_id):
         res[str(ds.dataset_id)] = ds
 
     return res
+
+
+def get_accessible_dataset(dbsession, dsid, check_role=None):
+    session_user = User.by_id(dbsession, session['user'])
+
+    access_datasets = accessible_datasets(dbsession, session_user, include_owned=True)
+
+    cur_dataset = None
+    if dsid is not None and dsid in access_datasets:
+        cur_dataset = access_datasets[dsid]
+
+    if check_role is None:
+        return cur_dataset
+
+    if cur_dataset is not None:
+        user_roles = cur_dataset.get_roles(dbsession, session_user)
+        if check_role not in user_roles:
+            return None
+
+    return cur_dataset
 
 
 def accessible_datasets(dbsession, user_id, include_owned=False):
