@@ -1,5 +1,5 @@
 wheel
-spacy==2.3.0
+spacy==2.3.2
 Flask==1.1.2
 coloredlogs==14.0
 passlib==1.7.2
