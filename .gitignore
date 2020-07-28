@@ -4,6 +4,7 @@ app/config.json
 testdata/quotes.json
 testdata/quotes-*.csv
 logs/*.log
+tags
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
