@@ -243,21 +243,18 @@ blockquote {
 }
 
 .navbar-brand {
-    min-width: 200px;
 }
 
 .sidebar {
     margin-top: 3em;
     box-shadow: inset -1px 0 1px rgba(0, 0, 0, .1);
     border-left: 1px rgba(0, 0, 0, .1);
-    min-width: 200px;
 }
 
 .sidebar-compact {
     display: flex;
     flex-direction: row;
     width: 100%;
-    min-width: 200px;
 	position: fixed;
 
     top: 48px;
