@@ -3,8 +3,10 @@ Database model and utilities
 """
 from contextlib import contextmanager
 
+import re
 import sys
 import atexit
+import logging
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -30,23 +32,27 @@ def fprint(*args):
 
 @contextmanager
 def session_scope():
-    session = flask_db.session
+    fdb_session = flask_db.session
     try:
-        yield session
-        session.commit()
+        yield fdb_session
+        fdb_session.commit()
     except Exception as e:
         fprint("rolling back transaction after error (%s)" % e)
-        session.rollback()
+        fdb_session.rollback()
         raise
     finally:
-        session.close()
+        fdb_session.close()
 
 
 def shutdown():
     print("DB shutdown")
     engine = flask_db.get_engine()
-    if not engine is None:
+    if engine is not None:
         engine.dispose()
+
+
+def masked_connstring(connstring):
+    return re.sub(r"(?<=\:\/\/).*(?=@.*)", r"****", connstring)
 
 
 def connect():
@@ -61,11 +67,7 @@ def connect():
     flask_db = SQLAlchemy(web.app, session_options={"expire_on_commit": False, "autoflush": False})
     migrate = Migrate(web.app, flask_db)
 
-    masked_connstring = connection_string
-    if 'password' in masked_connstring.lower():
-        delim = masked_connstring.lower().index("password")
-        masked_connstring = masked_connstring[:delim+ len("password")] + ":::" + "*" * len(masked_connstring[delim :])
-    print("[database] connection string (masked): %s" % masked_connstring)
+    print("[database] connection string (masked): %s" % masked_connstring(connection_string))
     db_pool_size = config.get("dbpool", "10", raise_missing=False)
     if not isinstance(db_pool_size, int):
         db_pool_size = int(db_pool_size)
@@ -75,14 +77,17 @@ def connect():
     atexit.register(shutdown)
     print("[database] connected")
 
+
 def init_db():
     global flask_db
     connect()
 
     with web.app.app_context():
         with session_scope() as dbsession:
+            User.ensure_system_user_exists(dbsession)
             try:
-                fprint("[users] system contains %s user accounts" % dbsession.query(User).count())
-                fprint("[users] you can create users with the scripts/createuser script")
+                logging.info("[users] system contains %s user accounts", dbsession.query(User).count())
+                logging.info("[users] you can create users with the scripts/createuser script")
             except:
-                fprint("[error] could not enumerate users, make sure database is initialized and up to date (./bin/flaskdb upgrade)")
+                logging.warning("[error] could not enumerate users, " +
+                                "make sure database is initialized and up to date (./bin/flaskdb upgrade)")
