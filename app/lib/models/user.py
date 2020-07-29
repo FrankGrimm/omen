@@ -21,7 +21,7 @@ import app.lib.crypto as crypto
 
 PW_MINLEN = 5
 VALID_ROLES = set(['annotator', 'curator'])
-
+LOGIN_DISABLED = "disabled"
 
 class User(Base):
     __tablename__ = 'users'
@@ -106,6 +106,18 @@ class User(Base):
         return (True, newobj)
 
     @staticmethod
+    def ensure_system_user_exists(dbsession):
+        system_account = User.by_email(dbsession, "SYSTEM", doraise=False)
+        if system_account is None:
+            logging.debug("System account not found, creating.")
+            newobj = User(email="SYSTEM", pwhash=LOGIN_DISABLED, displayname="System")
+            dbsession.add(newobj)
+            dbsession.commit()
+            logging.debug("System account created.")
+        else:
+            logging.debug("System account found.")
+
+    @staticmethod
     def by_email(dbsession, email, doraise=True):
         qry = dbsession.query(User).filter_by(email=email)
 
@@ -135,6 +147,9 @@ class User(Base):
         return self.email
 
     def verify_password(self, pw):
+        if self.pwhash is None or self.pwhash == LOGIN_DISABLED:
+            return False
+
         return scrypt.verify(pw, self.pwhash)
 
     def change_password(self, dbsession, curpw, pw1, pw2):
