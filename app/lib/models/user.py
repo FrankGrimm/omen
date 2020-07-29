@@ -106,7 +106,7 @@ class User(Base):
         return (True, newobj)
 
     @staticmethod
-    def ensure_system_user_exists(dbsession):
+    def system_user(dbsession):
         system_account = User.by_email(dbsession, "SYSTEM", doraise=False)
         if system_account is None:
             logging.debug("System account not found, creating.")
@@ -116,6 +116,7 @@ class User(Base):
             logging.debug("System account created.")
         else:
             logging.debug("System account found.")
+        return system_account
 
     @staticmethod
     def by_email(dbsession, email, doraise=True):

@@ -11,6 +11,8 @@ import logging
 
 from datetime import datetime, timedelta
 
+import app.lib.database as db
+
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -60,34 +62,23 @@ def jwt_decode(token, public_key):
     return jwt.decode(token, public_key, algorithm="RS256")
 
 
-def system_private_key():
-    private_key = config.get("jwt_privkey", None)
+def system_private_key(dbsession):
+    private_key = db.User.system_user(dbsession).get_private_key(dbsession)
+
     if private_key is None or private_key.strip() == "":
         raise InvalidTokenException("jwt_privkey configuration missing or malformed")
     return private_key
 
 
-def system_public_key():
-    public_key = config.get("jwt_pubkey", None)
+def system_public_key(dbsession):
+    public_key = db.User.system_user(dbsession).get_public_key(dbsession)
     if public_key is None or public_key.strip() == "":
         raise InvalidTokenException("jwt_pubkey configuration missing or malformed")
     return public_key
 
 
 def initialize():
-    if config.get("jwt_privkey", "") != "":
-        logging.debug("jwt_privkey is set, not reinitializing crypto")
-        return
-
-    logging.info("jwt_privkey not set in config, reinitializing crypto")
-    # config.store("testkey", "testval")
-
-    private_key, public_key = generate_keypair()
-
-    config.store("jwt_privkey", private_key)
-    config.store("jwt_pubkey", public_key)
-
-    logging.debug("crypto reinitialization done")
+    logging.debug("crypto initialization")
 
 
 def generate_keypair():
