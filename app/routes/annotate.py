@@ -152,8 +152,6 @@ def annotate(dsid=None, sample_idx=None):
 
         handle_set_annotation(dbsession, dataset)
 
-        random_sample, _, _, _, _ = get_sample_index(dbsession, dataset, session_user, random_order=True)
-
         sample = dataset.sample_by_index(dbsession, sample_idx) if sample_idx is not None else None
         sample_content = sample.content if sample is not None else None
         sample_id = sample.sample if sample is not None else None
@@ -190,7 +188,6 @@ def annotate(dsid=None, sample_idx=None):
                                sample_id=sample_id,
                                sample_idx=sample_idx,
                                sample_content=sample_content,
-                               random_sample=random_sample,
                                sample_prev=sample_prev,
                                sample_next=sample_next,
                                curanno=curanno,

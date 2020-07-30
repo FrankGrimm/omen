@@ -41,12 +41,6 @@ Annotate &quot;<span class="annometa">{{ task.name }}</span>&quot;
         <i class="mdi mdi-arrow-right"></i>
     </a>
     {% endif %}
-
-    {% if random_sample %}
-    <a id="anno_nav_random" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=random_sample) }}" title="random sample">
-        <i class="mdi mdi-shuffle-variant"></i>
-    </a>
-    {% endif %}
     </div>
 
 </div>
