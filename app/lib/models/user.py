@@ -23,6 +23,7 @@ PW_MINLEN = 5
 VALID_ROLES = set(['annotator', 'curator'])
 LOGIN_DISABLED = "disabled"
 
+
 class User(Base):
     __tablename__ = 'users'
 
@@ -322,4 +323,4 @@ class User(Base):
         return "[User #%s, %s]" % (self.uid, self.email)
 
     def activity_target(self):
-        return "USER:%s" % self.dataset_id
+        return "USER:%s" % self.uid
