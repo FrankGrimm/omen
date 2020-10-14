@@ -1,0 +1,24 @@
+
+{% if previewdf is none and not previewdf_alerts %}
+    <!-- div class="row">
+        <div class="col-12">No preview available.</div>
+    </div -->
+{% else %}
+    {% if previewdf_alerts %}
+    <div class="row">
+        {% for alertcontent in previewdf_alerts %}
+        <div class="alert alert-danger col-10 offset-1">
+            {{ alertcontent }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if not previewdf is none %}
+    <div class="row" id="dataset_preview">
+        <div class="col-12">
+            {{ macros.render_dataframe(previewdf, "previewdftable", "dataframe", 20) }}
+        </div>
+    </div>
+    {% endif %}
+{% endif %}

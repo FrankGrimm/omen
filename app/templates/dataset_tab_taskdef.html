@@ -1,0 +1,140 @@
+{% if dataset and dataset.has_content() %}
+<h3>Task Definition</h3>
+
+<div class="row seprow">
+    <form method="post">
+        <input type="hidden" name="action" value="change_annoorder">
+
+        <div class="form-group row">
+            <label for="annoorder" class="col-12 col-md-3 col-form-label">
+                <div class="">Select annotation order:</div>
+            </label> 
+            <div class="col-12 col-md-9">
+
+                <select class="taskdef_select" id='annoorder' name='annoorder' onchange="this.form.submit()">
+                    {% if not dataset.dsmetadata.annoorder or dataset.dsmetadata.annoorder == 'sequential' %} 
+                    <option selected="true" value="sequential">sequential</option>
+                    <option value="random">random</option>
+                    {% else %}
+                    <option value="sequential">sequential</option>
+                    <option selected="true" value="random">random</option>
+                    {% endif %}
+                </select>
+
+            </div>
+        </div> 
+    </form>
+</div>
+
+{% macro render_option(option, title, help_text="", title_left="") -%}
+<div class="row seprow">
+    <form method="post">
+        <input type="hidden" name="action" value="change_ds_option">
+
+        <div class="form-group row">
+            <label for="cb_option_{{ option }}_0" class="col-12 col-md-3 col-form-label">
+                {% if title_left %}<div>{{title_left}}</div>{% endif %}
+            </label> 
+            <div class="col-12 col-md-9">
+                <div class="custom-control custom-checkbox custom-control-inline">
+                    <input name="cb_option_{{ option }}" id="cb_option_{{ option }}_0" type="checkbox" class="custom-control-input cb_inspect_option" value="{{ option }}" autocomplete="off" {% if dataset.dsmetadata[option] %} checked{% endif %} > 
+                    <label for="cb_option_{{ option }}_0" class="custom-control-label">{{ title }}</label>
+                </div> 
+                {% if help_text %}
+                <span id="cb_option_{{ option }}HelpBlock" class="form-text text-muted">{{ help_text }}</span>
+                {% endif %}
+            </div>
+        </div> 
+    </form>
+</div>
+{%- endmacro %}
+
+{{ render_option("show_votes", title="Show other users choices during annotation", help_text="Activating this option shows votes to users with owner or curator roles during annotation.", title_left="Miscellaneous Options:") }}
+{{ render_option("allow_restart_annotation", title="Restart annotation after dataset annotation or work package is completed.", help_text="Enabling this option will allow users to reannotate the whole dataset (or work package) once they finish their first pass. Otherwise (default), a finished task is disabled.") }}
+
+<div class="row seprow">
+    <form method="post">
+        <input type="hidden" name="action" value="change_ds_option">
+
+        <div class="form-group row">
+            <label for="additional_field_display" class="col-12 col-md-3 col-form-label"> &nbsp; </label> 
+            <div class="col-12 col-md-9">
+
+                <select class="taskdef_select" id='additional_field_display' name='additional_field_display' autocomplete="off">
+
+                    {% if not dataset.dsmetadata.additional_column or not dataset.dsmetadata.additional_column in previewdf.columns %}
+                    <option value="-" selected="true">none</option>
+                    {% else %}
+                    <option value="-">none</option>
+                    {% endif %}
+                    {% for colname in previewdf.columns %}
+                    {% if colname != dataset.dsmetadata.idcolumn and colname != dataset.dsmetadata.textcol and colname != 'split' %}
+                        {% if dataset.dsmetadata.additional_column == colname %}
+                        <option selected='true' value="{{ colname }}">{{ colname }}</option>
+                        {% else %}
+                        <option value="{{ colname }}">{{ colname }}</option>
+                        {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </select>
+                </select>
+
+                <span id="additional_field_displayHelpBlock" class="form-text text-muted">
+                    Select an additional field in the dataset that is displayed alongside the text during annotation.
+                </span>
+
+            </div>
+        </div> 
+    </form>
+</div>
+
+<div class="row seprow">
+    <form method="post" id="tag_editor_container">
+        {% include "tag_editor.html" with context %}
+    </form>
+</div>
+
+<noscript>
+<div class="row seprow">
+    <form method="post">
+        <input type="hidden" name="action" value="change_taglist" />
+        <div class="row">
+            <label for="settaglist" class="col-12 col-md-3 col-form-label">
+                <div class="{% if dataset.get_taglist()|length == 0 %}ds_new_field_error alert alert-warning{% endif %}">Define a tag list</div>
+            </label> 
+            <div class="col-12 col-md-9">
+                <textarea id="settaglist" name="settaglist" cols="40" rows="5" class="form-control" aria-describedby="settaglistHelpBlock" required="required">{% if dataset.get_taglist()|length > 0 %}{{ dataset.get_taglist()|join('\n') }}{% endif %}</textarea> 
+                <span id="settaglistHelpBlock" class="form-text text-muted">separate single entries by newlines</span>
+            </div>
+        </div> 
+        <div class="row">
+            <div class="col-12 offset-md-4 col-md-9">
+                <button name="submit" type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </div>
+    </form>
+</div>
+</noscript>
+
+<div class="row seprow">
+    <form method="post">
+        <input type="hidden" name="action" value="change_description" />
+        <div class="row">
+            <label for="setdescription" class="col-12 col-md-3 col-form-label">
+                <div><strong>Description</strong> or annotation guidelines.<br />
+                    This is visible to all users.</div>
+            </label> 
+            <div class="col-12 col-md-9">
+                <textarea id="setdescription" name="setdescription" cols="40" rows="5" class="form-control with-markdown" aria-describedby="setdescriptionHelpBlock" required="required">{% if dataset.dsmetadata.description %}{{ dataset.dsmetadata.description }}{% endif %}</textarea> 
+                <span id="setdescriptionHelpBlock" class="form-text text-muted">separate single entries by newlines</span>
+            </div>
+        </div> 
+        <div class="row">
+            <div class="col-12 offset-md-3 col-md-9">
+                <button name="submit" type="submit" class="btn btn-primary"><i class="mdi mdi-square-edit-outline"></i> Update Description</button>
+            </div>
+        </div>
+    </form>
+
+</div>
+{% endif %}

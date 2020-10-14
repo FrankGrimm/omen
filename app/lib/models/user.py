@@ -18,6 +18,7 @@ from flask import flash
 from app.lib.database_internals import Base
 import app.lib.config as config
 import app.lib.crypto as crypto
+from app.lib.models.activity import Activity
 
 PW_MINLEN = 5
 VALID_ROLES = set(['annotator', 'curator'])
@@ -45,8 +46,12 @@ class User(Base):
         return annorole in VALID_ROLES
 
     @staticmethod
-    def userlist(dbsession):
-        return dbsession.query(User).all()
+    def userlist(dbsession, exclude_system_user=True):
+        allusers = dbsession.query(User).all()
+
+        if exclude_system_user:
+            return [userobj for userobj in allusers if not userobj.is_system_user()]
+        return allusers
 
     @staticmethod
     def validate_newuser(email, pw1, pw2):
@@ -129,11 +134,13 @@ class User(Base):
         return qry.one_or_none()
 
     @staticmethod
-    def by_id(dbsession, uid):
+    def by_id(dbsession, uid, no_error=False):
         if isinstance(uid, User):
             return uid
         if isinstance(uid, str):
             uid = int(uid)
+        if no_error:
+            return dbsession.query(User).filter_by(uid=uid).one_or_none()
         return dbsession.query(User).filter_by(uid=uid).one()
 
     def __init__(self, uid=None, email=None, pwhash=None, displayname=None):
@@ -142,6 +149,9 @@ class User(Base):
         self.pwhash = pwhash
         self.displayname = displayname
         self._cached_df = None
+
+    def is_system_user(self):
+        return self.email == "SYSTEM"
 
     def get_name(self):
         if self.displayname is not None and self.displayname.strip() != '':
@@ -322,5 +332,41 @@ class User(Base):
     def __str__(self):
         return "[User #%s, %s]" % (self.uid, self.email)
 
+    @staticmethod
+    def activity_prefix():
+        return "USER:"
+
     def activity_target(self):
         return "USER:%s" % self.uid
+
+    def history(self, dbsession, limit=20):
+        user_history = Activity.user_history(dbsession, self, limit=limit)
+        result_history = []
+
+        for activity in user_history:
+            if activity is None:
+                continue
+            if activity.scope == 'event' and \
+                    (activity.content is None or activity.content == 'login'):
+                continue
+            if activity.scope == "upload_file":
+                continue
+            if activity.scope == "import_complete" and \
+                    activity.content is not None and \
+                    activity.content == "total: 0, merged: 0, skipped: 0":
+                continue
+
+            if len(result_history) == 0:
+                result_history.append(activity)
+                continue
+
+            previous_activity = result_history[-1]
+            if previous_activity.owner == activity.owner and \
+                    previous_activity.scope == activity.scope and \
+                    previous_activity.target == activity.target:
+                continue
+            result_history.append(activity)
+
+        result_history = [[activity, activity.load_target(dbsession)] for activity in result_history]
+
+        return result_history

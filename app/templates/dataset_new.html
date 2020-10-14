@@ -22,431 +22,47 @@
     {% endif %}
 </div>
 
-<div class="row" id="dataset_name_change">
-    <form method="post" id="form_change_name" enctype="multipart/form-data" class="col-12">
-        <div class="input-group input-group-with-tagtext col-12">
-            <input type="hidden" name="action" value="change_name" />
+{% macro render_card_nav(target_id, tab_text, tab_selected=false, tab_disabled=false, icon="") -%}
+<li class="nav-item">
+    <a class="nav-link tablink {% if tab_selected %}active{% endif %} {% if tab_disabled %}disabled{% endif %}" href="#{{ target_id }}" role="tab" aria-controls="{{ tab_text }}" aria-selected="{{ tab_selected }}">
+        {% if icon != "" %}
+        <i class="mdi mdi-{{icon}}"></i>
+        {% endif %}
+        {{ tab_text }}
+    </a>
+</li>
+{%- endmacro %}
 
-            <div class="custom-file">
-                {% set ds_name_add = "" %}
-                {% if dataset and ds_errors and 'unnamed dataset' in ds_errors %}
-                    {% set ds_name_add = "field_error" %}
-                {% endif %}
-                <div class="input-group-tagtext {{ ds_name_add }}">
-                    Dataset Name
-                </div>
-                <input type="text" placeholder="Specify a name for this dataset" class="custom-input" value="{{ dataset.dsmetadata.name }}" id="dataset_name" name="dataset_name" required="required" autocomplete="off">
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="ds-edit-tabslist" role="tablist">
+
+                    {{ render_card_nav("dsgeneral", "General", true, icon="tune") }}
+                    {{ render_card_nav("taskdefinition", "Task Definition", false, not dataset and not dataset.has_content(), icon="tag-multiple") }}
+                    {{ render_card_nav("workpackages", "Work Packages", false, not dataset and not dataset.has_content(), icon="package-variant") }}
+                    {{ render_card_nav("aclsettings", "Access Management", false, not dataset and not dataset.has_content(), icon="security") }}
+                    {{ render_card_nav("moresettings", "More", false, icon="cog") }}
+                </ul>
             </div>
-            <div class="input-group-append">
-                <button class="btn btn-primary input-group-text" onclick="return $('#form_change_name').submit();">
-                    <i class="mdi mdi-file-outline"></i>&nbsp;OK
-                </button>
-            </div>
-        </div>
-    </form>
-</div>
-
-<div class="row" id="dataset_content">
-    <form method="post" id="form_upload_file" enctype="multipart/form-data" class="col-12">
-        <div class="input-group input-group-with-tagtext col-12">
-            <input type="hidden" name="action" value="upload_file" />
-            <div class="custom-file">
-                <div class="input-group-tagtext">
-                    Import New Samples
-                </div>
-                <input type="file" class="custom-file-input" id="upload_file" name="upload_file" required="required">
-                <label class="custom-file-label" for="upload_file">Choose file</label>
-            </div>
-            <div class="input-group-append">
-                <button class="btn btn-primary input-group-text" id="form_upload_file_submit" onclick="return $('#form_upload_file').submit();">
-                    <i class="mdi mdi-upload"></i>&nbsp;
-                    {% if can_import %}
-                    Replace
-                    {% elif dataset and dataset.has_content() %}
-                    Add
-                    {% else %}
-                    Upload
-                    {% endif %}
-                </button>
-            </div>
-        </div>
-    </form>
-</div>
-
-{% if has_upload_content %}
-    <div class="row upload_meta">
-        <div class="col-12">
-            <span class="dsmeta">Original filename:</span> <span class="dsmetaval">{{ dataset.dsmetadata.upload_filename }}</span></div>
-        <div class="col-12">
-            <span class="dsmeta">MIME type:</span> <span class="dsmetaval">{{ dataset.dsmetadata.upload_mimetype }}</span><br />
-        </div>
-    </div>
-
-    <div class="row upload_meta">
-        <div class="col-12 col-md-3" style="margin-top: 0.7em;">Delimiter:</div>
-        <form class="dropdown col-3" method="post">
-            <input type="hidden" name="action" value="change_delimiter" />
-            {% set ds_sep = dataset.dsmetadata.sep or ',' %}
-            <a class="btn btn-primary dropdown-toggle dataset_edit_action" role="button" data-toggle="dropdown">
-                {% if ds_sep == "\t" %}tab{% else %}{{ ds_sep }}{% endif %}
-            </a>
-
-            <div class="dropdown-menu">
-                <input type="submit" name="comma" class="dropdown-item dataset_edit_action_value" data-action="change_delimiter" value="," />
-                <input type="submit" name="tab" class="dropdown-item dataset_edit_action_value" data-action="change_delimiter" value="\t" />
-                <input type="submit" name="semicolon" class="dropdown-item dataset_edit_action_value" data-action="change_delimiter" value=";" />
-            </div>
-        </form>
-    </div>
-
-    <div class="row upload_meta">
-        <div class="col-12 col-md-3" style="margin-top: 0.7em;">Quote char:</div>
-        <form class="dropdown col-3" method="post">
-            <input type="hidden" name="action" value="change_quotechar" />
-
-            {% set ds_quotechar = dataset.dsmetadata.quotechar or '"' %}
-            <a class="btn btn-primary dropdown-toggle dataset_edit_action" role="button" data-toggle="dropdown">
-                {{ ds_quotechar }}
-            </a>
-
-            <div class="dropdown-menu">
-                <input type="submit" name="double-quote" class="dropdown-item dataset_edit_action_value" data-action="change_quotechar" value="&quot;" />
-                <input type="submit" name="single-quote" class="dropdown-item dataset_edit_action_value" data-action="change_quotechar" value="'" />
-            </div>
-        </form>
-    </div>
-
-    {% if not previewdf is none %}
-    <div class="row upload_meta">
-
-        <form method="post" class="col-12">
-            <input type="hidden" name="action" value="change_idcolumn">
-
-            <div class="row">
-                <label for="idcolumn" class="col-12 col-md-3 col-form-label"><div class="{% if not dataset.dsmetadata.idcolumn %}ds_new_field_error alert alert-warning{% endif %}">Select unique sample ID column:</div></label> 
-                <div class="col-12 col-md-9">
-
-                    <select class="taskdef_select" id='idcolumn' name='idcolumn' onchange="this.form.submit()">
-                        {% if not dataset.dsmetadata.idcolumn or not dataset.dsmetadata.idcolumn in previewdf.columns %}
-                        <option selected="true" disabled="disabled">-</option>
-                        {% endif %}
-                        {% for colname in previewdf.columns %}
-                        {% if dataset.dsmetadata.idcolumn == colname %}
-                        <option selected='true' value="{{ colname }}">{{ colname }}</option>
-                        {% else %}
-                        <option value="{{ colname }}">{{ colname }}</option>
-                        {% endif %}
-                        {% endfor %}
-                    </select>
-
-                </div>
-            </div> 
-        </form>
-
-    </div>
-
-    <div class="row upload_meta">
-
-        <form method="post" class="col-12">
-            <input type="hidden" name="action" value="change_textcol">
-
-            <div class="form-group row">
-                <label for="textcol" class="col-12 col-md-3 col-form-label"><div class="{% if not dataset.dsmetadata.textcol %}ds_new_field_error alert alert-warning{% endif %}">Select text column:</div></label> 
-                <div class="col-12 col-md-9">
-
-                    <select class="taskdef_select" id='textcol' name='textcol' onchange="this.form.submit()">
-                        {% if not dataset.dsmetadata.textcol or not dataset.dsmetadata.textcol in previewdf.columns %}
-                        <option selected="true" disabled="disabled">-</option>
-                        {% endif %}
-                        {% for colname in previewdf.columns %}
-                        {% if dataset.dsmetadata.textcol == colname %}
-                        <option selected='true' value="{{ colname }}">{{ colname }}</option>
-                        {% else %}
-                        <option value="{{ colname }}">{{ colname }}</option>
-                        {% endif %}
-                        {% endfor %}
-                    </select>
-
-                </div>
-            </div> 
-        </form>
-
-    </div>
-
-    {% endif %}
-{% endif %}
-
-{% if previewdf is none and not previewdf_alerts %}
-
-    <!-- div class="row">
-        <div class="col-12">Preview not available.</div>
-    </div -->
-
-{% else %}
-
-    {% if previewdf_alerts %}
-    <div class="row">
-        {% for alertcontent in previewdf_alerts %}
-        <div class="alert alert-danger col-10 offset-1">
-            {{ alertcontent }}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if not previewdf is none %}
-    <div class="row" id="dataset_preview">
-        <div class="col-12">
-            {{ macros.render_dataframe(previewdf, "previewdftable", "dataframe", 20) }}
-        </div>
-    </div>
-    {% endif %}
-
-{% endif %}
-
-{% if can_import %}
-<div class="row upload_meta">
-    <form method="post" class="offset-md-2 col-md-4 col-sm-12">
-        <input type="hidden" name="action" value="do_discard_import">
-        <div class="form-group row">
-            <div class="col-12">
-                <button class="btn btn-danger" id="form_import_discard_submit" onclick="return $('#form_upload_file').submit();">
-                    <i class="mdi mdi-cancel"></i>&nbsp;Discard Data
-                </button>
-            </div>
-        </div>
-    </form>
-    <form method="post" class="col-md-4 col-sm-12">
-        <input type="hidden" name="action" value="do_import">
-        <div class="form-group row">
-            <div class="col-12">
-                <button class="btn btn-success" id="form_import_commit_submit" onclick="return $('#form_upload_file').submit();">
-                    <i class="mdi mdi-plus-outline"></i>&nbsp;Import Now
-                </button>
-            </div>
-        </div>
-    </form>
-</div>
-{% endif %}
-
-{% if dataset and dataset.has_content() %}
-
-    <h3>Actions</h3>
-
-    <div class="row ds_actions_toolbar">
-        <div class="btn-toolbar col-12">
-            <div class="btn-group">
-                <a class="btn btn-primary" href="{{ url_for("download", dsid=dataset.dataset_id) }}"><i class="mdi mdi-download"></i> Download</a> 
-
-                {% set action_add = "" %}
-                {% set action_add_title = "" %}
-                {% if 'curator' not in userroles %}
-                    {% set action_add = " disabled" %}
-                    {% set action_add_title = "Requires 'Curator' role." %}
-                {% endif %}
-
-                <a class="btn btn-secondary {{ action_add }}" {% if action_add_title %}data-trigger="hover" data-toggle="popover" title="{{ action_add_title }}"{% endif %} href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id) }}" {{ action_add }}><i class="mdi mdi-table-search"></i> View</a> 
-            </div>
-
-        </div>
-    </div>
-
-    <h3>Task Definition</h3>
-
-    <div class="row seprow">
-        <form method="post">
-            <input type="hidden" name="action" value="change_annoorder">
-
-            <div class="form-group row">
-                <label for="annoorder" class="col-12 col-md-3 col-form-label">
-                    <div class="">Select annotation order:</div>
-                </label> 
-                <div class="col-12 col-md-9">
-
-                    <select class="taskdef_select" id='annoorder' name='annoorder' onchange="this.form.submit()">
-                        {% if not dataset.dsmetadata.annoorder or dataset.dsmetadata.annoorder == 'sequential' %} 
-                        <option selected="true" value="sequential">sequential</option>
-                        <option value="random">random</option>
-                        {% else %}
-                        <option value="sequential">sequential</option>
-                        <option selected="true" value="random">random</option>
-                        {% endif %}
-                    </select>
-
-                </div>
-            </div> 
-        </form>
-    </div>
-
-    {% macro render_option(option, title, help_text="", title_left="") -%}
-    <div class="row seprow">
-        <form method="post">
-            <input type="hidden" name="action" value="change_ds_option">
-
-            <div class="form-group row">
-                <label for="cb_option_{{ option }}_0" class="col-12 col-md-3 col-form-label">
-                    {% if title_left %}<div>{{title_left}}</div>{% endif %}
-                </label> 
-                <div class="col-12 col-md-9">
-                    <div class="custom-control custom-checkbox custom-control-inline">
-                        <input name="cb_option_{{ option }}" id="cb_option_{{ option }}_0" type="checkbox" class="custom-control-input cb_inspect_option" value="{{ option }}" autocomplete="off" {% if dataset.dsmetadata[option] %} checked{% endif %} > 
-                        <label for="cb_option_{{ option }}_0" class="custom-control-label">{{ title }}</label>
-                    </div> 
-                    {% if help_text %}
-                    <span id="cb_option_{{ option }}HelpBlock" class="form-text text-muted">{{ help_text }}</span>
-                    {% endif %}
-                </div>
-            </div> 
-        </form>
-    </div>
-    {%- endmacro %}
-
-    {{ render_option("hide_votes", title="Hide votes during annotation", help_text="Activating this option hides votes to users with owner or curator roles during annotation.", title_left="Miscellaneous Options:") }}
-    {{ render_option("allow_restart_annotation", title="Restart annotation after dataset annotation or work package is completed.", help_text="Enabling this option will allow users to reannotate the whole dataset (or work package) once they finish their first pass. Otherwise (default), a finished task is disabled.") }}
-
-    <div class="row seprow">
-        <form method="post" id="tag_editor_container">
-            {% include "tag_editor.html" with context %}
-        </form>
-    </div>
-
-    <noscript>
-    <div class="row seprow">
-        <form method="post">
-            <input type="hidden" name="action" value="change_taglist" />
-            <div class="row">
-                <label for="settaglist" class="col-12 col-md-3 col-form-label">
-                    <div class="{% if dataset.get_taglist()|length == 0 %}ds_new_field_error alert alert-warning{% endif %}">Define a tag list</div>
-                </label> 
-                <div class="col-12 col-md-9">
-                    <textarea id="settaglist" name="settaglist" cols="40" rows="5" class="form-control" aria-describedby="settaglistHelpBlock" required="required">{% if dataset.get_taglist()|length > 0 %}{{ dataset.get_taglist()|join('\n') }}{% endif %}</textarea> 
-                    <span id="settaglistHelpBlock" class="form-text text-muted">separate single entries by newlines</span>
-                </div>
-            </div> 
-            <div class="row">
-                <div class="col-12 offset-md-4 col-md-9">
-                    <button name="submit" type="submit" class="btn btn-primary">Submit</button>
-                </div>
-            </div>
-        </form>
-    </div>
-    </noscript>
-
-    <div class="row seprow">
-        <form method="post">
-            <input type="hidden" name="action" value="change_description" />
-            <div class="row">
-                <label for="setdescription" class="col-12 col-md-3 col-form-label">
-                    <div><strong>Description</strong> or annotation guidelines.<br />
-                        This is visible to all users.</div>
-                </label> 
-                <div class="col-12 col-md-9">
-                    <textarea id="setdescription" name="setdescription" cols="40" rows="5" class="form-control with-markdown" aria-describedby="setdescriptionHelpBlock" required="required">{% if dataset.dsmetadata.description %}{{ dataset.dsmetadata.description }}{% endif %}</textarea> 
-                    <span id="setdescriptionHelpBlock" class="form-text text-muted">separate single entries by newlines</span>
-                </div>
-            </div> 
-            <div class="row">
-                <div class="col-12 offset-md-3 col-md-9">
-                    <button name="submit" type="submit" class="btn btn-primary"><i class="mdi mdi-square-edit-outline"></i> Update Description</button>
-                </div>
-            </div>
-        </form>
-
-    </div>
-
-    <h3>Manage Access</h3>
-
-    <div class="row seprow userlist_header">
-        <div>Manage users who are allowed to add annotations for this dataset:</div>
-        <div>
-            <div class="btn-group">
-                <div class="dropdown">
-                    <button class="btn btn-secondary dropdown-toggle" id="adduser_to_dataset" data-toggle="dropdown">
-                        <span class="">Add User</span> <i class="mdi mdi-account"></i>
-                    </button>
-                    <div class="dropdown-menu" aria-labelledby="adduser_to_dataset">
-                    {% for userobj in db.User.userlist(dbsession) if dataset.get_roles(dbsession, userobj)|length == 0 %}
-                        <button class="dropdown-item adduser_btn" data-userid="{{userobj.uid}}">{{ userobj.get_name() }}</button>
-                    {% else %}
-                        <a class="dropdown-item" href="#" disabled>All users already added.</a>
-                    {% endfor %}
+            <div class="card-body">
+                <div class="tab-content mt-3">
+                    <div class="tab-pane active" id="dsgeneral" role="tabpanel">
+                        {% include "dataset_tab_general.html" with context %}
                     </div>
-                </div>
-                <a href="{{ url_for("createuser") }}" class="btn btn-primary">
-                    <span class="">Create New User</span> <i class="mdi mdi-account-plus"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-    <div class="row seprow">
-        <ul class="dsacl" id="dsacl">
-        {% for userobj in db.User.userlist(dbsession) %}
-            {% set dsroles = dataset.get_roles(dbsession, userobj) %}
-            <li class="row userlist_row {% if dsroles|length == 0 %} d-none{% endif %}" data-userid="{{userobj.uid}}">
-               
-                <div class="userlist_userinfo">
-                    <span class="aclusericon"><i title="{{userobj.uid}}" class="mdi mdi-account" style="margin-top: 0.5em;"></i></span>
-                    &nbsp;
-                    <span class="aclusermail">{{ userobj.get_name() }}</span>
-                </div>
-                <div class="userlist_details">
-                    <div class="userlist_role_setting">
-
-                        {% if 'owner' in dsroles %}
-                        <a href="#" class="toggleacl btn btn-sm btn-outline-success acluserowner disabled" data-roleid="owner" disabled data-userid="{{userobj.uid}}">
-                            <span class="">owner</span>
-                            <i class="far fa-check-square"></i>
-                        </a>
-                        {% endif %}
-
-                        {% if 'annotator' in dsroles  %}
-                            <a href="#" class="toggleacl btn btn-sm btn-outline-success" data-roleid="annotator" data-userid="{{userobj.uid}}">
-                                <span class="">annotator</span>
-                                <i class="far fa-check-square"></i>
-                            </a>
-                        {% else %}
-                            <a href="#" class="toggleacl btn btn-sm btn-outline-primary" data-roleid="annotator" data-userid="{{userobj.uid}}">
-                                <span class="">make annotator </span>
-                                <i class="far fa-square"></i>
-                            </a>
-                        {% endif %}
-
-                        {% if 'curator' in dsroles %}
-                            <a href="#" class="toggleacl btn btn-sm btn-outline-success" data-roleid="curator" data-userid="{{userobj.uid}}">
-                                <span class="">curator</span>
-                                <i class="far fa-check-square"></i>
-                            </a>
-                        {% else %}
-                            <a href="#" class="toggleacl btn btn-sm btn-outline-primary" data-roleid="curator" data-userid="{{userobj.uid}}">
-                                <span class="">make curator </span>
-                                <i class="far fa-square"></i>
-                            </a>
-                        {% endif %}
+                    <div class="tab-pane" id="taskdefinition" role="tabpanel">
+                        {% include "dataset_tab_taskdef.html" with context %}
                     </div>
-                    <div class="userlist_progress"> 
-                        {% set task = dataset.get_task(dbsession, userobj) %}
-                        {{ macros.render_progress(task, addclass="singleprocess") }}
+                    <div class="tab-pane" id="workpackages" role="tabpanel">
+                        {% include "dataset_tab_workpackages.html" with context %}
                     </div>
-                </div>
-            </li>
-        {% endfor %}
-        </ul>
+                    <div class="tab-pane" id="aclsettings" role="tabpanel">
+                        {% include "dataset_tab_acl.html" with context %}
+                    </div>
 
-    </div>
-
-{% else %}
-    {% if not can_import %}
-    <div class="row" style="margin-top: 3em;">
-        <div class="col-12">
-            <div class="alert alert-info">
-                Please upload and import data in order to configure this dataset.
-            </div>
-        </div>
-    </div>
-    {% endif %}
-{% endif %}
-
-<div class="row seprow">
+                    <div class="tab-pane" id="moresettings" role="tabpanel">
+<div class="row">
     <div class="col-12">
         <h4>Delete Dataset</h4>
         <p>
@@ -461,6 +77,13 @@
             </button>
         </div>
     </form>
+    </div>
+</div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 

@@ -34,7 +34,7 @@
     {{ tag }} {% if votes and tag in votes and votes[tag]|length %}<span class="anno_vote badge badge-dark">{{votes[tag]|length}}</span>{% endif %}
     </button>
 {%- endmacro %}
-
+{% if row is defined and row is not none %}
 <div class="df_inspect_table_row" data-sample-idx="{{ row.sample_index }}" data-sample-id="{{ row[id_column] }}">
     {% set row_sample = row.sample_index %}
     {% set all_tags = dataset.get_taglist(include_metadata=True) %}
@@ -44,7 +44,7 @@
     <div class="df_inspect_textcol df_inspect_col_content d-md-flex">
         {% if not (hide_nans and not row[text_column].is_na()) %}
         <div class="df_col_content df_inspect_col_content">
-            <div class="df_inspect_fulltext">{{ macros.render_cell(row, text_column, query) }}</div>
+            <div class="df_inspect_fulltext">{{ macros.render_cell(row, text_column, ds_filters.query) }}</div>
         </div>
         {% endif %}
 
@@ -85,7 +85,7 @@
                 {% endif %}
             {% endif %}
             <button class="btn btn-light btn-sm df_inspect_changebtn {{ css_colortag }} {{ css_btnclass }}" type="button">
-                {% if tag %}{{ tag }}{% else %}untagged{% endif %}
+                {% if tag %}{{ tag }}{% else %}not assigned{% endif %}
             </button>
             <button type="button" class="btn btn-sm btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 <span class="sr-only">Toggle Tag Visibility</span>
@@ -118,3 +118,4 @@
 
     </div><!-- col-* -->
 </div><!-- /df_inspect_table_row -->
+{% endif %}

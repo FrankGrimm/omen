@@ -1,0 +1,135 @@
+<ul class="ds_split_overview row col-12" id="ds_split_editor">
+<div class="ajax-loading" style="display: none;">
+    <img src="{{ url_for("static", filename="img/loading.gif") }}" alt="updating" />
+</div>
+{% for ds_split_name, ds_split_info in ds_splits.items()|sort %}
+<li class="ds_split_overview_single list-group-item col-12" data-targetsplit="{% if ds_split_name is none %}{% else %}{{ds_split_name}}{% endif %}" data-splitnum="{{loop.index}}">
+    {% if not ds_split_name %}
+        {% set ds_split_name = "" %}
+    {% endif %}
+    <div class="input-group split_editor_input">
+        <div class="input-group-prepend">
+            <span class="badge badge-info">{{ds_split_info.size}} samples</span>
+        </div>
+        <input autocomplete="off" name="split_edit_{{ loop.index }}" placeholder="rename split" type="text" class="form-control spliteditor_nameinput" data-targetsplit="{% if ds_split_name is none %}{% else %}{{ds_split_name}}{% endif %}" value="{% if ds_split_name is none or ds_split_name == "" %}unnamed{% else %}{{ds_split_name}}{% endif %}" />
+        <div>
+            <span class="ds_split_overview_splitname"> 
+                                    </span>
+        </div>
+    </div><!-- input-group -->
+        <div class="btn-group split_editor_btn_group">
+            <button class="btn btn-primary btn-sm dssplit_change split_action_rename" data-splitaction="rename" data-targetsplit="{{ds_split_name}}" disabled><i class="mdi mdi-square-edit-outline"></i> Rename</button>
+            <button class="btn btn-light btn-sm" disabled><i class="mdi mdi-set-split"></i> Split…</button>
+            <div class="dropdown">
+                <button class="btn btn-light btn-sm dropdown-toggle ds_split_byattrib" id="ds_split_byattrib" data-toggle="dropdown">
+                    <span class="">By Attribute</span> 
+                </button>
+                <div class="dropdown-menu" aria-labelledby="ds_split_byattrib">
+                    {% for colname in previewdf.columns if dataset.dsmetadata.idcolumn != colname and dataset.dsmetadata.textcol != colname and colname != 'split' and colname != 'index' %}
+                            {% if sample_stats.columns[colname].nunique <= 100 %}
+                            <button class="dropdown-item dssplit_change" data-splitaction="fork" data-splitmethod="attribute" data-splitcolumn="{{colname}}" data-targetsplit="{{ds_split_name}}">{{ colname }} ({% if sample_stats.size > 10000 %}~{% else %}up to {% endif %}{{sample_stats.columns[colname].nunique}} unique values)</button>
+                            {% else %}
+                            <button class="dropdown-item dssplit_change disabled" data-splitaction="fork" data-splitmethod="attribute" data-splitcolumn="{{colname}}" data-targetsplit="{{ds_split_name}}">{{ colname }} (too many unique values)</button>
+                            {% endif %}
+
+                    {% else %}
+                        <button class="dropdown-item disabled">No suitable attributes.</button>
+                    {% endfor %}
+
+                </div>
+            </div>
+            <div class="dropdown">
+                <button class="btn btn-light btn-sm dropdown-toggle ds_split_byvalue" id="ds_split_byvalue" data-toggle="dropdown">
+                    <span class="">By Value</span> 
+                </button>
+                <div class="dropdown-menu" aria-labelledby="ds_split_byvalue">
+                    {% for colname in previewdf.columns if dataset.dsmetadata.idcolumn != colname and dataset.dsmetadata.textcol != colname and colname != 'split' and colname != 'index' %}
+                            {% if sample_stats.columns[colname].numeric %}
+                            <button class="dropdown-item dssplit_change" data-splitaction="fork" data-splitmethod="value" data-splitcolumn="{{colname}}" data-targetsplit="{{ds_split_name}}">{{ colname }}</button>
+                            {% else %}
+                            <button class="dropdown-item dssplit_change disabled" data-splitaction="fork" data-splitmethod="value" data-splitcolumn="{{colname}}" data-targetsplit="{{ds_split_name}}">{{ colname }} (non-numeric)</button>
+                            {% endif %}
+                    {% else %}        
+                    <button class="dropdown-item disabled">No suitable attributes.</button>
+                    {% endfor %}
+
+                </div>
+            </div>
+            <div class="dropdown">
+                <button class="btn btn-light btn-sm dropdown-toggle" id="ds_split_byratio" data-toggle="dropdown">
+                    <span class="">Ratio</span>
+                </button>
+                <div class="dropdown-menu" aria-labelledby="ds_split_byratio">
+                    <button class="dropdown-item dssplit_change" data-splitaction="fork" data-splitmethod="ratio" data-splitratio="10-90" data-targetsplit="{{ds_split_name}}">10/90%</button>
+                    <button class="dropdown-item dssplit_change" data-splitaction="fork" data-splitmethod="ratio" data-splitratio="20-80" data-targetsplit="{{ds_split_name}}">20/80%</button>
+                    <button class="dropdown-item dssplit_change" data-splitaction="fork" data-splitmethod="ratio" data-splitratio="25-75" data-targetsplit="{{ds_split_name}}">25/75%</button>
+                    <button class="dropdown-item dssplit_change" data-splitaction="fork" data-splitmethod="ratio" data-splitratio="50-50" data-targetsplit="{{ds_split_name}}">50/50%</button>
+                </div>
+            </div>
+            <div class="dropdown">
+                <button class="btn btn-light btn-sm dropdown-toggle" id="ds_split_evenly" data-toggle="dropdown">
+                    <span class="">Evenly</span>
+                </button>
+                <div class="dropdown-menu" aria-labelledby="ds_split_evenly">
+                    {% for n in [2, 3, 4, 5, 10] %}
+                        {% if n <= sample_stats.size %}
+                            <button class="dropdown-item dssplit_change" data-splitaction="fork" data-splitmethod="evenly" data-splitcount="{{ n }}" data-targetsplit="{{ds_split_name}}">{{ n }} splits</button>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <button class="btn btn-light btn-sm" disabled><i class="mdi mdi-set-merge"></i> Merge…</button>
+            
+            <div class="dropdown">
+                <button class="btn btn-light btn-sm dropdown-toggle ds_split_merge {% if ds_splits|length < 2 %}disabled{% endif %}" id="ds_split_merge" data-toggle="dropdown">
+                    <span class="">Into</span> 
+                </button>
+                <div class="dropdown-menu" aria-labelledby="ds_split_merge">
+                    {% for other_ds_split_name, other_ds_split_info in ds_splits.items()|sort if other_ds_split_name != ds_split_name %}
+                    <button class="dropdown-item dssplit_change" data-splitaction="merge" data-targetsplit="{{ds_split_name}}" data-mergeinto="{{other_ds_split_name}}">{{other_ds_split_name or 'unnamed'}}</button>
+                    {% else %}
+                        <button class="dropdown-item disabled">No other splits defined.</button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div><!-- btn-group -->
+        
+        {% set split_annotators = dataset.split_annotator_list(dbsession, ds_split_name, True) %}
+        <div class="btn-group split_editor_btn_group split_editor_users">
+            <ul class="split_acl">
+                {% for userobj in split_annotators %}
+                <li>
+                    <a href="#" class="btn btn-sm btn-outline-success dssplit_change" data-targetsplit="{{ ds_split_name }}" data-splitaction="rem_annotator" data-targetuser="{{userobj.uid}}">
+
+                        <span class="aclusericon"><i title="{{userobj.uid}}" class="mdi mdi-account" style="margin-top: 0.5em;"></i></span>
+                        &nbsp;
+                        <span class="aclusermail">{{ userobj.get_name() }}</span>
+
+                        <i class="far fa-check-square"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li>
+                No annotators added yet.
+                </li>
+                {% endfor %}
+            </ul>
+            <div class="dropdown">
+                <button class="btn btn-secondary btn-sm dropdown-toggle adduser_to_split" data-toggle="dropdown">
+                    <span class="">Add User&nbsp;</span> <i class="mdi mdi-account-plus"></i>
+                </button>
+                <div class="dropdown-menu" aria-labelledby="adduser_to_dataset">
+                {% for userobj in db.User.userlist(dbsession) if not userobj in split_annotators %}
+                    <button class="dropdown-item dssplit_change" data-targetsplit="{{ ds_split_name }}" data-splitaction="add_annotator" data-targetuser="{{userobj.uid}}">{{ userobj.get_name() }}</button>
+                {% else %}
+                    <a class="dropdown-item" href="#" disabled>No more users to add.</a>
+                {% endfor %}
+                </div>
+            </div>
+        </div>
+</li>
+{% else %}
+<li class="badge badge-warning">No data available yet.</li>
+{% endfor %}
+</ul>

@@ -3,7 +3,7 @@
     "dbconnection_disabled": "sqlite:///database.db",
     "flask_secret": "5d1-0u8$#kmj",
     "db_debug_disabled": true,
-    "tag_orientation_cutoff": 5,
+    "tag_orientation_cutoff": 0,
     "log_level": "debug",
     "invite_max_age": 48,
     "feature_user_invite": true,

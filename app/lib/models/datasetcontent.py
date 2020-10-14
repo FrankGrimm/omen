@@ -18,6 +18,7 @@ class DatasetContent(Base):
 
     sample = Column(String, primary_key=True)
     content = Column(String, nullable=False)
+    split_id = Column(String, nullable=True)
 
     annotations = relationship("Annotation")
 

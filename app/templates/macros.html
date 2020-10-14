@@ -1,5 +1,5 @@
 {% macro render_tag_buttons(dataset, nextsampleidx, votes={}, data_sample='', group_id='', add_classes='') -%}
-{% if dataset.get_option("hide_votes") %}
+{% if not dataset.get_option("show_votes", False) %}
 {% set votes = {} %}
 {% endif %}
 <div class="btn-group{% if add_classes != ''%} {{ add_classes }}{% endif %}"{% if group_id != '' %} id="{{ group_id }}"{% endif %}{% if data_sample !='' %} data-sample="{{ data_sample }}"{% endif %}>

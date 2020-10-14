@@ -1,0 +1,13 @@
+{% if dataset and dataset.has_content() %}
+<h3>Work Packages</h3>
+
+<div class="row seprow">
+    <div>Manage work packages for this dataset:</div>
+</div>
+<div class="row seprow">
+    <form method="post" id="split_editor_container">
+        {% include "split_editor.html" with context %}
+    </form>
+</div>
+
+{% endif %}

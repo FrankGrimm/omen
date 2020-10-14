@@ -16,7 +16,7 @@ function initChartPalette() {
     for (var i = 0; i < styles.length; i++) {
         const style_key = styles[i];
         if (!style_key) { continue; }
-        
+
         if (style_key.startsWith("--tag_color_")) {
             let value = styles.getPropertyValue(style_key);
             value = `rgb(${value})`
@@ -26,7 +26,7 @@ function initChartPalette() {
         if (style_key.startsWith("--palette_")) {
             const value = styles.getPropertyValue(style_key);
             const color_name = style_key.substring("--palette_".length)
-            
+
             if (!(color_name in user_colors)) {
                 palette_colors[color_name] = value;
             }
@@ -81,11 +81,11 @@ function initOverviewChart(target) {
     const overviewChart = new Chart(ctx, config);
 
     fetch(window.OMEN_BASE + "dataset/" + ACTIVE_DATASET_ID + "/overview.json")
-      .then(response => response.json())
-      .then(overviewData => {
-          updateOverviewChart(overviewChart, overviewData, config);
-          updateAnnotatorAgreement(overviewData);
-      });
+        .then(response => response.json())
+        .then(overviewData => {
+            updateOverviewChart(overviewChart, overviewData, config);
+            updateAnnotatorAgreement(overviewData);
+        });
 
     return overviewChart;
 }
@@ -105,7 +105,7 @@ function updateAnnotatorAgreement(overviewData) {
     if (!overviewData || !overviewData.fleiss) {
         return;
     }
-   
+
     const value_target = document.getElementById("anno_fleiss_value");
     const kappa_val = overviewData.fleiss.kappa;
     value_target.textContent = kappa_val;
@@ -124,7 +124,7 @@ function updateOverviewChart(overviewChart, overviewData, config, mode)  {
     }
     overviewDataCache = overviewData;
     overviewChartConfig = config;
-   
+
     // mode = mode || 'all';
     mode = mode || 'single';
     config.data.labels = [...overviewData.tags];
@@ -132,7 +132,7 @@ function updateOverviewChart(overviewChart, overviewData, config, mode)  {
     if (mode === 'single') {
         // config.data.labels.push("N/A");
     }
-        
+
     overviewChart.data.datasets = [];
     overviewChart.options.title.text = "Annotations";
 
@@ -164,7 +164,7 @@ function updateOverviewChart(overviewChart, overviewData, config, mode)  {
         idx_to_palette_color[target_index] = result_color;
         return result_color;
     }
-    
+
     function getColor(tag_color, tag_idx) {
         const cols = window.chartColors;
 
@@ -186,7 +186,7 @@ function updateOverviewChart(overviewChart, overviewData, config, mode)  {
             const tag_meta = overviewData.tag_metadata[tag] || {}
 
             const tag_color = getColor(tag_meta.color, idx);
-            
+
             allAnnosDS.data.push(tag_count);
             allAnnosDS.backgroundColor.push(tag_color);
         });
@@ -204,69 +204,14 @@ function updateOverviewChart(overviewChart, overviewData, config, mode)  {
                 annoDS.data.push(tag_count);
                 annoDS.backgroundColor.push(tag_color);
             });
-            
+
             annoDS.label = annotator; 
             overviewChart.data.datasets.push(annoDS);
         }
     }
-    
+
     overviewChart.update();
 }
-
-/**
-* https://stackoverflow.com/questions/1090948/change-url-parameters
- * http://stackoverflow.com/a/10997390/11236
- */
-function updateURLParameter(url, param, paramVal) {
-    let TheAnchor = null;
-    let newAdditionalURL = "";
-    let tempArray = url.split("?");
-    let baseURL = tempArray[0];
-    let additionalURL = tempArray[1];
-    let temp = "";
-
-    if (additionalURL) 
-    {
-        let tmpAnchor = additionalURL.split("#");
-        let TheParams = tmpAnchor[0];
-        TheAnchor = tmpAnchor[1];
-        if(TheAnchor)
-            additionalURL = TheParams;
-
-        tempArray = additionalURL.split("&");
-
-        for (let i=0; i<tempArray.length; i++)
-        {
-            if(tempArray[i].split('=')[0] != param)
-            {
-                newAdditionalURL += temp + tempArray[i];
-                temp = "&";
-            }
-        }        
-    }
-    else
-    {
-        let tmpAnchor = baseURL.split("#");
-        let TheParams = tmpAnchor[0];
-        TheAnchor  = tmpAnchor[1];
-
-        if(TheParams)
-            baseURL = TheParams;
-    }
-
-    if(TheAnchor)
-        paramVal += "#" + TheAnchor;
-
-    let rows_txt = temp + "" + param + "=" + paramVal;
-    return baseURL + "?" + newAdditionalURL + rows_txt;
-}
-
-const hideEmptyCB = document.getElementById("cb_hideempty");
-hideEmptyCB.addEventListener("click", function() {
-    document.getElementById("restrict_view").value = hideEmptyCB.checked ? 'tagged' : "";
-    return $('#form_doquery').submit();
-    });
-
 
 function initEditorButton(btn) {
     btn.addEventListener("click", function(evt) {
@@ -312,87 +257,189 @@ function initEditorButton(btn) {
     });
 }
 
-     function initEditorButtons() {
-         document.querySelectorAll("a.df_inspect_changeaction").forEach(initEditorButton);
-         document.querySelectorAll("button.df_inspect_changeaction").forEach(initEditorButton);
-     }
+function initEditorButtons() {
+    document.querySelectorAll("a.df_inspect_changeaction").forEach(initEditorButton);
+    document.querySelectorAll("button.df_inspect_changeaction").forEach(initEditorButton);
+}
 
-    initEditorButtons();
+function initWorkpackageFilter(target) {
+    target.addEventListener("click", function(evt) {
+        if (target.dataset.targethref) {
+            const filterform = document.getElementById('form_doquery');
+            filterform.action = target.dataset.targethref;
+            document.getElementById("restrict_split").value = target.dataset.targetsplit;
+            return filterform.submit();
+        }
+        evt.preventDefault();
+        return false;
+    });
+}
+function initWorkpackageFilters() {
+    document.querySelectorAll("button.ds_split_filter").forEach(initWorkpackageFilter);
+}
 
-    function updateTristateTargets() {
-        // update target fields
+function initActionButton(btn) {
+    btn.addEventListener("click", function(evt) {
+        evt.preventDefault();
+        const evt_action = btn.dataset.action;
+        const evt_target = btn.dataset.targethref;
+        const evt_description = btn.dataset.description || btn.dataset.action || "no description available";
 
-        const includes = [];
-        const excludes = [];
-        document.querySelectorAll(".cb_show_tag_elem").forEach((cbtn) => {
-            const cbtn_state = +cbtn.dataset.tristate || 0;
-            if (cbtn_state === 1) {
-                includes.push(cbtn.dataset.tag);
-            } else if (cbtn_state === 2){
-                excludes.push(cbtn.dataset.tag);
+        if (!evt_action) {
+            console.error("no action attribute found on", btn);
+            return false;
+        }
+
+        bootbox.confirm({
+            title: "Confirm bulk action?",
+            message: "Are you sure you want to continue? This action will " + evt_description,
+            buttons: {
+                cancel: {
+                    label: '<i class="mdi mdi-close"></i> Cancel',
+                    className: 'btn-default'
+                },
+                confirm: {
+                    label: '<i class="mdi mdi-check"></i> Confirm',
+                    className: 'btn-danger'
+                }
+            },
+            size: "large",
+            backdrop: true,
+            callback: function (result) {
+                if (!result) { return; }
+                console.log('triggering bulk action', evt_action);
+                const req_data = {
+                    "bulk_action": evt_action
+                };
+
+                fetch(evt_target, {
+                    method: 'post',
+                    body: JSON.stringify(req_data)
+                }).then(
+                    response => response.json()
+                ).then(response => {
+                    if (response.applied === 0) {
+                        response = "The bulk action did not affect any entries."
+                    } else {
+                        response = "Bulk action was applied to " + response.applied + " entries.";
+                        if ((response.affected - response.applied) > 0) {
+                            response += " " + (response.affected - response.applied) + " elements remained unchanged (tied votes).";
+                        }
+                    }
+
+                    bootbox.alert({
+                        message: response,
+                        size: "small",
+                        backdrop: true,
+                        callback: function() {
+                            window.location.reload();
+                        }
+                    });
+                });
             }
         });
-        
-        const includeTarget = document.getElementById("restrict_taglist_include");
-        const excludeTarget = document.getElementById("restrict_taglist_exclude");
-        if (includeTarget && excludeTarget) {
-            includeTarget.value = JSON.stringify(includes);
-            excludeTarget.value = JSON.stringify(excludes);
-            console.log("updated tristate, include:", includes, "exclude:", excludes);
-        } else {
-            console.log("DOM not ready to update tristate yet");
-        }
-    }
-
-    function applyTristate(cbtn) {
-
-        let label_prefix = "";
-        switch (+cbtn.dataset.tristate || 0) {
-            case 0:
-                cbtn.checked = false;
-                cbtn.indeterminate = false;
-                label_prefix = "";
-                break;
-            case 1:
-                cbtn.checked = true;
-                cbtn.indeterminate = false;
-                label_prefix = "include";
-                break;
-            case 2:
-                cbtn.checked = false;
-                cbtn.indeterminate = true;
-                label_prefix = "exclude";
-                break;
-        }
-
-        // update label with new state
-        const btn_tag = cbtn.dataset.tag;
-        const cbtn_label = cbtn.parentNode.querySelector("label");
-        if (cbtn_label) {
-            cbtn_label.textContent = label_prefix + " " + btn_tag;
-        }
-
-        updateTristateTargets();
-    } 
-
-    function initTagSelect(cbtn) {
-        console.log("initTagSelect", cbtn);
-        applyTristate(cbtn);
-
-        cbtn.addEventListener("change", (e) => {
-            e.preventDefault();
-            cbtn.dataset.tristate = ((+cbtn.dataset.tristate) + 1) % 3
-            applyTristate(cbtn);
-            console.log("change-tristate", cbtn, cbtn.dataset.tristate);
-            return $('#form_doquery').submit();
-            return true;
-        });
-    }
-
-    function initTagSelection() {
-        document.querySelectorAll(".cb_show_tag_elem").forEach(initTagSelect);
-    }
-
-    document.addEventListener("DOMContentLoaded",function(){
-        initTagSelection();
+        return false;
     });
+}
+function initActionButtons() {
+    document.querySelectorAll("button.ds_action_btn").forEach(initActionButton);
+}
+
+function initAnnotationFilter(target) {
+    target.addEventListener("click", function(evt) {
+        if (target.dataset.targethref) {
+            const filterform = document.getElementById('form_doquery');
+            filterform.action = target.dataset.targethref;
+            document.getElementById("viewfilter").value = target.dataset.targetviewfilter;
+            return filterform.submit();
+        }
+        evt.preventDefault();
+        return false;
+    });
+}
+function initAnnotationFilters() {
+    document.querySelectorAll("button.ds_filter").forEach(initAnnotationFilter);
+}
+
+function updateTristateTargets() {
+    // update target fields
+
+    const includes = [];
+    const excludes = [];
+    document.querySelectorAll(".cb_show_tag_elem").forEach((cbtn) => {
+        const cbtn_state = +cbtn.dataset.tristate || 0;
+        if (cbtn_state === 1) {
+            includes.push(cbtn.dataset.tag);
+        } else if (cbtn_state === 2){
+            excludes.push(cbtn.dataset.tag);
+        }
+    });
+
+    const includeTarget = document.getElementById("restrict_taglist_include");
+    const excludeTarget = document.getElementById("restrict_taglist_exclude");
+    if (includeTarget && excludeTarget) {
+        includeTarget.value = JSON.stringify(includes);
+        excludeTarget.value = JSON.stringify(excludes);
+        console.log("updated tristate, include:", includes, "exclude:", excludes);
+    } else {
+        console.log("DOM not ready to update tristate yet");
+    }
+}
+
+function applyTristate(cbtn) {
+
+    let label_prefix = "";
+    switch (+cbtn.dataset.tristate || 0) {
+        case 0:
+            cbtn.checked = false;
+            cbtn.indeterminate = false;
+            label_prefix = "";
+            break;
+        case 1:
+            cbtn.checked = true;
+            cbtn.indeterminate = false;
+            label_prefix = "include";
+            break;
+        case 2:
+            cbtn.checked = false;
+            cbtn.indeterminate = true;
+            label_prefix = "exclude";
+            break;
+    }
+
+    // update label with new state
+    const btn_tag = cbtn.dataset.tag;
+    const cbtn_label = cbtn.parentNode.querySelector("label");
+    if (cbtn_label) {
+        cbtn_label.textContent = label_prefix + " " + btn_tag;
+    }
+
+    updateTristateTargets();
+} 
+
+/* function initTagSelect(cbtn) {
+    console.log("initTagSelect", cbtn);
+    applyTristate(cbtn);
+
+    cbtn.addEventListener("change", (e) => {
+        e.preventDefault();
+        cbtn.dataset.tristate = ((+cbtn.dataset.tristate) + 1) % 3
+        applyTristate(cbtn);
+        console.log("change-tristate", cbtn, cbtn.dataset.tristate);
+        return document.getElementById("form_doquery").submit();
+    });
+}
+
+function initTagSelection() {
+    document.querySelectorAll(".cb_show_tag_elem").forEach(initTagSelect);
+}*/
+
+document.addEventListener("DOMContentLoaded",function(){
+    // initTagSelection();
+    initEditorButtons();
+    initWorkpackageFilters();
+    initActionButtons();
+    initAnnotationFilters();
+});
+
+

@@ -21,24 +21,25 @@ logging.basicConfig(level=config.get("log_level", "DEBUG").upper(),
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M')
 
-import app.lib.database as db
-import app.lib.crypto as app_crypto
+import app.lib.database as db  # noqa
+import app.lib.crypto as app_crypto  # noqa
 
 try:
     from app.lib.getch import getch
-except ImportError as _:
+except ImportError as _:  # noqa: F841
     print("failed to import getch implementation supported by current OS", file=sys.stderr)
 
 db_init_okay = False
 try:
     db.init_db()
     db_init_okay = True
-except Exception as e:
+except Exception as e:  # pylint: disable=broad-except
     print("Failed to initialize database: %s" % e, file=sys.stderr)
     if 'reset_database' not in sys.argv:
         sys.exit(1)
     else:
         print("continuing to CLI invocation anyway")
+
 
 @app.before_request
 def check_auth():
@@ -47,6 +48,7 @@ def check_auth():
     if session and 'user' in session and not session['user'] is None:
         return None
     return redirect(url_for('login'))
+
 
 @app.context_processor
 def inject_globals():
@@ -58,7 +60,6 @@ def inject_globals():
     with db.session_scope() as dbsession:
         if is_authenticated:
             annotation_tasks = db.annotation_tasks(dbsession, session['user'])
-
 
     def calculate_votes(row, anno_columns):
         if row is None or anno_columns is None:
@@ -83,18 +84,11 @@ def inject_globals():
 
         return votes
 
-    tag_orientation_cutoff = 5
-    try:
-        tag_orientation_cutoff = int(config.get("tag_orientation_cutoff", "5"))
-    except ValueError:
-        print("[warn] malformed entry for key tag_orientation_cutoff", file=sys.stderr)
-
-    return dict(product_name=config.get("product_name", "Annotations"), \
+    return dict(product_name=config.get("product_name", "Annotations"),
                 is_authenticated=is_authenticated,
                 tasks=annotation_tasks,
                 calculate_votes=calculate_votes,
                 cur_year=datetime.utcnow().year,
-                tag_orientation_cutoff=tag_orientation_cutoff,
                 app_version=app_version)
 
 
@@ -108,7 +102,8 @@ def bad_request_error(error):
     return render_template("400.html", error=error), 400
 
 
-import app.views
+import app.routing
+
 
 @flask_app.cli.command("reset_database")
 def cli_reset_database():
@@ -129,6 +124,7 @@ def cli_reset_database():
     print(db.flask_db.drop_all())
     print("all done")
 
+
 @flask_app.cli.command("createuser")
 def cli_createuser():
     with db.session_scope() as dbsession:
@@ -137,9 +133,11 @@ def cli_createuser():
 
 server_status = None
 
+
 def on_shutdown():
     global server_status
     logging.info("server shutdown received")
+
 
 def on_starting(_):
     global server_status
@@ -148,6 +146,7 @@ def on_starting(_):
     app_crypto.initialize()
 
     server_status = "started"
+
 
 # make sure startup/shutdown handlers are called when not
 # automatically invoked through the gunicorn events

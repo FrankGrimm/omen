@@ -9,8 +9,8 @@
       </p>
   </div>
   <div class="row">
-      <div class="col-12">
-          Jump straight back in:
+      <div class="col-12 col-lg-6">
+          <h5>Jump straight back in:</h5>
           <div class="list-group">
             {% for task in tasks %}
             <a class="list-group-item list-group-item-action {% if not task.can_annotate %} disabled{% endif %}" href="{{ url_for('annotate', dsid=task.id) }}" {% if not task.can_annotate %} disabled{% endif %}>
@@ -41,6 +41,35 @@
             </a>
             {% endfor %}
           </div>
+      </div>
+      <div class="col-12 col-lg-6">
+        <h5>Latest activity:</h5>
+        <ul id="index_user_history" class="list-group">
+            {% for activity, target in user_history %}
+            <li class="list-group-item index_activity">
+                <span class="index_activity_timestamp">{{ activity.formatted_create() }}</span>
+                {% if activity.scope == "uploaded_file" %}
+                Uploaded file <span class="index_activity_detail">{{ activity.content }}</span> for dataset <span class="index_activity_target">{{ target.get_name() }}</span>.
+                {% elif activity.scope == "import_complete" %}
+                Data import for dataset <span class="index_activity_target">{{ target.get_name() }}</span> completed. <span class="index_activity_detail">{{ activity.content }}</span>
+                {% elif activity.scope == "update_option" %}
+                Updated configuration for dataset <span class="index_activity_target">{{ target.get_name() }}</span>.
+                {% elif activity.scope == "split_add_annotator" %}
+                Added annotator for work package in dataset <span class="index_activity_target">{{ target.get_name() }}</span>: {{ activity.content }}
+                {% elif activity.scope == "split_remove_annotator" %}
+                Removed annotator from work package in dataset <span class="index_activity_target">{{ target.get_name() }}</span>: {{ activity.content }}
+                {% elif activity.scope == "split_edit" %}
+                Managed work packages for dataset <span class="index_activity_target">{{ target.get_name() }}</span>.
+                {% elif activity.scope == "bulk_action" %}
+                Curated annotations in dataset <span class="index_activity_target">{{ target.get_name() }}</span>.
+                {% else %}
+                Activity (owner: {{activity.owner}}, scope: {{ activity.scope }}, target: {{ target }})
+                {% endif %}
+            </li>
+            {% else %}
+                <li class="list-group-item">Nothing to show here yet.</li>
+            {% endfor %}
+        </ul>
       </div>
   </div>
   {% endif %}

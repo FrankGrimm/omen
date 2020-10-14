@@ -4,6 +4,11 @@
 Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
 {% endblock %}
 
+{% macro filterurl(template="inspect_dataset", dsid=dataset.dataset_id, split=ds_filters.split[0] or None, query=ds_filters.query, viewfilter=ds_filters.viewfilter, page=pagination.page) -%}{{
+    url_for(template, dsid=dsid, split=split, query=query, viewfilter=viewfilter, page=page)
+}}{%- endmacro %}
+
+
 {% block pagebody %}
 
 <div class="row df_inspect_overview">
@@ -24,7 +29,8 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
                     <div class="dataset_inspect_meta">
                         <span class="dataset_inspect_meta_label">Owner:</span> <span class="dataset_inspect_meta_value">{{ dataset.owner.get_name() }}</span><br />
                         <span class="dataset_inspect_meta_label">Fields:</span> <span class="dataset_inspect_meta_value">{{ ", ".join(df.columns) }}</span><br />
-                        <span class="dataset_inspect_meta_label">Access Roles:</span> <span class="dataset_inspect_meta_value">{{ user_roles|join(", ") }}</span>
+                        <span class="dataset_inspect_meta_label">Access Roles:</span> <span class="dataset_inspect_meta_value">{{ user_roles|join(", ") }}</span><br />
+                        <span class="dataset_inspect_meta_label">Work Packages:</span> <span class="dataset_inspect_meta_value">{{ ds_splits.keys()|length }}</span>
                     </div>
                 </div>
             </div>
@@ -69,70 +75,104 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
     </div>
 </div>
 
-<form action="{{ url_for("inspect_dataset", dsid=dataset.dataset_id) }}" method="get" id="form_doquery">
+<form action="{{ filterurl() }}" method="get" id="form_doquery">
 
-<div class="row df_pagination">
-    <div class="col-sm-12 col-md-7">
-        Entries: {{results}}<br />
-    <div class="btn-group">
-        {% set addclass="" %}
-        {% if page == 1 %}{% set addclass="active" %}{% endif %}
-
-        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, restrict_view=restrict_view, page=1) }}"><i class="fa fa-angle-double-left"> </i></a>
-        {% if not 1 in pagination_elements and pages > 0 %}
-        <a class="btn btn-sm btn-outline-secondary" disabled href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, restrict_view=restrict_view, page=1) }}"><i class="fas fa-ellipsis-h"></i> </a>
-        {% endif %}
-
-        {% for pagination_page in pagination_elements %}
-
-        {% set addclass="" %}
-        {% if page == pagination_page %}{% set addclass="active" %}{% endif %}
-        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, restrict_view=restrict_view, page=pagination_page) }}">{{ pagination_page }}</a>
-
-        {% endfor %}
-
-        {% if not pages in pagination_elements and pages > 0 %}
-        <a class="btn btn-sm btn-outline-secondary" disabled href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, restrict_view=restrict_view, page=1) }}"><i class="fas fa-ellipsis-h"></i> </a>
-        {% endif %}
-
-        {% set addclass="" %}
-        {% if page == pages %}{% set addclass="active" %}{% endif %}
-        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ url_for("inspect_dataset", dsid=dataset.dataset_id, query=query, restrict_view=restrict_view, page=pages) }}"><i class="fa fa-angle-double-right"> </i></a>
-    </div>
-
-    </div>
-
-    <div class="col-sm-12 col-md-5">
-        <div class="form-group row">
-            <div class="col-12">
+<nav class="navbar navbar-light bg-light">
+    <ul class="navbar-nav mr-auto">
+        <li class="navbar-item">
                 <div class="input-group">
-                    <input id="query" name="query" placeholder="search" type="text" class="form-control" value="{{ query }}"> 
+                    <input id="query" name="query" placeholder="search" type="text" class="form-control" value="{{ ds_filters.query }}"> 
                     <div class="input-group-append">
                         <button class="btn btn-outline-primary input-group-text" onclick="return $('#form_doquery').submit();">
                             <i class="fa fa-arrow-circle-right"></i>
                         </button>
                     </div>
                 </div>
-            </div>
-        </div> 
+        </li>
+    </ul>
+    <ul class="navbar-nav">
+        <li class="navbar-item">
+                <div class="btn-group">
 
-        <div class="form-group row">
-            <div class="col-12 d-flex" style="justify-content: end">
-                <div class="custom-control custom-checkbox custom-control-inline">
-                    {% if restrict_view and restrict_view == 'tagged' %}
-                    <input name="restrict_view" id="restrict_view" type="hidden" value="tagged" />
-                    <input name="cb_hideempty" id="cb_hideempty" type="checkbox" class="custom-control-input" value="true" checked="checked"> 
-                    {% else %}
-                    <input name="restrict_view" id="restrict_view" type="hidden" value="" />
-                    <input name="cb_hideempty" id="cb_hideempty" type="checkbox" class="custom-control-input" value="false"> 
-                    {% endif %}
-                    <label for="cb_hideempty" class="custom-control-label">Hide untagged rows</label>
+                <input type="hidden" name="restrict_split" id="restrict_split" value="{{ds_filters.split[0] if not ds_filters.split is none and ds_filters.split|length > 0 else "*"}}" />
+                <div class="dropdown">
+                    <button class="btn {% if ds_filters.split and ds_filters.split[0] and ds_filters.split[0] != "*" %}btn-secondary{% else %}btn-light{% endif %} btn-sm dropdown-toggle" id="ds_split_filter_btn" data-toggle="dropdown">
+                        <span class="">{% if ds_filters.split and ds_filters.split|length > 0 %}{{ ds_filters.split[0] }}{% else %}Work Package{% endif %}&nbsp;</span> <i class="mdi mdi-package-variant"></i>
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="ds_split_filter_btn">
+                        <button class="dropdown-item ds_split_filter ds_filter_all" data-targetsplit="*" data-targethref="{{ filterurl(split=None) }}">show all</button>
+                        {% for split_id, split_info in ds_splits.items() %}
+                        <button class="dropdown-item {% if split_id == ds_filters.split %}active {% endif %} ds_split_filter" data-targetsplit="{{ split_id }}" data-targethref="{{ filterurl(split=split_id) }}">{{ split_id }}</button>
+                        {% else %}
+                        <a class="dropdown-item" href="#" disabled>No work packages defined.</a>
+                        {% endfor %}
+                    </div>
                 </div>
-            </div>
-        </div> 
-    </div>
-</div>
+
+                <input type="hidden" name="viewfilter" id="viewfilter" value="{{ds_filters.viewfilter|join(",") if not ds_filters.viewfilter is none else ""}}" />
+                <div class="dropdown">
+                    {% set active_viewfilter = ds_filters.viewfilter|join(",") if ds_filters.viewfilter is not none and ds_filters.viewfilter|length > 0 else "" %}
+                    <button class="btn {% if ds_filters.viewfilter %}btn-secondary{% else %}btn-light{% endif %} btn-sm dropdown-toggle" id="ds_view_filter_btn" data-toggle="dropdown">
+                        <span class="">{% if ds_filters.viewfilter %}{{ active_viewfilter }}{% else %}Filter{% endif %}&nbsp;</span> <i class="mdi mdi-filter-menu-outline"></i>
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="ds_view_filter_btn">
+                        <button class="dropdown-item ds_filter ds_view_filter_all" data-targetviewfilter="*" data-targethref="{{ filterurl(viewfilter=None) }}">show all</button>
+                        {% for viewfilter_id, viewfilter_description in valid_filters.items() %}
+                        <button class="dropdown-item {% if viewfilter_id == active_viewfilter %}active {% endif %} ds_filter" data-targetviewfilter="{{ viewfilter_id }}" data-targethref="{{ filterurl(viewfilter=viewfilter_id) }}">{{ viewfilter_description }}</button>
+                        {% else %}
+                        <a class="dropdown-item" href="#" disabled>No view filters defined.</a>
+                        {% endfor %}
+                    </div>
+                </div>
+                </div>
+        </li>
+        <li class="navbar-item">
+                <div class="dropdown">
+                    <button class="btn btn-light btn-sm dropdown-toggle" id="ds_actions" data-toggle="dropdown">
+                        <span class="">Actions&nbsp;</span> <i class="mdi mdi-cogs"></i>
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="ds_actions">
+                        <button class="dropdown-item ds_action_btn" data-action="accept_majority" data-description="accept the majority vote for entries that are disputed and have a clear winner." data-targethref="{{ filterurl() }}">Accept majority votes</button>
+                        <button class="dropdown-item ds_action_btn" data-action="accept_undisputed" data-description="accept all unanimous annotations." data-targethref="{{ filterurl() }}">Accept undisputed</button>
+                    </div>
+                </div>
+
+        </li>
+    </ul>
+</nav>
 <div class="row df_pagination">
+    <div class="col-12">
+        Entries: {{results}}<br />
+    <div class="btn-group">
+        {% set addclass="" %}
+        {% if pagination.page == 1 %}{% set addclass="active" %}{% endif %}
+
+        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ filterurl(page=1) }}"><i class="fa fa-angle-double-left"> </i></a>
+        {% if not 1 in pagination_elements and pagination.pages > 0 %}
+        <a class="btn btn-sm btn-outline-secondary" disabled href="{{ filterurl(page=1) }}"><i class="fas fa-ellipsis-h"></i> </a>
+        {% endif %}
+
+        {% for pagination_page in pagination_elements %}
+
+        {% set addclass="" %}
+        {% if pagination.page == pagination_page %}{% set addclass="active" %}{% endif %}
+        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ filterurl(page=pagination_page) }}">{{ pagination_page }}</a>
+
+        {% endfor %}
+
+        {% if not pagination.pages in pagination_elements and pagination.pages > 0 %}
+        <a class="btn btn-sm btn-outline-secondary" disabled href="{{ filterurl(page=1) }}"><i class="fas fa-ellipsis-h"></i> </a>
+        {% endif %}
+
+        {% set addclass="" %}
+        {% if pagination.page == pagination.pages %}{% set addclass="active" %}{% endif %}
+        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ filterurl(page=pagination.pages) }}"><i class="fa fa-angle-double-right"> </i></a>
+    </div>
+
+    </div>
+
+</div>
+{# <div class="row df_pagination">
     {% set taglist = dataset.get_taglist() %}
     <input type="hidden" name="restrict_taglist_include" id="restrict_taglist_include" value="" />
     <input type="hidden" name="restrict_taglist_exclude" id="restrict_taglist_exclude" value="" />
@@ -150,13 +190,13 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
             {% endfor %}
         </div>
     </div>
-</div>
+</div> #}
 
 </form>
 
 {% set df_editor_id = "dfid" %}
 {% set df_class = "dfclasses" %}
-{% set maxrows = page_size %}
+{% set maxrows = pagination.page_size %}
 {% set hide_nan = True %}
 
 {% if df.shape[0] > 0 %}

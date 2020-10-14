@@ -13,6 +13,7 @@ Option keys can be translated to environment variables by:
 
 """
 import json
+import sys
 import os
 import logging
 
@@ -25,7 +26,7 @@ def load_config():
         with open(CFG_FILENAME, "rt") as infile:
             obj = json.load(infile)
     else:
-        print("WARN: config file not found at %s" % os.path.abspath(CFG_FILENAME))
+        print("WARN: config file not found at %s" % os.path.abspath(CFG_FILENAME), file=sys.stderr)
     if not obj:
         obj = {}
     return obj

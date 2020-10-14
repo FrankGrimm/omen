@@ -10,6 +10,7 @@ import app.routes.routesetup
 import app.routes.templates
 import app.routes.user
 import app.routes.dataset
+import app.routes.dataset_inspect
 import app.routes.annotate
 
 
@@ -29,6 +30,8 @@ def index():
         my_datasets = db.my_datasets(dbsession, session_user_id)
         access_datasets = db.accessible_datasets(dbsession, session_user_id)
 
+        user_history = session_user.history(dbsession)
+
         ds_errors = {}
         for cur_dataset in my_datasets.values():
             if cur_dataset in ds_errors:
@@ -45,4 +48,6 @@ def index():
                                ds_errors=ds_errors,
                                dbsession=dbsession,
                                session_user=session_user,
-                               tasks=annotation_tasks)
+                               tasks=annotation_tasks,
+                               user_history=user_history
+                               )

@@ -16,8 +16,7 @@ import app.web as web
 from app.lib import config
 
 
-#from app.lib.models.user import User
-import app.lib.database as db
+from app.lib.models.user import User
 from app.lib.models.datasetcontent import DatasetContent
 from app.lib.models.annotation import Annotation
 from app.lib.models.dataset import *
@@ -86,7 +85,7 @@ def init_db():
     with web.app.app_context():
         with session_scope() as dbsession:
 
-            db.User.system_user(dbsession)
+            User.system_user(dbsession)
 
             try:
                 logging.info("[users] system contains %s user accounts", dbsession.query(User).count())

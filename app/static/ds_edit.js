@@ -36,7 +36,30 @@ function updateACL(foruser, annoaction, newroles) {
         setACLstatus($elem, elemrole, newroles);
     });
 }
+
+function updateSplits(split_action, action_payload) {
+    const $split_editor = $("#ds_split_editor");
     
+    $split_editor.css("opacity", "0.5");
+    $split_editor.find(".ajax-loading").show();
+
+    jQuery.ajax({
+        url: window.location.href,
+        data: JSON.stringify({"action": "spliteditor", "options": action_payload || {}}),
+        cache: false,
+        contentType: "application/json",
+        method: 'POST',
+        success: function(data){
+            document.getElementById("split_editor_container").innerHTML = data;
+            initializeSplitEditor();
+        },
+        error: function(jqXHR, textstatus, err) {
+            if (!err) { return; }
+            alert(textstatus + " " + err);
+        }
+    });
+}
+
 function updateTags(tag_action, newtags) {
     newtags = newtags || [];
 
@@ -98,6 +121,62 @@ function getCurrentTags() {
     });
 
     return all_tags;
+}
+
+function initializeSplitEditor() {
+    $(".ds_split_overview_single").each((idx, elem) => {
+        const $elem = $(elem);
+        const targetsplit = $elem.data("targetsplit");
+        console.log("SPLITEDITOR", idx, $elem, targetsplit);
+
+// spliteditor_nameinput
+        // enable change action if tag has been renamed
+        $elem.find("input.spliteditor_nameinput").on("input change", function handleSplitEditorChange() {
+            const $changed_input = $(this);
+            const $entry = $($changed_input.parents(".ds_split_overview_single")[0]);
+            $entry.find("button.split_action_rename").removeAttr("disabled");
+        });
+        
+        $elem.find(".dssplit_change").click((e) => {
+            e.preventDefault();
+            if (!e.target) { return false; }
+
+            let btn = $(e.target)[0];
+            if (btn.tagName.toLowerCase() !== 'button') {
+                btn = $(btn).parents(".dssplit_change")[0];
+            }
+            console.log("split action btn", btn);
+            const $btn = $(btn);
+            const $entry = $btn.parents(".ds_split_overview_single")[0];
+            
+            const split_action = $btn.data("splitaction") || null;
+            const targetsplit = "" + $btn.data("targetsplit");
+            
+            console.log("split action", split_action, targetsplit);
+            if (!split_action || split_action == "") {
+                throw Error("no value for split_action");
+            }
+            if (!targetsplit === null) {
+                throw Error("no value for targetsplit");
+            }
+
+            const actionoptions = {
+                target: targetsplit,
+                splitaction: split_action,
+                splitmethod: $btn.data("splitmethod") || null,
+                splitcolumn: $btn.data("splitcolumn") || null,
+                splitratio: $btn.data("splitratio") || null,
+                splitcount: $btn.data("splitcount") || null,
+                mergeinto: $btn.data("mergeinto") || null,
+                targetuser: $btn.data("targetuser") || null,
+                target_new: $elem.find("input.spliteditor_nameinput").val().trim()
+            }
+            updateSplits(split_action, actionoptions);
+            return false;
+        });
+
+
+    });
 }
 
 function initializeTagEditor() {
@@ -291,8 +370,25 @@ function initOption(cbElem) {
     }
 }
 
+function initAdditionalFieldOption() {
+    const fieldSelect = document.getElementById("additional_field_display");
+    if (!fieldSelect) { return; }
+
+    console.log("initializing additional field display", fieldSelect);
+
+    function additionalFieldChange() {
+        const new_field = (fieldSelect.value && fieldSelect.value !== "-") ? fieldSelect.value : null;
+        console.log("changing additional display field to", new_field);
+        sendOptionValue(fieldSelect, "additional_column", new_field);
+    }
+
+    fieldSelect.addEventListener("change", additionalFieldChange);
+}
+
 function initOptions() {
     document.querySelectorAll(".cb_inspect_option").forEach(initOption);
+
+    initAdditionalFieldOption();
 }
 
 function initLabelAttributes() {
@@ -344,9 +440,26 @@ function initUserListEditor() {
     document.querySelectorAll(".adduser_btn").forEach(initUserListButton);
 }
 
+function initTabPages() {
+    $('#ds-edit-tabslist a').on('click', function (e) {
+        e.preventDefault();
+        console.log($(this));
+        $(this).tab('show');
+        // make sure tab navigation is added to history
+        location.hash = $(e.target).attr('href').substr(1);
+    });
+    
+
+    // restore tab specified in hash if available
+    if (location.hash && location.hash !== '') {
+        $('a[href="' + location.hash + '"]').tab('show');
+    }
+}
+
 document.addEventListener("DOMContentLoaded",function(){
 
     initializeTagEditor();
+    initializeSplitEditor();
     initializeDataFramePreview();
     setupDeleteConfirmation();
 
@@ -404,5 +517,7 @@ document.addEventListener("DOMContentLoaded",function(){
     initLabelAttributes();
     initOptions();
     initUserListEditor();
+    initTabPages();
+
 });
 

@@ -1,7 +1,7 @@
 """
 Model for generic activities (e.g. change events, comments).
 """
-from sqlalchemy import Column, Integer, String, desc, func, ForeignKey
+from sqlalchemy import Column, Integer, String, desc, func, ForeignKey, or_
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import DateTime
 
@@ -9,6 +9,7 @@ import logging
 import json
 
 from app.lib.database_internals import Base
+import app.lib.database as db
 
 
 class Activity(Base):
@@ -17,7 +18,7 @@ class Activity(Base):
     event_id = Column(Integer, primary_key=True)
 
     owner_id = Column(Integer, ForeignKey("users.uid"))
-    owner = relationship("User")
+    owner = relationship("User", lazy="joined")
 
     created = Column(DateTime(timezone=True), server_default=func.now())
     edited = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -29,6 +30,81 @@ class Activity(Base):
     scope = Column(String, nullable=False, default="")
 
     content = Column(String, nullable=False)
+
+    def load_target(self, dbsession):
+        if self.target is None:
+            return None
+
+        if self.target.startswith(db.User.activity_prefix()):
+            return db.User.by_id(dbsession, int(self.target[len(db.User.activity_prefix()):]))
+        elif self.target.startswith(db.Dataset.activity_prefix()):
+            return db.Dataset.by_id(dbsession, int(self.target[len(db.Dataset.activity_prefix()):]))
+        else:
+            return "unknown target %s" % self.target
+
+        return None
+
+    @staticmethod
+    def user_history(dbsession, owner, scope_in=None, limit=None):
+        qry = dbsession.query(Activity)
+
+        if owner is None:
+            raise Exception("Activity::user_history requires a non-null user object or ID")
+
+        target_filter = db.User.activity_prefix() + str(owner.uid)
+
+        if isinstance(owner, db.User):
+            qry = qry.filter(or_(
+                                Activity.target == target_filter,
+                                Activity.owner == owner,
+                                ))
+        elif isinstance(owner, int):
+            qry = qry.filter(or_(
+                                Activity.target == target_filter,
+                                Activity.owner_id == owner.uid,
+                                ))
+        else:
+            raise Exception("Activity::user_history requires the owner argument by of type User or int")
+
+        if scope_in is not None and len(scope_in) > 0:
+            qry = qry.filter(Activity.scope.in_(scope_in))
+
+        qry = qry.order_by(Activity.event_id.desc())
+
+        if limit is not None:
+            qry = qry.limit(limit)
+
+        return qry.all()
+
+    def formatted_create(self):
+        if self.created is None:
+            return None
+
+        return self.created.strftime("%Y-%m-%d")
+
+    @staticmethod
+    def by_owner(dbsession, owner, scope_in=None, limit=None):
+        qry = dbsession.query(Activity)
+
+        if owner is None:
+            raise Exception("Activity::by_owner requires a non-null user object or ID")
+
+        if isinstance(owner, db.User):
+            qry = qry.filter(Activity.owner == owner)
+        elif isinstance(owner, int):
+            qry = qry.filter(Activity.owner_id == owner.uid)
+        else:
+            raise Exception("Activity::by_owner requires the owner argument by of type User or int")
+
+        if scope_in is not None and len(scope_in) > 0:
+            qry = qry.filter(Activity.scope.in_(scope_in))
+
+        qry = qry.order_by(Activity.event_id.desc())
+
+        if limit is not None:
+            qry = qry.limit(limit)
+
+        return qry.all()
 
     @staticmethod
     def by_target(dbsession, target, scope_in=None, like_target=False):
