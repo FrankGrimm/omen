@@ -53,7 +53,7 @@ def get_random_sample(df, id_column):
 
 
 def get_annotation_dataframe(dbsession, task, session_user, min_sample_idx=None, random_order=False):
-    order_by = "dc.sample_index, usercol_value ASC NULLS LAST"
+    order_by = "o.sample_index, usercol_value ASC NULLS LAST"
     if random_order:
         order_by = "random()"
 
