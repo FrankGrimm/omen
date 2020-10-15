@@ -43,6 +43,60 @@ function updateSplits(split_action, action_payload) {
     $split_editor.css("opacity", "0.5");
     $split_editor.find(".ajax-loading").show();
 
+
+    if (action_payload.splitmethod === "value") {
+        // http://localhost:5000/omen/dataset/8/field/user_statuses_count.json
+        const field_info_target = API_TARGET_FIELDINFO.replace("{field}", 
+                                                               encodeURIComponent(action_payload.splitcolumn));
+
+        fetch(field_info_target, {
+            method: 'GET',
+            mode: 'cors',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            redirect: 'follow',
+            referrerPolicy: 'no-referrer'
+        })
+        .then(response => response.json())
+        .then(fieldinfo => {
+            console.log("got fieldinfo", fieldinfo);
+            const valuePrompt = bootbox.prompt({
+                title: "Split at value:",
+                message: "Minimum value: " + fieldinfo.min + "<br> Maximum value: " + fieldinfo.max,
+                inputType: 'number',
+                callback: function (result) {
+                    if (!result) { 
+                        $split_editor.css("opacity", "1.0");
+                        $split_editor.find(".ajax-loading").hide();
+                        return;
+                    }
+                    action_payload.splitvalue = result;
+                    sendUpdatesplits(action_payload);
+                }
+            });
+            valuePrompt.init(function() {
+                const targetInput = valuePrompt.find("input");
+                if (fieldinfo && fieldinfo.min !== undefined) {
+                    targetInput.attr("min", fieldinfo.min);
+                }
+                if (fieldinfo && fieldinfo.max !== undefined) {
+                    targetInput.attr("max", fieldinfo.max);
+                }
+                console.log(targetInput);
+            });
+
+        }).catch((err) => {
+            console.error("field info retrieval failed", err);
+        });
+    } else {
+        sendUpdatesplits(action_payload);
+    }
+}
+
+function sendUpdatesplits(action_payload) {
     jQuery.ajax({
         url: window.location.href,
         data: JSON.stringify({"action": "spliteditor", "options": action_payload || {}}),
@@ -129,7 +183,7 @@ function initializeSplitEditor() {
         const targetsplit = $elem.data("targetsplit");
         console.log("SPLITEDITOR", idx, $elem, targetsplit);
 
-// spliteditor_nameinput
+        // spliteditor_nameinput
         // enable change action if tag has been renamed
         $elem.find("input.spliteditor_nameinput").on("input change", function handleSplitEditorChange() {
             const $changed_input = $(this);

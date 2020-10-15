@@ -26,10 +26,8 @@
                 </button>
                 <div class="dropdown-menu" aria-labelledby="ds_split_byattrib">
                     {% for colname in previewdf.columns if dataset.dsmetadata.idcolumn != colname and dataset.dsmetadata.textcol != colname and colname != 'split' and colname != 'index' %}
-                            {% if sample_stats.columns[colname].nunique <= 100 %}
+                    {% if sample_stats.columns[colname].nunique > 1 and sample_stats.columns[colname].nunique <= 100 %}
                             <button class="dropdown-item dssplit_change" data-splitaction="fork" data-splitmethod="attribute" data-splitcolumn="{{colname}}" data-targetsplit="{{ds_split_name}}">{{ colname }} ({% if sample_stats.size > 10000 %}~{% else %}up to {% endif %}{{sample_stats.columns[colname].nunique}} unique values)</button>
-                            {% else %}
-                            <button class="dropdown-item dssplit_change disabled" data-splitaction="fork" data-splitmethod="attribute" data-splitcolumn="{{colname}}" data-targetsplit="{{ds_split_name}}">{{ colname }} (too many unique values)</button>
                             {% endif %}
 
                     {% else %}
@@ -45,9 +43,7 @@
                 <div class="dropdown-menu" aria-labelledby="ds_split_byvalue">
                     {% for colname in previewdf.columns if dataset.dsmetadata.idcolumn != colname and dataset.dsmetadata.textcol != colname and colname != 'split' and colname != 'index' %}
                             {% if sample_stats.columns[colname].numeric %}
-                            <button class="dropdown-item dssplit_change" data-splitaction="fork" data-splitmethod="value" data-splitcolumn="{{colname}}" data-targetsplit="{{ds_split_name}}">{{ colname }}</button>
-                            {% else %}
-                            <button class="dropdown-item dssplit_change disabled" data-splitaction="fork" data-splitmethod="value" data-splitcolumn="{{colname}}" data-targetsplit="{{ds_split_name}}">{{ colname }} (non-numeric)</button>
+                            <button class="dropdown-item dssplit_change" data-splitaction="fork" data-splitmethod="value" data-splitcolumn="{{colname}}" data-targetsplit="{{ds_split_name}}">{{ colname }} {{sample_stats.columns[colname]}}</button>
                             {% endif %}
                     {% else %}        
                     <button class="dropdown-item disabled">No suitable attributes.</button>

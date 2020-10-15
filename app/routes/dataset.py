@@ -10,8 +10,9 @@ from io import StringIO
 
 from werkzeug.utils import secure_filename
 from flask import flash, redirect, render_template, request, url_for, session, Response, abort
+import numpy as np
 
-from app.lib.viewhelpers import login_required
+from app.lib.viewhelpers import login_required, get_session_user
 from app.web import app, BASEURI, db
 
 TAGORDER_ACTIONS = ["update_taglist", "rename_tag", "delete_tag", "move_tag_down", "move_tag_up"]
@@ -204,12 +205,37 @@ def handle_tag_update(dbsession, session_user, dataset):
                 dataset.update_tag_metadata(update_tag, {"icon": update_value})
 
 
+@app.route(BASEURI + "/dataset/<dsid>/field/<fieldid>.json", methods=["GET"])
+def dataset_field_overview(dsid, fieldid):
+    with db.session_scope() as dbsession:
+        field_overview = {}
+
+        dataset = db.get_accessible_dataset(dbsession, dsid)
+        dataset_overview = dataset.get_overview_statistics(dbsession)['columns']
+        for column_name, column_info in dataset_overview.items():
+            column_type = column_info.get("dtype", None)
+            if isinstance(column_type, np.dtype):
+                column_info['dtype'] = str(column_type)
+
+        field_overview['fields'] = list(dataset_overview.keys())
+        if fieldid not in dataset_overview.keys():
+            return field_overview
+
+        for k, v in dataset_overview[fieldid].items():
+            field_overview[k] = v
+
+        if field_overview['numeric']:
+            field_overview['min'], field_overview['max'] = dataset.get_field_minmax(dbsession, fieldid)
+
+        return field_overview
+
+
 @app.route(BASEURI + "/dataset/<dsid>/overview.json", methods=["GET"])
 def dataset_overview_json(dsid):
     dataset = None
 
     with db.session_scope() as dbsession:
-        session_user = db.User.by_id(dbsession, session['user'])
+        session_user = get_session_user(dbsession)
         dataset = db.get_accessible_dataset(dbsession, dsid)
         user_roles = list(dataset.get_roles(dbsession, session_user))
 
@@ -251,12 +277,7 @@ def editdataset_post_actions(editmode, dbsession, userobj, dataset):
     return editmode
 
 
-def editdataset_form_actions(dbsession, dataset, userobj):
-    formaction = request.form.get("action", None)
-
-    if formaction is None:
-        return None
-
+def editdataset_form_action_metadata(dataset, formaction):
     if formaction == 'change_name':
         dsname = request.form.get('dataset_name', None)
         if dsname is not None and dsname.strip() != '':
@@ -266,18 +287,6 @@ def editdataset_form_actions(dbsession, dataset, userobj):
         ds_description = request.form.get('setdescription', None)
         if ds_description is not None:
             dataset.dsmetadata['description'] = ds_description.strip()
-
-    if formaction == 'delete_dataset' and \
-            request.form.get("confirmation", "") == "delete_dataset_confirmed" and \
-            dataset is not None and dataset.dataset_id is not None:
-        db.fprint("User %s triggers delete on dataset %s" % (userobj, dataset))
-        db.Activity.create(dbsession, userobj, dataset, "event", "deleted")
-        dbsession.delete(dataset)
-
-        dbsession.commit()
-        dbsession.flush()
-        flash("Dataset was deleted successfully.", "success")
-        return redirect(url_for("show_datasets"))
 
     if formaction == "change_delimiter":
         newdelim = dataset.dsmetadata.get("sep", ",")
@@ -289,7 +298,6 @@ def editdataset_form_actions(dbsession, dataset, userobj):
         dataset.invalidate()
 
     if formaction == "change_quotechar":
-        # {% set ds_quotechar = dataset.dsmetadata.quotechar or '"' %}
         newquot = dataset.dsmetadata.get("quotechar", '"')
         if request.form.get("double-quote", "") != "":
             newquot = "\""
@@ -298,14 +306,36 @@ def editdataset_form_actions(dbsession, dataset, userobj):
         dataset.dsmetadata["quotechar"] = newquot
         dataset.invalidate()
 
-    if formaction == 'change_textcol' and not request.form.get("textcol", None) is None:
-        dataset.dsmetadata['textcol'] = request.form.get("textcol", None)
+    for metadatakey in ["textcol", "idcolumn", "annoorder"]:
+        if formaction == "change_%s" % metadatakey and not request.form.get(metadatakey, None) is None:
+            dataset.dsmetadata[metadatakey] = request.form.get(metadatakey, None)
 
-    if formaction == 'change_idcolumn' and not request.form.get("idcolumn", None) is None:
-        dataset.dsmetadata['idcolumn'] = request.form.get("idcolumn", None)
 
-    if formaction == 'change_annoorder' and not request.form.get("annoorder", None) is None:
-        dataset.dsmetadata['annoorder'] = request.form.get("annoorder", None)
+def editdataset_form_action_delete(dbsession, dataset, userobj, formaction):
+    if formaction == 'delete_dataset' and \
+            request.form.get("confirmation", "") == "delete_dataset_confirmed" and \
+            dataset is not None and dataset.dataset_id is not None:
+        db.fprint("User %s triggers delete on dataset %s" % (userobj, dataset))
+        db.Activity.create(dbsession, userobj, dataset, "event", "deleted")
+        dbsession.delete(dataset)
+
+        dbsession.commit()
+        dbsession.flush()
+        flash("Dataset was deleted successfully.", "success")
+        return redirect(url_for("show_datasets"))
+    return None
+
+
+def editdataset_form_actions(dbsession, dataset, userobj):
+    formaction = request.form.get("action", None)
+
+    if formaction is None:
+        return None
+
+    editdataset_form_action_metadata(dataset, formaction)
+    delete_result = editdataset_form_action_delete(dbsession, dataset, userobj, formaction)
+    if delete_result is not None:
+        return delete_result
 
     if formaction == 'add_role' and \
             not request.form.get("annouser", None) is None and \
@@ -415,7 +445,7 @@ def new_dataset(dsid=None):
         try:
             dataset, editmode = dataset_lookup_or_create(dbsession, dsid, editmode)
             # pylint: disable=bare-except
-        except:
+        except:  # noqa: E722
             flash("Dataset not found or access denied", "error")
             return abort(404, description="Dataset not found or access denied")
 
@@ -432,9 +462,9 @@ def new_dataset(dsid=None):
             formaction_result = editdataset_form_actions(dbsession, dataset, userobj)
 
             if formaction_result is not None \
-                and not isinstance(formaction_result, list) \
-                and not isinstance(formaction_result, str) \
-                and not isinstance(formaction_result, dict):
+                    and not isinstance(formaction_result, list) \
+                    and not isinstance(formaction_result, str) \
+                    and not isinstance(formaction_result, dict):
                 return formaction_result
 
             dataset.update_size()

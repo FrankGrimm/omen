@@ -220,6 +220,35 @@ class Dataset(Base):
         self.dirty(dbsession)
         return affected
 
+    def get_field_minmax(self, dbsession, fieldid):
+        """
+        Retrieve the minimum and maximum values of a particular additional field in the dataset.
+        """
+        maxval = minval = None
+
+        sql_raw = prep_sql("""
+            SELECT MIN((data->>:targetcolumn)::float) AS minval, MAX((data->>:targetcolumn)::float) AS maxval
+            FROM datasetcontent AS dc
+            WHERE
+                dc.dataset_id = :datasetid
+        """.strip())
+
+        params = {
+                "datasetid": self.dataset_id,
+                "targetcolumn": fieldid
+                }
+
+        logging.debug("DB_SQL_LOG %s %s", sql, params)
+        statement = sql.text(sql_raw)
+        sqlres = dbsession.execute(statement, params=params)
+        sqlres = [{column: value for column, value in rowproxy.items()} for rowproxy in sqlres]
+
+        if len(sqlres) > 0:
+            minval = sqlres[0]['minval']
+            maxval = sqlres[0]['maxval']
+
+        return minval, maxval
+
     def split_dataset(self, dbsession, session_user, targetsplit, splitoptions):
         splitmethod = splitoptions.get("splitmethod", "")
         if splitmethod == "" or splitmethod is None:
@@ -229,7 +258,8 @@ class Dataset(Base):
         target_criterion = self._split_target(targetsplit)
 
         params = {
-                "datasetid": self.dataset_id
+                "datasetid": self.dataset_id,
+                "targetold": targetsplit
                 }
 
         affected = 0
@@ -245,6 +275,30 @@ class Dataset(Base):
             sql_raw = """
             UPDATE datasetcontent AS dc
                 SET split_id = TRIM(BOTH FROM (split_id || ' / ' || :trimtargetcolumn || '=' || (TRIM(both ' "' FROM data->>:targetcolumn))::TEXT))
+            WHERE
+                dc.dataset_id = :datasetid
+                AND
+            """ + target_criterion + """
+            """
+        elif splitmethod == "value":
+            splitcolumn = splitoptions.get("splitcolumn", None) or None
+            if splitcolumn is None or splitcolumn == "":
+                raise Exception("no column specified for split method %s" % (splitmethod))
+            splitvalue = splitoptions.get("splitvalue", None) or None
+            if splitvalue is None or splitvalue == "":
+                raise Exception("no value specified to split at")
+            splitvalue = float(splitvalue)
+
+            params['targetcolumn'] = splitcolumn
+            params['splitvalue'] = splitvalue
+            params['trimtargetcolumn'] = (splitcolumn or "").strip()
+
+            sql_raw = """
+            UPDATE datasetcontent AS dc
+                SET split_id = CASE WHEN (data->>:targetcolumn)::float < :splitvalue
+                    THEN TRIM(BOTH FROM (split_id || ' / ' || :trimtargetcolumn || '<' || :splitvalue))
+                    ELSE TRIM(BOTH FROM (split_id || ' / ' || :trimtargetcolumn || '>=' || :splitvalue))
+                    END
             WHERE
                 dc.dataset_id = :datasetid
                 AND
@@ -1058,7 +1112,7 @@ class Dataset(Base):
             overview['columns'][colname] = {}
             colinfo = overview['columns'][colname]
             colinfo['dtype'] = coldtype
-            colinfo['numeric'] = is_numeric_dtype(coldtype)
+            colinfo['numeric'] = is_numeric_dtype(coldtype) and not str(coldtype) == 'bool'
             colinfo['nunique'] = df[colname].nunique(dropna=True)
 
     def get_overview_statistics(self, dbsession):
@@ -1526,7 +1580,6 @@ class AnnotationTask:
             self.progress = min(round(self.annos / self.size * 100.0), 100.0)
             self.progress_today = min(round(self.annos_today / self.size * 100.0), 100.0)
             self.progress_beforetoday = self.progress - self.progress_today
-
 
 
 def prep_sql(sql_raw):

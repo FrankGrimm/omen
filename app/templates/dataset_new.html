@@ -92,6 +92,7 @@
 {% block addscript %}
 <script>
 const ACTIVE_DATASET_ID = {{ dataset.dataset_id }};
+const API_TARGET_FIELDINFO = decodeURIComponent("{{ url_for("dataset_field_overview", dsid=dataset.dataset_id, fieldid="{field}") }}");
 </script>
 <script src="{{ url_for("static", filename="ds_edit.js") }}"></script>
 {% endblock %}
