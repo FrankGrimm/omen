@@ -100,6 +100,6 @@ jobs:
           context: ./
           file: ./Dockerfile.prod
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/$PROD_IMAGE_NAME:latest
+          tags: frankgrimm/omen-prod:latest
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
