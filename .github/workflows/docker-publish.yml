@@ -46,14 +46,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Build image (dev)
-        run: docker build . --file Dockerfile.dev --tag $DEV_IMAGE_NAME
-
-      - name: Build image (prod)
-        run: docker build . --file Dockerfile.prod --tag $PROD_IMAGE_NAME
-
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+
+      - name: Build image (dev)
+        run: docker build . --file Dockerfile.dev --tag $DEV_IMAGE_NAME
 
       - name: Push image (dev)
         run: |
@@ -72,6 +69,9 @@ jobs:
           docker tag $DEV_IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
       
+      - name: Build image (prod)
+        run: docker build . --file Dockerfile.prod --tag $PROD_IMAGE_NAME
+
       - name: Push image (prod)
         run: |
           IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$PROD_IMAGE_NAME
@@ -93,13 +93,19 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push (prod to dockerhub)
-        id: docker_build
-        uses: docker/build-push-action@v2
-        with:
-          context: ./
-          file: ./Dockerfile.prod
-          push: true
-          tags: frankgrimm/omen-prod:latest
-      - name: Image digest
-        run: echo ${{ steps.docker_build.outputs.digest }}
+      - name: Push image (prod->dockerhub)
+        run: |
+          IMAGE_ID=frankgrimm/omen-prod:tagname
+          
+          # Change all uppercase to lowercase
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          # Strip "v" prefix from tag name
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          # Use Docker `latest` tag convention
+          [ "$VERSION" == "master" ] && VERSION=latest
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+          docker tag $PROD_IMAGE_NAME $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:$VERSION
