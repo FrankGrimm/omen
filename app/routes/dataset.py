@@ -431,6 +431,12 @@ def new_dataset(dsid=None):
             editmode = editdataset_post_actions(editmode, dbsession, userobj, dataset)
             formaction_result = editdataset_form_actions(dbsession, dataset, userobj)
 
+            if formaction_result is not None \
+                and not isinstance(formaction_result, list) \
+                and not isinstance(formaction_result, str) \
+                and not isinstance(formaction_result, dict):
+                return formaction_result
+
             dataset.update_size()
             dataset.dirty(dbsession)
             dbsession.commit()

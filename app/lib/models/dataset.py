@@ -11,7 +11,7 @@ import re
 from dataclasses import dataclass, field
 from typing import List
 
-from sqlalchemy import Column, Integer, JSON, ForeignKey, func, sql, or_, and_
+from sqlalchemy import Column, Integer, JSON, ForeignKey, func, sql, or_, and_, inspect
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.attributes import flag_dirty, flag_modified
 from flask import flash, session
@@ -90,9 +90,8 @@ class Dataset(Base):
     owner_id = Column(Integer, ForeignKey("users.uid"), nullable=False)
     owner = relationship("User", back_populates="datasets", lazy="joined")
 
-    dsannotations = relationship("Annotation")
-    dscontent = relationship("DatasetContent")
-
+    dsannotations = relationship("Annotation", cascade="all, delete-orphan")
+    dscontent = relationship("DatasetContent", cascade="all, delete-orphan")
     dsmetadata = Column(JSON, nullable=False)
 
     persisted = False
@@ -323,8 +322,8 @@ class Dataset(Base):
         return affected
 
     @staticmethod
-    def by_id(dbsession, dataset_id, user_id=None):
-        return dataset_by_id(dbsession, dataset_id, user_id=user_id)
+    def by_id(dbsession, dataset_id, user_id=None, no_error=False):
+        return dataset_by_id(dbsession, dataset_id, user_id=user_id, no_error=no_error)
 
     def get_option(self, key, default_value=False):
         return bool(self.dsmetadata.get(key, default_value))
@@ -526,9 +525,13 @@ class Dataset(Base):
         return task
 
     def dirty(self, dbsession):
+        db_state = inspect(self)
+        if db_state.deleted:
+            return False
         flag_dirty(self)
         flag_modified(self, "dsmetadata")
         dbsession.add(self)
+        return True
 
     def migrate_annotations(self, dbsession, old_name, new_name):
         migrated_annotations = 0
@@ -1544,13 +1547,17 @@ def dataset_roles(dbsession, user_id):
     return res
 
 
-def dataset_by_id(dbsession, dataset_id, user_id=None):
+def dataset_by_id(dbsession, dataset_id, user_id=None, no_error=False):
     qry = None
     if user_id is None:
         qry = dbsession.query(Dataset).filter_by(dataset_id=dataset_id)
     else:
         qry = dbsession.query(Dataset).filter_by(owner_id=user_id, dataset_id=dataset_id)
-    return qry.one()
+
+    if no_error:
+        return qry.one_or_none()
+    else:
+        return qry.one()
 
 
 def all_datasets(dbsession):

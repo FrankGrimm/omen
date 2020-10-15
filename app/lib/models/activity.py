@@ -36,9 +36,9 @@ class Activity(Base):
             return None
 
         if self.target.startswith(db.User.activity_prefix()):
-            return db.User.by_id(dbsession, int(self.target[len(db.User.activity_prefix()):]))
+            return db.User.by_id(dbsession, int(self.target[len(db.User.activity_prefix()):]), no_error=True)
         elif self.target.startswith(db.Dataset.activity_prefix()):
-            return db.Dataset.by_id(dbsession, int(self.target[len(db.Dataset.activity_prefix()):]))
+            return db.Dataset.by_id(dbsession, int(self.target[len(db.Dataset.activity_prefix()):]), no_error=True)
         else:
             return "unknown target %s" % self.target
 

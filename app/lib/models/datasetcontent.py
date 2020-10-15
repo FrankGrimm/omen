@@ -20,7 +20,7 @@ class DatasetContent(Base):
     content = Column(String, nullable=False)
     split_id = Column(String, nullable=True)
 
-    annotations = relationship("Annotation")
+    annotations = relationship("Annotation", cascade="all, delete-orphan")
 
     data = Column(JSON)
 

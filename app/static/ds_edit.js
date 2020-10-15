@@ -308,12 +308,49 @@ function initializeDataFramePreview() {
 function setupDeleteConfirmation() {
     document.getElementById("form_delete_dataset_confirm").addEventListener("click", function(e) {
         e.preventDefault();
-        if (window.confirm("Warning: You are about to delete a dataset.\nAre you sure?")) {
-        if (window.confirm("Are you really sure?\nDeleting a dataset cannot be undone.")) {
-            $("input#confirmation").attr("value", "delete_dataset_confirmed");
-            return $('#form_delete_dataset').submit();
-        }
-        }
+        bootbox.confirm({
+            title: "Confirm dataset deletion?",
+            message: "Warning: You are about to delete a dataset.\nAre you sure?",
+            buttons: {
+                cancel: {
+                    label: '<i class="mdi mdi-close"></i> Cancel',
+                    className: 'btn-default'
+                },
+                confirm: {
+                    label: '<i class="mdi mdi-check"></i> Confirm',
+                    className: 'btn-danger'
+                }
+            },
+            size: "large",
+            backdrop: true,
+            callback: function (result) {
+                if (!result) { return; }
+
+                bootbox.confirm({
+                    title: "Confirm dataset deletion?",
+                    message: "Are you really sure?\nDeleting a dataset cannot be undone.",
+                    buttons: {
+                        cancel: {
+                            label: '<i class="mdi mdi-close"></i> Cancel',
+                            className: 'btn-default'
+                        },
+                        confirm: {
+                            label: '<i class="mdi mdi-check"></i> Confirm',
+                            className: 'btn-danger'
+                        }
+                    },
+                    size: "large",
+                    backdrop: true,
+                    callback: function (result) {
+                        if (!result) { return; }
+                        $("input#confirmation").attr("value", "delete_dataset_confirmed");
+                        return $('#form_delete_dataset').submit();
+                    }
+                });
+
+            }
+        });
+        
         return false;
     });
 }
