@@ -43,7 +43,7 @@
                 <div class="dropdown-menu" aria-labelledby="ds_split_byvalue">
                     {% for colname in previewdf.columns if dataset.dsmetadata.idcolumn != colname and dataset.dsmetadata.textcol != colname and colname != 'split' and colname != 'index' %}
                             {% if sample_stats.columns[colname].numeric %}
-                            <button class="dropdown-item dssplit_change" data-splitaction="fork" data-splitmethod="value" data-splitcolumn="{{colname}}" data-targetsplit="{{ds_split_name}}">{{ colname }} {{sample_stats.columns[colname]}}</button>
+                            <button class="dropdown-item dssplit_change" data-splitaction="fork" data-splitmethod="value" data-splitcolumn="{{colname}}" data-targetsplit="{{ds_split_name}}">{{ colname }}</button>
                             {% endif %}
                     {% else %}        
                     <button class="dropdown-item disabled">No suitable attributes.</button>
