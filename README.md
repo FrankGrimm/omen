@@ -41,6 +41,8 @@ The software is made available as a Docker container via [GitHub packages](https
 
 Note that pulling images, even public ones, from GitHub's infrastructure requires authentication. A personal authentication token with the `read:packages` permission is required. Please see the [GitHub documentation](https://docs.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages#authenticating-to-github-packages) on how to set this up (`cat ~/TOKEN.txt | docker login https://docker.pkg.github.com -u USERNAME --password-stdin`).
 
+Alternatively you can choose to pull the production image from [dockerhub](https://hub.docker.com/r/frankgrimm/omen-prod).
+
 To pull the image using the **command line**: `docker pull docker.pkg.github.com/frankgrimm/omen/omen-prod:latest`
 
 Our standard deployment model uses **[Docker compose](https://docs.docker.com/compose/)**. An example `docker-compose.yml` configuration that sets up a database and OMEN instance can be found in the [`examples/`](https://github.com/FrankGrimm/omen/tree/master/examples) directory of the repository. Note that this example requires mapping the database files to a volume in order to be retained when the infrastructure is restarted.
