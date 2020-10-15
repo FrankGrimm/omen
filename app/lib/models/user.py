@@ -349,13 +349,8 @@ class User(Base):
         for activity in user_history:
             if activity is None:
                 continue
-            # hides login events
-            if activity.scope == 'event' and \
-                    (activity.content is None or activity.content == 'login'):
-                continue
-            # hide activity on deleted datasets
-            if activity.scope == 'event' and \
-                    activity.target is None:
+            # hide generic event logs
+            if activity.scope == 'event':
                 continue
             # upload file events are mostly redundant to end users
             if activity.scope == "upload_file":
