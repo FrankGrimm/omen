@@ -340,17 +340,27 @@ class User(Base):
         return "USER:%s" % self.uid
 
     def history(self, dbsession, limit=20):
+        """
+        Gather relevant activity elements to display in the feed on the homepage.
+        """
         user_history = Activity.user_history(dbsession, self, limit=limit)
         result_history = []
 
         for activity in user_history:
             if activity is None:
                 continue
+            # hides login events
             if activity.scope == 'event' and \
                     (activity.content is None or activity.content == 'login'):
                 continue
+            # hide activity on deleted datasets
+            if activity.scope == 'event' and \
+                    activity.target is None:
+                continue
+            # upload file events are mostly redundant to end users
             if activity.scope == "upload_file":
                 continue
+            # hides imports that did not affect the dataset
             if activity.scope == "import_complete" and \
                     activity.content is not None and \
                     activity.content == "total: 0, merged: 0, skipped: 0":
