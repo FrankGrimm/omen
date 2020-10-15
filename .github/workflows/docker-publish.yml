@@ -95,7 +95,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Push image (prod->dockerhub)
         run: |
-          IMAGE_ID=frankgrimm/omen-prod:tagname
+          IMAGE_ID=frankgrimm/omen-prod
           
           # Change all uppercase to lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
