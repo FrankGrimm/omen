@@ -1358,3 +1358,43 @@ ul.split_acl {
     max-width: max-content;
     align-content: center;
 }
+
+.comments_modal_text {
+    font-size: medium;
+}
+
+.ds_header_btns {
+    display: flex;
+    justify-content: end;
+    height: max-content;
+}
+
+.icon-badge {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+}
+
+#comments_modal_content {
+    margin-bottom: 1em;
+}
+
+.comment_header {
+    display: flex;
+    padding: 0.2em;
+    margin: 0.1em 1em 0.1em 0.5em;
+    width: 100%;
+}
+.comment_header > span {
+    margin-right: 1em;
+}
+
+.comment_created {
+    font-style: italic;
+    color: #515151;
+}
+
+.comment_action_delete {
+    display: inline;
+    margin-left: auto;
+}

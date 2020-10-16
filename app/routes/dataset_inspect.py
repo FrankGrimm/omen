@@ -12,6 +12,9 @@ import app.lib.config as config
 from app.web import app, BASEURI, db
 from collections import defaultdict
 
+from app.routes.dataset import handle_comment_action
+from app.lib.models.comments import Comments
+
 VALID_INSPECT_FILTERS = {
         "curated": "Curated",
         "uncurated": "Uncurated",
@@ -243,6 +246,10 @@ def inspect_dataset(dsid=None):
         if inspect_action_result is not None:
             return inspect_action_result
 
+        new_comment_result = handle_comment_action(dbsession, session_user, cur_dataset)
+        if new_comment_result is not None:
+            return new_comment_result
+
         df, annotation_columns, results = cur_dataset.annotations(dbsession,
                                                                   foruser=db.User.system_user(dbsession),
                                                                   page=pagination.page,
@@ -258,6 +265,9 @@ def inspect_dataset(dsid=None):
 
         pagination_elements = get_pagination_elements(pagination, results, pagination_size=5)
 
+        comments = Comments.fortarget(dbsession,
+                                      cur_dataset.activity_target(),
+                                      session_user)
         if inspect_update_sample(req_sample, cur_dataset, ctx_args, df):
             template_name = "dataset_inspect_row.html"
 
@@ -265,12 +275,13 @@ def inspect_dataset(dsid=None):
                                df=df,
                                pagination=pagination,
                                results=results,
+                               comments=comments,
                                # tagstates=tagstates,
                                annotation_columns=annotation_columns,
                                pagination_elements=pagination_elements,
                                ds_splits=cur_dataset.defined_splits(dbsession),
                                ds_filters=ds_filters,
                                valid_filters=VALID_INSPECT_FILTERS,
-                               user_roles=cur_dataset.get_roles(dbsession, session_user),
+                               userroles=cur_dataset.get_roles(dbsession, session_user),
                                **ctx_args
                                )

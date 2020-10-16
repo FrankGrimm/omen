@@ -14,6 +14,7 @@ import numpy as np
 
 from app.lib.viewhelpers import login_required, get_session_user
 from app.web import app, BASEURI, db
+from app.lib.models.comments import Comments
 
 TAGORDER_ACTIONS = ["update_taglist", "rename_tag", "delete_tag", "move_tag_down", "move_tag_up"]
 
@@ -53,7 +54,7 @@ def download(dsid=None):
 def show_datasets(dsid=None):
     with db.session_scope() as dbsession:
 
-        userobj = db.User.by_id(dbsession, session['user'])
+        userobj = get_session_user(dbsession)
 
         my_datasets = db.my_datasets(dbsession, session['user'])
         access_datasets = db.accessible_datasets(dbsession, session['user'])
@@ -277,6 +278,47 @@ def editdataset_post_actions(editmode, dbsession, userobj, dataset):
     return editmode
 
 
+def handle_comment_action(dbsession, userobj, dataset):
+    targetaction = None
+    if request.json is not None and request.json.get("action", "") in ["add_comment", "delete_comment"]:
+        targetaction = request.json.get("action", "")
+
+    if targetaction is not None:
+        if targetaction == "add_comment":
+            comment_text = request.json.get("text", "")
+
+            target = dataset.activity_target()
+            if len(comment_text) > 0:
+                Comments.comment(dbsession,
+                                 owner=userobj,
+                                 target=target,
+                                 scope=request.json.get("scope", "comment_note"),
+                                 text=comment_text)
+        elif targetaction == "delete_comment":
+            delete_id = int(request.json.get("comment_id", ""))
+
+            comments = Comments.fortarget(dbsession,
+                                          dataset.activity_target(),
+                                          userobj)
+
+            for comment in comments:
+                if comment.entity.event_id == delete_id and comment.owned:
+                    comment.delete(dbsession)
+
+        dbsession.commit()
+        dbsession.flush()
+
+        comments = Comments.fortarget(dbsession,
+                                      dataset.activity_target(),
+                                      userobj)
+
+        return render_template("dataset_comments.html",
+                               dataset=dataset,
+                               session_user=userobj,
+                               comments=comments)
+    return None
+
+
 def editdataset_form_action_metadata(dataset, formaction):
     if formaction == 'change_name':
         dsname = request.form.get('dataset_name', None)
@@ -429,6 +471,30 @@ def dataset_create_handle_upload(dbsession, dataset, userobj):
     return preview_df, import_alerts, has_upload_content, can_import
 
 
+@app.route(BASEURI + "/dataset/<dsid>/comments", methods=['GET', 'POST'])
+@login_required
+def dataset_comments(dsid=None):
+    with db.session_scope() as dbsession:
+        dataset = None
+        try:
+            session_user = get_session_user(dbsession)
+            dataset = db.dataset_by_id(dbsession, dsid, user_id=session_user.uid)
+
+            comments = Comments.fortarget(dbsession,
+                                          dataset.activity_target(),
+                                          session_user)
+
+            return render_template("dataset_comments.html",
+                                   dataset=dataset,
+                                   session_user=session_user,
+                                   comments=comments)
+
+            # pylint: disable=bare-except
+        except:  # noqa: E722
+            flash("Dataset not found or access denied", "error")
+            return abort(404, description="Dataset not found or access denied")
+
+
 @app.route(BASEURI + "/dataset/<dsid>/edit", methods=['GET', 'POST'])
 @app.route(BASEURI + "/dataset/create", methods=['GET', 'POST'])
 @login_required
@@ -449,7 +515,7 @@ def new_dataset(dsid=None):
             flash("Dataset not found or access denied", "error")
             return abort(404, description="Dataset not found or access denied")
 
-        userobj = db.User.by_id(dbsession, session['user'])
+        userobj = get_session_user(dbsession)
         if dataset.owner is None:
             dataset.owner = userobj
 
@@ -460,6 +526,10 @@ def new_dataset(dsid=None):
         if request.method == 'POST':
             editmode = editdataset_post_actions(editmode, dbsession, userobj, dataset)
             formaction_result = editdataset_form_actions(dbsession, dataset, userobj)
+
+            new_comment_result = handle_comment_action(dbsession, userobj, dataset)
+            if new_comment_result is not None:
+                return new_comment_result
 
             if formaction_result is not None \
                     and not isinstance(formaction_result, list) \
@@ -508,6 +578,12 @@ def new_dataset(dsid=None):
         if editmode == "spliteditor":
             template = "split_editor.html"
 
+        comments = None
+        if editmode not in ['tageditor', 'spliteditor']:
+            comments = Comments.fortarget(dbsession,
+                                          dataset.activity_target(),
+                                          userobj)
+
         return render_template(template,
                                dataset=dataset,
                                editmode=editmode,
@@ -520,4 +596,5 @@ def new_dataset(dsid=None):
                                can_import=can_import,
                                has_upload_content=has_upload_content,
                                sample_stats=dataset.get_overview_statistics(dbsession),
-                               userroles=dataset.get_roles(dbsession, userobj))
+                               userroles=dataset.get_roles(dbsession, userobj),
+                               comments=comments)

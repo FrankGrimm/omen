@@ -27,7 +27,7 @@ function initMarkdownEditors() {
             toolbar: mdeToolbar
         };
         const mde = new SimpleMDE(mdeOptions);
-        window.mde = mde;
+        textarea.mde = mde;
     });
 }
 
@@ -122,14 +122,16 @@ function initSidebar() {
     });
 }
 
+function initMarkdownElement(elem) {
+    const mdcontent = elem.textContent.trim();
+    const mdconverted = marked(mdcontent);
+    elem.innerHTML = mdconverted;
+}
+
 function initMarkdownContent() {
     const mdTargets = [".description_modal_text"];
     mdTargets.forEach((mdTarget) => {
-        document.querySelectorAll(mdTarget).forEach((elem) => {
-            const mdcontent = elem.textContent.trim();
-            const mdconverted = marked(mdcontent);
-            elem.innerHTML = mdconverted;
-        });
+        document.querySelectorAll(mdTarget).forEach(initMarkdownElement);
     });
 }
 
@@ -195,6 +197,149 @@ function initAlerts() {
     });
 }
 
+function initCommenting() {
+    const commentContent = document.getElementById("comment_modal_content");
+    const newcommentSubmit = document.getElementById("newcomment_send");
+
+    if (!commentContent || !newcommentSubmit) { 
+        return;
+    }
+    
+    const newcommentScope = document.getElementById("newcomment_scope");
+    const newcommentEditor = document.getElementById("newcomment");
+    
+    function scrollToLatestComment() {
+        const commententries = $(".comment_entry:last");
+        if (commententries && commententries.length) {
+            commententries[0].scrollIntoView();
+        }
+    }
+    // automatically scroll to the last comment
+    $('#dsCommentsModal').on('shown.bs.modal', scrollToLatestComment);
+
+    function initCommentDeleteButton(btn) {
+        btn.addEventListener("click", function() {
+            const commentTarget = newcommentSubmit.dataset.target;
+            
+            const deleteCommentPayload = {
+                "action": "delete_comment",
+                "target": commentTarget,
+                "comment_id": btn.dataset.commentid
+            };
+
+            commentContent.style.opacity = "0.5";
+            $(commentContent.parentNode.querySelector(".ajax-loading")).show();
+
+            fetch(window.location.href, {
+                method: 'POST',
+                mode: 'cors',
+                cache: 'no-cache',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                redirect: 'follow',
+                referrerPolicy: 'no-referrer',
+                body: JSON.stringify(deleteCommentPayload) 
+            })
+            .then(response => response.text())
+            .then(deleteCommentResponse => {
+                console.log("comment delete");
+                commentContent.style.opacity = "1.0";
+                $(commentContent.parentNode.querySelector(".ajax-loading")).hide();
+                
+                commentContent.innerHTML = deleteCommentResponse;
+                updateCommentElements();
+
+                // empty the comment editor
+                newcommentEditor.mde.value("");
+            }).catch((err) => {
+                console.error(err);
+                commentContent.style.opacity = "1.0";
+                $(commentContent.parentNode.querySelector(".ajax-loading")).hide();
+            });
+        });
+    }
+
+    function updateCommentElements() {
+        document.querySelectorAll(".comment_text").forEach(initMarkdownElement);
+        document.querySelectorAll(".comment_action_delete").forEach(initCommentDeleteButton);
+        scrollToLatestComment();
+        if (document.getElementById("comments_counter_badge")) {
+            const commentcount = document.querySelectorAll(".comment_text").length;
+            document.getElementById("comments_counter_badge").textContent = "" + commentcount;
+        }
+    }
+
+    updateCommentElements();
+
+    newcommentEditor.parentNode.querySelector(".CodeMirror").style.minHeight = "4em";
+    newcommentEditor.parentNode.querySelector(".CodeMirror").style.height= "4em";
+
+    newcommentEditor.mde.codemirror.on("change", function(){
+        // update editor hide dynamically
+        const mdeEditor = newcommentEditor.parentNode.querySelector(".CodeMirror");
+        mdeEditor.style.height = (Math.max(4, newcommentEditor.mde.value().split("\n").length + 1) + 3) + "em";
+        
+        // enable or disable sending if there is content in the editor
+        const currentvalue = newcommentEditor.mde.value().trim();
+        if (currentvalue) {
+            newcommentSubmit.classList.remove("disabled");
+        } else {
+            newcommentSubmit.classList.add("disabled");
+        }
+    });
+
+    newcommentSubmit.addEventListener("click", function(evt) {
+        const commentTarget = newcommentSubmit.dataset.target;
+        if (!commentTarget) {
+            console.error("no target in element data");
+            return;
+        }
+
+        const newcommentPayload = {
+            "action": "add_comment",
+            "target": commentTarget,
+            "scope": newcommentScope.value,
+            "text": newcommentEditor.mde.value(),
+        }
+
+        commentContent.style.opacity = "0.5";
+        $(commentContent.parentNode.querySelector(".ajax-loading")).show();
+
+        fetch(window.location.href, {
+            method: 'POST',
+            mode: 'cors',
+            cache: 'no-cache',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            redirect: 'follow',
+            referrerPolicy: 'no-referrer',
+            body: JSON.stringify(newcommentPayload) 
+        })
+        .then(response => response.text())
+        .then(newcommentResponse => {
+            console.log("comment added", newcommentResponse);
+            commentContent.style.opacity = "1.0";
+            $(commentContent.parentNode.querySelector(".ajax-loading")).hide();
+            
+            commentContent.innerHTML = newcommentResponse;
+            updateCommentElements();
+
+            // empty the comment editor
+            newcommentEditor.mde.value("");
+        }).catch((err) => {
+            console.error(err);
+            commentContent.style.opacity = "1.0";
+            $(commentContent.parentNode.querySelector(".ajax-loading")).hide();
+        });
+    });
+
+
+}
+
 window.addEventListener('DOMContentLoaded', (event) => {
 
     initSidebar();
@@ -206,5 +351,6 @@ window.addEventListener('DOMContentLoaded', (event) => {
     initMarkdownEditors();
     initMarkdownContent();
     initAlerts();
+    initCommenting();
 
 });
