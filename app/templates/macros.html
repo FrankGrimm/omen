@@ -38,11 +38,61 @@
     </div>
 {%- endmacro %}
 
+{% macro render_comment_modal(modal_id, target, modal_title="Comments") -%}
+
+<div class="btn btn-light btn-ds-comments" data-toggle="modal" data-target="#dsCommentsModal">
+    <i class="mdi mdi-chat-outline"></i> {% if comments|length > 0 %}<span class="badge badge-dark icon-badge" id="comments_counter_badge">{{ comments|length }}</span>{% endif %} <span class="sr-only">comments</span>
+</div>
+
+<div class="modal fade comments_modal" id="{{ modal_id }}" tabindex="-1" role="dialog" aria-labelledby="{{modal_id}}Label" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+          <h5 class="modal-title" id="{{ modal_id }}Label">{{ modal_title }}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body comments_modal_text">
+          <div class="row">
+              <div class="col-12">
+                  <div class="ajax-loading" style="display: none;">
+                      <img src="{{ url_for("static", filename="img/loading.gif") }}" alt="updating" />
+                  </div>
+                  <ul class="list-group" id="comment_modal_content">
+                      {% include "dataset_comments.html" with context %}
+                  </ul>
+              </div>
+          </div>
+          <div class="row">
+
+              <div class="col-12">
+                  <textarea id="newcomment" autocomplete="off" name="newcomment" cols="40" rows="1" maxlength="500" class="form-control with-markdown" aria-describedby="newcommentHelpBlock" required="required"></textarea> 
+
+                  <div class="form-group">
+                      <select id="newcomment_scope" name="newcomment_scope" autocomplete="off">
+                          <option value="comment_public" selected>Add comment</option>
+                          <option value="comment_note">Add private note</option>
+                      </select>
+                      <div class="btn btn-sm disabled" data-target="{% if target and target.activity_target %}{{ target.activity_target() }}{% endif %}" id="newcomment_send">Send</div>
+                  </div>
+              </div>
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{%- endmacro %}
+
 {% macro render_description_modal(modal_id, description, modal_title="Description") -%}
 {% if description %}
 
 <div class="modal fade description_modal" id="{{ modal_id }}" tabindex="-1" role="dialog" aria-labelledby="{{modal_id}}Label" aria-hidden="true">
-  <div class="modal-dialog" role="document">
+  <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
           <h5 class="modal-title" id="{{ modal_id }}Label">{{ modal_title }}</h5>

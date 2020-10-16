@@ -2,14 +2,24 @@
 
 {% block body %}
 <div class="row">
-    <h1 class="col-12">{% block page_title %}Dataset {{ dataset.get_name() }}{% endblock %}
-    {% if dataset.get_description() != "" %}<button class="btn btn-light btn-ds-description" data-toggle="modal" data-target="#dsDescriptionModal">
-        <i class="mdi mdi-information-outline"></i> info
-    </button>{% endif %}
-</h1>
+    <h1 class="col-8">
+        {% block page_title %}Dataset {{ dataset.get_name() }}{% endblock %}
+    </h1>
+    <div class="col-4 ml-auto ds_header_btns">
+    <div class="btn-group">
+    {% if dataset.get_description() != "" %}<div class="btn btn-light btn-ds-description" data-toggle="modal" data-target="#dsDescriptionModal">
+        <i class="mdi mdi-information-outline"></i> <span class="sr-only">info</span>
+    </div>{% endif %}
+    {% if userroles and ('curator' in userroles) or ('owner' in userroles) %}
+        {{ macros.render_comment_modal("dsCommentsModal", dataset) }}
+    {% endif %}
+    </div>
+    </div>
 </div>
 
-{% if dataset and dataset.get_description() != "" %}{{ macros.render_description_modal("dsDescriptionModal", dataset.get_description()) }}{% endif %}
+{% if dataset %}
+{% if dataset.get_description() != "" %}{{ macros.render_description_modal("dsDescriptionModal", dataset.get_description()) }}{% endif %}
+{% endif %}
 {% block pagebody %}
 {% endblock %}
 {% endblock %}

@@ -1,12 +1,12 @@
 """
 Model for generic activities (e.g. change events, comments).
 """
+import logging
+import json
+
 from sqlalchemy import Column, Integer, String, desc, func, ForeignKey, or_
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import DateTime
-
-import logging
-import json
 
 from app.lib.database_internals import Base
 import app.lib.database as db
@@ -37,12 +37,9 @@ class Activity(Base):
 
         if self.target.startswith(db.User.activity_prefix()):
             return db.User.by_id(dbsession, int(self.target[len(db.User.activity_prefix()):]), no_error=True)
-        elif self.target.startswith(db.Dataset.activity_prefix()):
+        if self.target.startswith(db.Dataset.activity_prefix()):
             return db.Dataset.by_id(dbsession, int(self.target[len(db.Dataset.activity_prefix()):]), no_error=True)
-        else:
-            return "unknown target %s" % self.target
-
-        return None
+        return "unknown target %s" % self.target
 
     @staticmethod
     def user_history(dbsession, owner, scope_in=None, limit=None):
@@ -118,7 +115,7 @@ class Activity(Base):
         if scope_in is not None and len(scope_in) > 0:
             qry = qry.filter(Activity.scope.in_(scope_in))
 
-        qry = qry.order_by(desc(Activity.created))
+        qry = qry.order_by(desc(Activity.event_id))
         return qry.all()
 
     @staticmethod

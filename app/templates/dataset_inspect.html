@@ -29,7 +29,7 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
                     <div class="dataset_inspect_meta">
                         <span class="dataset_inspect_meta_label">Owner:</span> <span class="dataset_inspect_meta_value">{{ dataset.owner.get_name() }}</span><br />
                         <span class="dataset_inspect_meta_label">Fields:</span> <span class="dataset_inspect_meta_value">{{ ", ".join(df.columns) }}</span><br />
-                        <span class="dataset_inspect_meta_label">Access Roles:</span> <span class="dataset_inspect_meta_value">{{ user_roles|join(", ") }}</span><br />
+                        <span class="dataset_inspect_meta_label">Access Roles:</span> <span class="dataset_inspect_meta_value">{{ userroles|join(", ") }}</span><br />
                         <span class="dataset_inspect_meta_label">Work Packages:</span> <span class="dataset_inspect_meta_value">{{ ds_splits.keys()|length }}</span>
                     </div>
                 </div>
