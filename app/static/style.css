@@ -1398,3 +1398,7 @@ ul.split_acl {
     display: inline;
     margin-left: auto;
 }
+
+.feed_comment {
+    margin: 0;
+}

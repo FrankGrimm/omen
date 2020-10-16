@@ -62,6 +62,10 @@
                 Managed work packages for dataset <span class="index_activity_target">{{ target.get_name() }}</span>.
                 {% elif activity.scope == "bulk_action" %}
                 Curated annotations in dataset <span class="index_activity_target">{{ target.get_name() }}</span>.
+                {% elif activity.scope == "comment_note" %}
+                Added a private note to <span class="index_activity_target">{{ target.get_name() }}</span>.
+                {% elif activity.scope == "comment_public" %}
+                Commented on <span class="index_activity_target">{{ target.get_name() }}</span>: <blockquote class="with_markdown feed_comment">{{ activity.content }}</blockquote>
                 {% else %}
                 Activity (owner: {{activity.owner}}, scope: {{ activity.scope }}, target: {{ target }})
                 {% endif %}
