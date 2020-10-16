@@ -6,7 +6,7 @@ import logging
 
 import numpy as np
 
-
+# pylint: disable=too-many-return-statements
 def get_kappa_interpretation(kappa):
     if kappa is None or np.isnan(kappa):
         return "Invalid Value"
@@ -92,7 +92,7 @@ def fleiss_kappa(df, tags, exclude_insufficient=False, filter_target=None):
     f_kappa = np.round(f_kappa, 4)
     f_kappa_text = get_kappa_interpretation(f_kappa)
 
-    logging.debug("Fleiss' Kappa %s (%s)", f_kappa, f_kappa_text)
+    logging.debug("Fleiss' Kappa %s (%s), n=%s", f_kappa, f_kappa_text, df.shape[0])
 
     if np.isnan(f_kappa):
         f_kappa = None
@@ -101,5 +101,6 @@ def fleiss_kappa(df, tags, exclude_insufficient=False, filter_target=None):
     return {
             "type": "fleiss",
             "kappa": f_kappa,
-            "interpretation": f_kappa_text
+            "interpretation": f_kappa_text,
+            "n": df.shape[0]
             }

@@ -15,7 +15,8 @@ from app import __version__ as app_version
 
 BASEURI = config.get("base_uri", "/omen") or "/omen"
 flask_app = app = Flask(__name__, static_url_path=BASEURI + "/static")
-app.secret_key = config.get("flask_secret", raise_missing=True)
+
+app.secret_key = config.get_flask_secret()
 
 logging.basicConfig(level=config.get("log_level", "DEBUG").upper(),
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',

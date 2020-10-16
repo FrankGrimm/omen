@@ -701,32 +701,32 @@ class Dataset(Base):
         if not by_tag:
             # return overall IAA
             return iaa.fleiss_kappa(df, tags, exclude_insufficient=exclude_insufficient)
-        else:
-            iaa_result = {}
-            iaa_result['__overall'] = iaa.fleiss_kappa(df, tags, exclude_insufficient=False)
 
-            for tag in tags:
-                not_tag = "!%s" % tag
-                cur_tags = [tag, not_tag]
-                cur_df = df.copy()
+        iaa_result = {}
+        iaa_result['__overall'] = iaa.fleiss_kappa(df, tags, exclude_insufficient=False)
 
-                cur_df.loc[cur_df.anno_tag != tag, 'anno_tag'] = not_tag
+        for tag in tags:
+            not_tag = "!%s" % tag
+            cur_tags = [tag, not_tag]
+            cur_df = df.copy()
 
-                cur_df = cur_df.groupby(["sample_index", "anno_tag"], as_index=False)[["cnt"]].sum()
+            cur_df.loc[cur_df.anno_tag != tag, 'anno_tag'] = not_tag
 
-                cols = ["sample_index", "anno_tag"]
-                midf = pd.MultiIndex.from_product([cur_df.sample_index, [tag, not_tag]], names=cols)
-                cur_df = cur_df.reset_index()
-                cur_df = cur_df.set_index(cols).reindex(midf, fill_value=0).reset_index().drop(columns=["index"])
-                cur_df.drop_duplicates(inplace=True)
+            cur_df = cur_df.groupby(["sample_index", "anno_tag"], as_index=False)[["cnt"]].sum()
 
-                logging.debug("FLEISS %s\n%s\n%s", tag, cur_df, cur_df.shape)
-                iaa_result[tag] = iaa.fleiss_kappa(cur_df,
-                                                   cur_tags,
-                                                   filter_target=tag,
-                                                   exclude_insufficient=False)
+            cols = ["sample_index", "anno_tag"]
+            midf = pd.MultiIndex.from_product([cur_df.sample_index, [tag, not_tag]], names=cols)
+            cur_df = cur_df.reset_index()
+            cur_df = cur_df.set_index(cols).reindex(midf, fill_value=0).reset_index().drop(columns=["index"])
+            cur_df.drop_duplicates(inplace=True)
 
-            return iaa_result
+            logging.debug("FLEISS %s\n%s\n%s", tag, cur_df, cur_df.shape)
+            iaa_result[tag] = iaa.fleiss_kappa(cur_df,
+                                               cur_tags,
+                                               filter_target=tag,
+                                               exclude_insufficient=False)
+
+        return iaa_result
 
     def annotations(self, dbsession, page=1, page_size=50, foruser=None,
                     user_column=None, restrict_view=None, only_user=False, with_content=True,

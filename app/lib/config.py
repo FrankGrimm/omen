@@ -16,6 +16,7 @@ import json
 import sys
 import os
 import logging
+from base64 import b64encode
 
 CFG_FILENAME = os.environ.get("OMEN_CONFIG_FILENAME", "./config.json")
 
@@ -75,3 +76,16 @@ def store(key, val):
     cfg = load_config()
     cfg[key] = val
     store_config(cfg)
+
+
+def get_flask_secret():
+    flask_secret = get("flask_secret", None, raise_missing=False)
+    if flask_secret is not None and flask_secret != "":
+        return flask_secret
+
+    # auto-generate flask_secret if not available
+    generated_secret = b64encode(os.urandom(32)).decode("utf-8")
+    cfg = load_config()
+    cfg['flask_secret'] = generated_secret
+    store_config(cfg)
+    return generated_secret
