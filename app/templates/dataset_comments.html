@@ -2,13 +2,15 @@
 {% set comment = comment.to_json() %}
 <li class="list-group-item comment_entry {{comment.scope}}">
     <div class="comment_header">
-        {% if comment.scope == "comment_note" %}
-        <i class="mdi mdi-note-text-outline"></i>
-        {% else %}
-        <i class="mdi mdi-chat-outline"></i>
-        {% endif %}
+        <span class="comment_owner badge badge-dark">
+            {% if comment.scope == "comment_note" %}
+            <i class="mdi mdi-note-text-outline"></i>
+            {% else %}
+            <i class="mdi mdi-chat-outline"></i>
+            {% endif %}
+            {{comment.owner}}
+        </span>
         <span class="comment_created">{{comment.created}}</span>
-        <span class="comment_owner">{{comment.owner}}</span>
         {% if comment.isowned %}
         <div data-commentid="{{comment.id}}" class="btn btn-sm comment_action_delete" label="Delete comment"><i class="mdi mdi-delete-outline"> </i></div>
         {% endif %}
