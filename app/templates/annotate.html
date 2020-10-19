@@ -51,14 +51,15 @@ Annotate &quot;<span class="annometa">{{ task.name }}</span>&quot;
             {% endif %}
             <blockquote class="sampletext {% if additional_content %}sampletext_withadditional{% else %}sampletext_noadditional{% endif %}">
                 <strong>sample</strong>
-                <span>{{sample_content}}</span>
+                <span>{{sample.content}}</span>
             </blockquote>
         </div>
     </div>
 </div>
 <div class="row">
     <div class="col-12 d-flex justify-content-center">
-        <span class="sample_metadata">ID: {{sample_id}}</span>
+        <span class="sample_metadata">ID: {{sample.sample}}</span>
+        <span class="sample_metadata">WP: {{sample.split_id}}</span>
 
     </div>
 </div>

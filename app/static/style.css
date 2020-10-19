@@ -277,6 +277,10 @@ ul.flashes li {
     margin: 0.5em 0;
 }
 
+h1 {
+    font-size: 26pt;
+}
+
 h1, h2, h3, h4 {
     margin-bottom: 0.8em;
     margin-top: 0.5em;
