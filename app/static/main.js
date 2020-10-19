@@ -337,7 +337,27 @@ function initCommenting() {
         });
     });
 
+}
 
+function initTabPages() {
+    $('#ds-tabslist a.tablink').on('click', function (e) {
+        e.preventDefault();
+        const $tgt = $(this);
+        $tgt.tab('show');
+        // make sure tab navigation is added to history
+        const targethash = ($tgt.attr('href') || $tgt.data("target")).substr(1);
+        location.hash = targethash;
+        
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+        return false;
+    });
+    
+    // restore tab specified in hash if available
+    if (location.hash && location.hash !== '') {
+        const target_tablink = $('a[data-target="' + location.hash + '"]');
+        target_tablink.tab('show');
+    }
 }
 
 window.addEventListener('DOMContentLoaded', (event) => {
@@ -351,6 +371,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
     initMarkdownEditors();
     initMarkdownContent();
     initAlerts();
+    initTabPages();
     initCommenting();
 
 });

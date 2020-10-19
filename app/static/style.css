@@ -1418,3 +1418,14 @@ ul.split_acl {
 .comment_entry {
     padding: 0.5em;
 }
+
+.ds-tabslist-container {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.ds-tabslist-container > .card {
+    width: 100%;
+    min-height: 80vh;
+}

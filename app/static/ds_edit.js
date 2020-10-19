@@ -531,22 +531,6 @@ function initUserListEditor() {
     document.querySelectorAll(".adduser_btn").forEach(initUserListButton);
 }
 
-function initTabPages() {
-    $('#ds-edit-tabslist a').on('click', function (e) {
-        e.preventDefault();
-        console.log($(this));
-        $(this).tab('show');
-        // make sure tab navigation is added to history
-        location.hash = $(e.target).attr('href').substr(1);
-    });
-    
-
-    // restore tab specified in hash if available
-    if (location.hash && location.hash !== '') {
-        $('a[href="' + location.hash + '"]').tab('show');
-    }
-}
-
 document.addEventListener("DOMContentLoaded",function(){
 
     initializeTagEditor();
@@ -608,7 +592,6 @@ document.addEventListener("DOMContentLoaded",function(){
     initLabelAttributes();
     initOptions();
     initUserListEditor();
-    initTabPages();
 
 });
 

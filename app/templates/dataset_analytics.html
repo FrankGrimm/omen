@@ -1,0 +1,55 @@
+
+<div class="row df_inspect_overview">
+    <div class="accordion col-12" id="df_overview_collapse">
+
+        <div class="card">
+            <div class="card-header slim-card-header">
+                <h5 class="mb-0">
+                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#df_overview_collapse_b"> 
+                        <i class="fas fa-angle-down"></i> Metadata
+                    </button>
+                </h5>
+            </div>
+
+            <div id="df_overview_collapse_b" class="collapse hide" data-parent="#df_overview_collapse">
+                <div class="card-body">
+
+                    <div class="dataset_inspect_meta">
+                        <span class="dataset_inspect_meta_label">Owner:</span> <span class="dataset_inspect_meta_value">{{ dataset.owner.get_name() }}</span><br />
+                        <span class="dataset_inspect_meta_label">Fields:</span> <span class="dataset_inspect_meta_value">{{ ", ".join(df.columns) }}</span><br />
+                        <span class="dataset_inspect_meta_label">Access Roles:</span> <span class="dataset_inspect_meta_value">{{ userroles|join(", ") }}</span><br />
+                        <span class="dataset_inspect_meta_label">Work Packages:</span> <span class="dataset_inspect_meta_value">{{ ds_splits.keys()|length }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+</div>
+
+<div class="row df_inspect_overview">
+    <h5 class="col-12">Annotation Overview</h5>
+</div>
+<div class="row df_inspect_overview">
+    <div id="overview-chart-holder row" class="col-12 col-md-6" style="">
+        <canvas id="overview-chart" style="position: relative; height: 40vh;"></canvas>
+    </div>
+    <div class="df_inspect_analysis_meta col-12 col-md-6">
+        <p>
+        <strong>Fleiss' Kappa:</strong> <span id="anno_fleiss_value">unavailable</span> <span id="anno_fleiss_text"></span> <br />
+        </p>
+        <p class="df_inspect_note">
+        Note that inter-annotator agreement only takes into account samples with annotations by at least 2 different users.
+        </p>
+    </div>
+</div>
+<div class="row df_inspect_overview">
+    <div class="overview-chart-controls col-12">
+        <span>Annotators: </span>
+        <div class="btn-group">
+            <button id="show_all_annotators" class="btn btn-light">All</button>
+            <button id="show_individual_annotators" class="btn btn-light">Individual</button>
+        </div>
+    </div>
+</div>

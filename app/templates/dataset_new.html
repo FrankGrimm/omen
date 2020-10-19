@@ -22,65 +22,52 @@
     {% endif %}
 </div>
 
-{% macro render_card_nav(target_id, tab_text, tab_selected=false, tab_disabled=false, icon="") -%}
-<li class="nav-item">
-    <a class="nav-link tablink {% if tab_selected %}active{% endif %} {% if tab_disabled %}disabled{% endif %}" href="#{{ target_id }}" role="tab" aria-controls="{{ tab_text }}" aria-selected="{{ tab_selected }}">
-        {% if icon != "" %}
-        <i class="mdi mdi-{{icon}}"></i>
-        {% endif %}
-        {{ tab_text }}
-    </a>
-</li>
-{%- endmacro %}
+<div class="row ds-tabslist-container">
+    <div class="card">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs" id="ds-tabslist" role="tablist">
 
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <ul class="nav nav-tabs card-header-tabs" id="ds-edit-tabslist" role="tablist">
-
-                    {{ render_card_nav("dsgeneral", "General", true, icon="tune") }}
-                    {{ render_card_nav("taskdefinition", "Task Definition", false, not dataset and not dataset.has_content(), icon="tag-multiple") }}
-                    {{ render_card_nav("workpackages", "Work Packages", false, not dataset and not dataset.has_content(), icon="package-variant") }}
-                    {{ render_card_nav("aclsettings", "Access Management", false, not dataset and not dataset.has_content(), icon="security") }}
-                    {{ render_card_nav("moresettings", "More", false, icon="cog") }}
-                </ul>
-            </div>
-            <div class="card-body">
-                <div class="tab-content mt-3">
-                    <div class="tab-pane active" id="dsgeneral" role="tabpanel">
-                        {% include "dataset_tab_general.html" with context %}
-                    </div>
-                    <div class="tab-pane" id="taskdefinition" role="tabpanel">
-                        {% include "dataset_tab_taskdef.html" with context %}
-                    </div>
-                    <div class="tab-pane" id="workpackages" role="tabpanel">
-                        {% include "dataset_tab_workpackages.html" with context %}
-                    </div>
-                    <div class="tab-pane" id="aclsettings" role="tabpanel">
-                        {% include "dataset_tab_acl.html" with context %}
-                    </div>
-
-                    <div class="tab-pane" id="moresettings" role="tabpanel">
-<div class="row">
-    <div class="col-12">
-        <h4>Delete Dataset</h4>
-        <p>
-        Warning: This completely deletes the current dataset (including all annotations) and <strong>cannot be undone</strong>.
-        </p>
-    <form method="post" id="form_delete_dataset" enctype="multipart/form-data" class="col-12">
-        <div class="input-group col-12">
-            <input type="hidden" name="action" value="delete_dataset" />
-            <input type="hidden" name="confirmation" id="confirmation" value="delete_dataset_unconfirmed" />
-            <button class="btn btn-danger" id="form_delete_dataset_confirm">
-                <i class="mdi mdi-trash-can"></i>&nbsp;Delete Now
-            </button>
+                {{ macros.render_card_nav("dsgeneral", "General", true, icon="tune") }}
+                {{ macros.render_card_nav("taskdefinition", "Task Definition", false, not dataset and not dataset.has_content(), icon="tag-multiple") }}
+                {{ macros.render_card_nav("workpackages", "Work Packages", false, not dataset and not dataset.has_content(), icon="package-variant") }}
+                {{ macros.render_card_nav("aclsettings", "Access Management", false, not dataset and not dataset.has_content(), icon="security") }}
+                {{ macros.render_card_nav("moresettings", "More", false, icon="cog") }}
+            </ul>
         </div>
-    </form>
+        <div class="card-body">
+            <div class="tab-content mt-3">
+                <div class="tab-pane active" id="dsgeneral" role="tabpanel">
+                    {% include "dataset_tab_general.html" with context %}
+                </div>
+                <div class="tab-pane" id="taskdefinition" role="tabpanel">
+                    {% include "dataset_tab_taskdef.html" with context %}
+                </div>
+                <div class="tab-pane" id="workpackages" role="tabpanel">
+                    {% include "dataset_tab_workpackages.html" with context %}
+                </div>
+                <div class="tab-pane" id="aclsettings" role="tabpanel">
+                    {% include "dataset_tab_acl.html" with context %}
+                </div>
+
+                <div class="tab-pane" id="moresettings" role="tabpanel">
+<div class="row">
+<div class="col-12">
+    <h4>Delete Dataset</h4>
+    <p>
+    Warning: This completely deletes the current dataset (including all annotations) and <strong>cannot be undone</strong>.
+    </p>
+<form method="post" id="form_delete_dataset" enctype="multipart/form-data" class="col-12">
+    <div class="input-group col-12">
+        <input type="hidden" name="action" value="delete_dataset" />
+        <input type="hidden" name="confirmation" id="confirmation" value="delete_dataset_unconfirmed" />
+        <button class="btn btn-danger" id="form_delete_dataset_confirm">
+            <i class="mdi mdi-trash-can"></i>&nbsp;Delete Now
+        </button>
     </div>
+</form>
+</div>
 </div>
 
-                    </div>
                 </div>
             </div>
         </div>
