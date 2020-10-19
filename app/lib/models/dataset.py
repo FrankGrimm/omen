@@ -446,6 +446,32 @@ class Dataset(Base):
                 split_list.add(split_id)
         return split_list
 
+    def get_split_progress(self, dbsession):
+        sql_raw = prep_sql("""
+        SELECT
+            dc.split_id,
+            COUNT(dc.sample_index) as sample_count,
+            COUNT(DISTINCT annos.sample_index) AS annotated_sample_count,
+            COUNT(DISTINCT annos.owner_id) AS annotators_count
+        FROM datasetcontent dc
+        LEFT OUTER JOIN annotations annos ON dc.dataset_id = annos.dataset_id AND dc.sample_index = annos.sample_index
+        LEFT OUTER JOIN users u ON u.uid = annos.owner_id
+        WHERE u.email <> 'SYSTEM'
+            AND dc.dataset_id = :datasetid
+        GROUP BY dc.split_id;
+        """.strip())
+
+        params = {
+                "datasetid": self.dataset_id,
+                }
+
+        logging.debug("DB_SQL_LOG %s %s", sql, params)
+        statement = sql.text(sql_raw)
+        sqlres = dbsession.execute(statement, params=params)
+        sqlres = [{column: value for column, value in rowproxy.items()} for rowproxy in sqlres]
+
+        return sqlres
+
     def get_roles(self, dbsession, user_obj, splitroles=True):
         if isinstance(user_obj, str):
             user_obj = int(user_obj)

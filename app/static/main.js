@@ -59,11 +59,15 @@ function initPopovers() {
     };
     
     const titled_links = document.querySelectorAll("a[title]");
-    const titled_buttons = document.querySelectorAll("button[title]");
-    const nav_items = document.querySelectorAll(".nav-item[title]");
     titled_links.forEach(addPopOvers)
+    const titled_buttons = document.querySelectorAll("button[title]");
     titled_buttons.forEach(addPopOvers)
+    const nav_items = document.querySelectorAll(".nav-item[title]");
     nav_items.forEach(addPopOvers)
+    const badges = document.querySelectorAll(".badge[title]");
+    badges.forEach(addPopOvers)
+    const progressbars = document.querySelectorAll(".progressbar[title]");
+    progressbars.forEach(addPopOvers)
 }
 
 function initSidebar() {

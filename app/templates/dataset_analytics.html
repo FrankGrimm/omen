@@ -53,3 +53,41 @@
         </div>
     </div>
 </div>
+
+{% set split_progress = dataset.get_split_progress(dbsession) %}
+<div class="row df_inspect_overview">
+    <h5 class="col-12">Work Packages</h5>
+</div>
+
+<ul class="row analytics_wp_list">
+    {% for split_info in split_progress %}
+    <li class="col-12">
+        {% set split_name = split_info.split_id or "uncategorized" %}
+        {% set split_percentage = 0.0 %}
+        {% if split_info.sample_count > 0 %}
+            {% set split_percentage = [((split_info.annotated_sample_count / split_info.sample_count) * 100.0)|int, 100]|min %}
+        {% endif %}
+        
+        <span class="analytics_wp_name"><i class="mdi mdi-package-variant"> </i> {{ split_name }}</span>
+    
+        <div class="analytics_annotator_info"><i class="mdi mdi-account-group-outline"></i> <span class="badge badge-dark icon-badge" title="{{ split_info.annotators_count }} annotators">{{ split_info.annotators_count }}</span> <span class="sr-only">annotators</span></div>
+
+        {% set split_progress_class = "bg-info" %}
+        {% if split_percentage >= 75 %}
+            {% set split_progress_class = "bg-success" %}
+        {% elif split_percentage >= 50 %}
+            {% set split_progress_class = "bg-info" %}
+        {% elif split_percentage >= 25 %}
+            {% set split_progress_class = "bg-warning" %}
+        {% else %}
+            {% set split_progress_class = "bg-danger" %}
+        {% endif %}
+        <div class="progress analytics_wp_progress">
+            <div class="progress-bar progress-bar-striped {{ split_progress_class }}" role="progressbar" title="{{ split_info.annotated_sample_count }} / {{ split_info.sample_count }}" style="width: {{ split_percentage }}%" aria-valuenow="{{ split_info.annotated_sample_count }}" aria-valuemin="0" aria-valuemax="{{ split_info.sample_count }}"></div>
+
+        </div>
+    </li>
+    {% else %}
+    <li class="col-12">No work packages defined for this dataset.</li>
+    {% endfor %}
+</ul>

@@ -273,6 +273,7 @@ def inspect_dataset(dsid=None):
 
         return render_template(template_name, dataset=cur_dataset,
                                df=df,
+                               dbsession=dbsession,
                                pagination=pagination,
                                results=results,
                                comments=comments,

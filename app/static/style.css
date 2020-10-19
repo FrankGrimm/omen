@@ -1429,3 +1429,46 @@ ul.split_acl {
     width: 100%;
     min-height: 80vh;
 }
+
+ul.analytics_wp_list {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+ul.analytics_wp_list > li {
+    margin: 0.2em 0;
+    padding: 0.5em;
+}
+
+.analytics_wp_name {
+    font-weight: bold;
+}
+
+.analytics_annotator_info {
+    display: inline-block;
+    height: 2.2em;
+    width: 3em;
+    position: relative;
+    font-size: smaller;
+    line-height: 1em;
+    margin-left: 1rem;
+}
+
+.analytics_wp_progress {
+    margin-top: 0.5em;
+}
+
+.analytics_wp_progress > .progress-bar {
+}
+
+.analytics_wp_progress > .progress-bar::after {
+    bottom: 0;
+    content: "";
+    display: block;
+    height: 15px;
+    left: 0;
+    position: absolute;
+    right: 0;
+    z-index: -1;
+}
