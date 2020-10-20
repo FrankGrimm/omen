@@ -58,9 +58,11 @@ def inject_globals():
         is_authenticated = True
 
     annotation_tasks = None
+    dataset_roles = {}
     with db.session_scope() as dbsession:
         if is_authenticated:
             annotation_tasks = db.annotation_tasks(dbsession, session['user'])
+            dataset_roles = db.dataset_roles(dbsession, session['user'])
 
     def calculate_votes(row, anno_columns):
         if row is None or anno_columns is None:
@@ -90,7 +92,8 @@ def inject_globals():
                 tasks=annotation_tasks,
                 calculate_votes=calculate_votes,
                 cur_year=datetime.utcnow().year,
-                app_version=app_version)
+                app_version=app_version,
+                dataset_roles=dataset_roles)
 
 
 @app.errorhandler(404)
