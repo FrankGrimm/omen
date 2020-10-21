@@ -5,119 +5,15 @@ Annotate &quot;<span class="annometa">{{ task.name }}</span>&quot;
 
 {% block pagebody %}
 
-{{ macros.render_progress(task, addclass="annoprogress") }}
-
-{% if all_done %}
-<div class="row">
-<div class="d-flex col-12">
-    <h3>Task complete!<h3>
+<div id="pagebody">
+{% include "annotate_body.html" with context %}
 </div>
-</div>
-
-<div class="row">
-<div class="d-flex col-12">
-    You have completely annotated this dataset or work package.</div>
-</div>
-</div>
-{% else %}
-
-<br />
-<div class="row d-flex-row">
-    <div class="sample_content_container">
-        <div class="sample_content_tagbtns">
-            <div class="btn-group" id="anno_actions">
-                {% if sample_prev %}
-                <a id="anno_nav_prev"class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_prev) }}" title="skip (previous)">
-                    <i class="mdi mdi-arrow-left"></i>
-                </a>
-                {% endif %}
-                {% if sample_next %}
-                <a id="anno_nav_next" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_next) }}" title="skip (next)">
-                    <i class="mdi mdi-arrow-right"></i>
-                </a>
-                {% endif %}
-            </div>
-
-            {% set add_classes = "btn-group-vertical" %}
-            {{ macros.render_tag_buttons(dataset, sample_next, votes, add_classes=add_classes) }}
-        </div>
-
-        <div class="sample_content_view">
-            {% if additional_content %}
-            <blockquote class="sample_additional_content">
-                <strong>{{additional_content_field}}</strong>
-                <span>{{ additional_content }}</span>
-            </blockquote>
-            {% endif %}
-            <blockquote class="sampletext {% if additional_content %}sampletext_withadditional{% else %}sampletext_noadditional{% endif %}">
-                <strong>sample</strong>
-                <span>{{sample.content}}</span>
-            </blockquote>
-        </div>
-    </div>
-</div>
-<div class="row">
-    <div class="col-12 d-flex justify-content-center">
-        <span class="sample_metadata">ID: {{sample.sample}}</span>
-        <span class="sample_metadata">WP: {{sample.split_id}}</span>
-
-    </div>
-</div>
-
-{% endif %}
-
-<br />
-<br />
 
 {% endblock %}
 
 {% block addscript %}
     <script>
-        $(document).ready(function() {
-
-            document.addEventListener("keydown", event => {
-                if (event.isComposing || event.keyCode === 229) {
-                    return;
-                }
-                console.log("kbd", event);
-                let $tgtid = null;
-
-                if (event.key === "ArrowRight") {
-                    $tgtid = 'anno_nav_next';
-                }
-                if (event.key === "ArrowLeft") {
-                    $tgtid = 'anno_nav_prev';
-                }
-                if (event.key === "R" || event.key === "r") {
-                    $tgtid = 'anno_nav_random';
-                }
-                let $tgtbtn = null;
-                if ($tgtid) {
-                    $tgtbtn = $("#" + $tgtid);
-                }
-                if (event.keyCode > 48 && event.keyCode <= 57) {
-                    let tagoffset = event.keyCode - 48 - 1;
-                    let tagcount = {{ dataset.get_taglist()|length }};
-                    if (tagoffset < tagcount) {
-                        $("a.btn").each(function() {
-                            let $this = $(this);
-                            if ($this.data("tagidx") == tagoffset) {
-                                $tgtbtn = $(this);
-                            }
-                        });
-                    }
-                }
-                if ($tgtbtn && $tgtbtn[0]) { 
-                    $($tgtbtn[0]).removeClass("btn-info");
-                    $($tgtbtn[0]).removeClass("btn-primary");
-                    $($tgtbtn[0]).removeClass("btn-success");
-                    $($tgtbtn[0]).removeClass("btn-light");
-                    $($tgtbtn[0]).addClass("btn-dark tag_current_choice");
-
-                    $tgtbtn[0].click();
-                }
-            });
-
-        });
+        const tagcount = {{ dataset.get_taglist()|length }};
     </script>
+    <script src="{{ url_for("static", filename="ds_annotate.js") }}"></script>
 {% endblock %}
