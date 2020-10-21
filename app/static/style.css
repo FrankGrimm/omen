@@ -1477,3 +1477,6 @@ ul.analytics_wp_list > li {
     z-index: -1;
 }
 
+ul.api_token_list {
+    list-style-type: none;
+}

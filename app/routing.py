@@ -12,6 +12,7 @@ import app.routes.user
 import app.routes.dataset
 import app.routes.dataset_inspect
 import app.routes.annotate
+import app.routes.api
 
 
 from app.web import app, BASEURI, db
