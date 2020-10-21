@@ -191,7 +191,11 @@ def annotate(dsid=None, sample_idx=None):
            "sample_idx" in request.args:
             all_done = False
 
-        return render_template("annotate.html", dataset=dataset,
+        template_name = "annotate.html"
+        if request.args.get("contentonly", None) is not None:
+            template_name = "annotate_body.html"
+
+        return render_template(template_name, dataset=dataset,
                                task=task,
                                tasks=annotation_tasks,
                                all_done=all_done,

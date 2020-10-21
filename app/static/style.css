@@ -1309,6 +1309,10 @@ nav-tabs .nav-link::before {
     font-style: italic;
 }
 
+.index_activity_owner {
+    font-style: italic;
+}
+
 .index_activity_detail {
     color: #333;
     font-family: "Courier New", Courier, monospace;
@@ -1472,3 +1476,4 @@ ul.analytics_wp_list > li {
     right: 0;
     z-index: -1;
 }
+

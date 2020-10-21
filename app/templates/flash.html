@@ -1,0 +1,28 @@
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="row">
+    <ul class="flashes col-md-12">
+    {% for category, message in messages %}
+        {% set alertcategory = "info" %}
+        {% if category=='error' %}
+            {% set alertcategory = "danger" %}
+        {% elif not category or category=='message'%}
+            {% set alertcategory = "info" %}
+        {%else%}
+            {% set alertcategory = category %}
+        {% endif %}
+        <li class="alert alert-dismissable fade show alert-{{ alertcategory }}" data-alertcategory="{{alertcategory}}">
+            {{ message }}
+            <button type="button" class="close alert-dismiss" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <div class="progress alert-timer">
+                <div class="progress-bar bg-{{ alertcategory }}" role="progressbar" style="width: 1%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </li>
+    {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+{% endwith %}
+

@@ -133,7 +133,7 @@ function initMarkdownElement(elem) {
 }
 
 function initMarkdownContent() {
-    const mdTargets = [".description_modal_text"];
+    const mdTargets = [".description_modal_text", ".feed_comment"];
     mdTargets.forEach((mdTarget) => {
         document.querySelectorAll(mdTarget).forEach(initMarkdownElement);
     });

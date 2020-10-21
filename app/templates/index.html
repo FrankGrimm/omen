@@ -44,30 +44,62 @@
       </div>
       <div class="col-12 col-lg-6">
         <h5>Latest activity:</h5>
+
+{% macro render_activity_target(activity, target) -%}
+{% if target %}
+    {% set targetlink = "" %}
+    {% if target.activity_prefix() == "DATASET:" %}
+    {% if dataset_roles and target.dataset_id|string in dataset_roles %}
+        {% set target_roles = dataset_roles[target.dataset_id|string] %}
+        {% if 'curator' in target_roles %}
+            {% set targetlink = url_for("inspect_dataset", dsid=target.dataset_id) %}
+        {% elif 'owner' in target_roles %}
+            {% set targetlink = url_for("dataset_new", dsid=target.dataset_id) %}
+        {% endif %}
+    {% endif %}
+    {% endif %}
+
+    {% if targetlink %}
+        <a class="index_activity_target" href="{{targetlink}}">{{ target.get_name() }}</a>
+    {% else %}
+        <span class="index_activity_target">{{ target.get_name() }}</span>
+    {% endif %}
+{% endif %}
+{%- endmacro %}
+        
         <ul id="index_user_history" class="list-group">
             {% for activity, target in user_history %}
             <li class="list-group-item index_activity">
                 <span class="index_activity_timestamp">{{ activity.formatted_create() }}</span>
+                {% if activity.owner %}
+                <span class="index_activity_owner">
+                    {% if activity.owner == session_user %}
+                    You
+                    {% else %}
+                    {{ activity.owner.get_name() }}
+                    {% endif %}
+                </span>
+                {% endif %}
                 {% if activity.scope == "uploaded_file" %}
-                Uploaded file <span class="index_activity_detail">{{ activity.content }}</span> for dataset <span class="index_activity_target">{{ target.get_name() }}</span>.
+                uploaded a file <span class="index_activity_detail">{{ activity.content }}</span> for dataset {{ render_activity_target(activity, target) }}.
                 {% elif activity.scope == "import_complete" %}
-                Data import for dataset <span class="index_activity_target">{{ target.get_name() }}</span> completed. <span class="index_activity_detail">{{ activity.content }}</span>
+                imported data for dataset {{ render_activity_target(activity, target) }} completed. <span class="index_activity_detail">{{ activity.content }}</span>
                 {% elif activity.scope == "update_option" %}
-                Updated configuration for dataset <span class="index_activity_target">{{ target.get_name() }}</span>.
+                updated configuration for dataset {{ render_activity_target(activity, target) }}.
                 {% elif activity.scope == "split_add_annotator" %}
-                Added annotator for work package in dataset <span class="index_activity_target">{{ target.get_name() }}</span>: {{ activity.content }}
+                added annotator for work package in dataset {{ render_activity_target(activity, target) }}: {{ activity.content }}
                 {% elif activity.scope == "split_remove_annotator" %}
-                Removed annotator from work package in dataset <span class="index_activity_target">{{ target.get_name() }}</span>: {{ activity.content }}
+                removed annotator from work package in dataset {{ render_activity_target(activity, target) }}: {{ activity.content }}
                 {% elif activity.scope == "split_edit" %}
-                Managed work packages for dataset <span class="index_activity_target">{{ target.get_name() }}</span>.
+                managed work packages for dataset {{ render_activity_target(activity, target) }}.
                 {% elif activity.scope == "bulk_action" %}
-                Curated annotations in dataset <span class="index_activity_target">{{ target.get_name() }}</span>.
+                curated annotations in dataset {{ render_activity_target(activity, target) }}.
                 {% elif activity.scope == "comment_note" %}
-                Added a private note to <span class="index_activity_target">{{ target.get_name() }}</span>.
+                added a private note to {{ render_activity_target(activity, target) }}.
                 {% elif activity.scope == "comment_public" %}
-                Commented on <span class="index_activity_target">{{ target.get_name() }}</span>: <blockquote class="with_markdown feed_comment">{{ activity.content }}</blockquote>
+                commented on {{ render_activity_target(activity, target) }}: <blockquote class="with_markdown feed_comment">{{ activity.content|trim }}</blockquote>
                 {% else %}
-                Activity (owner: {{activity.owner}}, scope: {{ activity.scope }}, target: {{ target }})
+                activity (owner: {{activity.owner}}, scope: {{ activity.scope }}, target: {{ target }})
                 {% endif %}
             </li>
             {% else %}
