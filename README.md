@@ -10,7 +10,6 @@
 
 The OMEN platform is a self-hosted annotation paltform with multi-user support. It is deployed as a [Docker](https://www.docker.com/) container and, by default, backed by a [PostgreSQL](https://www.postgresql.org/) database. It is maintained by the [Semantic Computing Group](http://www.sc.cit-ec.uni-bielefeld.de/home/) at the [Center for Cognitive Interaction Technology (CITEC), Bielefeld University](https://www.cit-ec.de/en)
 
-The upcoming v1.1.x release features:
 - Simple dataset management for document-level annotation tasks.
 - Role-based dataset and task management: Users interact with datasets as either *owner*, *curator*, or *annotator* (each providing different levels of functionality and access).
 - Work package definitions for annotation tasks based on subsets of your dataset.
