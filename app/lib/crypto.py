@@ -59,7 +59,7 @@ def jwt_encode(payload, private_key):
 def jwt_decode(token, public_key):
     if public_key is None or public_key.strip() == "":
         raise InvalidTokenException("public key missing or malformed")
-    return jwt.decode(token, public_key, algorithm="RS256")
+    return jwt.decode(token, public_key, algorithm="RS256", verify=True)
 
 
 def system_private_key(dbsession):
@@ -68,6 +68,13 @@ def system_private_key(dbsession):
     if private_key is None or private_key.strip() == "":
         raise InvalidTokenException("jwt_privkey configuration missing or malformed")
     return private_key
+
+
+def jwt_decode_unsafe(token):
+    if token is None:
+        return None
+    token = token.strip()
+    return jwt.decode(token, algorithm="RS256", verify=False)
 
 
 def system_public_key(dbsession):

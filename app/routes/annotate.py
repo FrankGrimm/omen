@@ -139,7 +139,7 @@ def annotate(dsid=None, sample_idx=None):
 
     with db.session_scope() as dbsession:
         session_user = db.User.by_id(dbsession, session['user'])
-        dataset = db.get_accessible_dataset(dbsession, dsid, "annotator")
+        dataset = db.datasets.get_accessible_dataset(dbsession, dsid, "annotator")
 
         if dataset is None:
             return abort(404, description="Forbidden. User does not have annotation access to the requested dataset.")
@@ -176,7 +176,7 @@ def annotate(dsid=None, sample_idx=None):
 
         anno_votes = get_votes(dbsession, dataset, user_roles, session_user, sample_id)
 
-        annotation_tasks = db.annotation_tasks(dbsession, session['user'])
+        annotation_tasks = db.datasets.annotation_tasks(dbsession, session['user'])
         increment_task_states(df, task, annotation_tasks)
 
         task.calculate_progress()

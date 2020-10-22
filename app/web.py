@@ -36,7 +36,10 @@ try:
     db_init_okay = True
 except Exception as e:  # pylint: disable=broad-except
     print("Failed to initialize database: %s" % e, file=sys.stderr)
+
     if 'reset_database' not in sys.argv:
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
     else:
         print("continuing to CLI invocation anyway")
@@ -61,8 +64,8 @@ def inject_globals():
     dataset_roles = {}
     with db.session_scope() as dbsession:
         if is_authenticated:
-            annotation_tasks = db.annotation_tasks(dbsession, session['user'])
-            dataset_roles = db.dataset_roles(dbsession, session['user'])
+            annotation_tasks = db.datasets.annotation_tasks(dbsession, session['user'])
+            dataset_roles = db.datasets.dataset_roles(dbsession, session['user'])
 
     def calculate_votes(row, anno_columns):
         if row is None or anno_columns is None:

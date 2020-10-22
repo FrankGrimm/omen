@@ -57,12 +57,37 @@ def login(backto=None):
     return render_template('login.html')
 
 
+def handle_token_settings(dbsession, session_user):
+    if request.json is None or request.json.get("action", None) is None:
+        return None
+
+    action = request.json.get("action", None)
+    if action == "new_api_token":
+        new_token_description = request.json.get("api_token_generate_description", "").strip()
+        if new_token_description == "":
+            return abort("parameter missing: description")
+        return session_user.new_api_token(dbsession, new_token_description)
+
+    if action == "revoke_api_token":
+        revoke_uuid = request.json.get("api_token_id", None)
+        if revoke_uuid is None or revoke_uuid.strip() == "":
+            return abort("parameter missing: api_token_id")
+        revoke_uuid = revoke_uuid.strip()
+        return session_user.revoke_api_token(dbsession, revoke_uuid)
+
+    return None
+
+
 @app.route(BASEURI + '/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
     with db.session_scope() as dbsession:
         userobj = db.User.by_id(dbsession, session['user'])
         if request.method == 'POST':
+            token_action_result = handle_token_settings(dbsession, userobj)
+            if token_action_result is not None:
+                return token_action_result
+
             act = request.form.get("action", None)
 
             if act == 'change_displayname':

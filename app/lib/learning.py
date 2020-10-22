@@ -117,7 +117,7 @@ def training(dataset_id, user_id):
 
     training_progress = []
     with db.session_scope() as dbsession:
-        dataset = db.dataset_by_id(dbsession, dataset_id)
+        dataset = db.Dataset.by_id(dbsession, dataset_id)
         userobj = db.User.by_id(dbsession, user_id)
 
         training_timer = LearningBenchmark("full_training")
@@ -441,7 +441,7 @@ def debug():
 
 
         debugdata["test"] = {}
-        dataset = db.dataset_by_id(dbsession, 1)
+        dataset = db.Dataset.by_id(dbsession, 1)
         anno_user = dataset.owner
         debugdata["test"]["ds"] = str(dataset)
         debugdata["test"]["user"] = str(anno_user)

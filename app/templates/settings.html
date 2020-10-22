@@ -24,8 +24,8 @@
   <h3 style="margin-top:2em;"><i class="mdi mdi-account-key"></i> Change Password</h3>
   
   <div class="row">
-      <div class="col-12" style="margin-bottom: 2em;">
-          <strong>Note:</strong> Changing your password invalidates all pending invitations that have not been used yet.<br />
+      <div class="col-12">
+          <strong>Note:</strong> Changing your password invalidates all pending invitations and API tokens.<br />
       </div>
   </div>
   
@@ -49,4 +49,47 @@
         </div>
     </div>
   </form>
+
+  <h3 style="margin-top:2em;"><i class="mdi mdi-api"></i> API Tokens</h3>
+  
+  <div class="row">
+      <div class="col-12" style="margin-bottom: 2em;">
+          <strong>Note:</strong> These tokens let other applications act on your behalf. Make sure to treat these API tokens confidential.<br />
+      </div>
+  </div>
+ 
+  <ul class="api_token_list">
+    {% for api_token in session_user.get_api_tokens(metadata_only=True) %}
+    <li class="row">
+        <div class="col-8">
+            <strong><i class="mdi mdi-key-outline"> </i> {{ api_token.description }}</strong>
+            <span>created: {{ api_token.created }}</span>
+        </div>
+        <form method=post class="col-2">
+            <input type="hidden" name="action" value="revoke_api_token" />
+            <input type="hidden" name="api_token_id" value="{{api_token.uuid}}" />
+            <button class="btn btn-sm btn-danger revoke_token_btn" data-tokenid="{{api_token.uuid}}" title="Revoke Token '{{api_token.description}}'"><i class="mdi mdi-delete"> </i></button>
+        </form>
+    </li>
+    {% else %}
+    <li class="row">
+        <div class="col-12">
+            You have no active API tokens.
+        </div>
+    </li>
+    {% endfor %}
+  </ul>
+  
+    <div class="row" style="margin-top: 1em">
+        <form class="col-12">
+            <input type="hidden" name="action" value="api_token_generate" />
+            <input id="api_token_generate_description" name="api_token_generate_description" autocomplete="off" type="text" class="custom-input" placeholder="New token description (required)" required />
+            <button disabled autocomplete="off" class="btn btn-warning" id="api_token_generate"><i class="mdi mdi-key-plus"> </i> Generate API token</button>
+        </form>
+    </div>
+
+{% endblock %}
+
+{% block addscript %}
+<script src="{{ url_for("static", filename="user_settings.js") }}"></script>
 {% endblock %}

@@ -34,7 +34,7 @@ class User(Base):
     pwhash = Column(String, nullable=False)
     usermetadata = Column(JSON, nullable=True)
 
-    datasets = relationship("Dataset")
+    datasets = relationship("Dataset", back_populates="owner")
     annotations = relationship("Annotation")
 
     @staticmethod
@@ -249,6 +249,70 @@ class User(Base):
                 matching_invites.append(invite)
 
         return matching_invites
+
+    def new_api_token(self, dbsession, description):
+        token_uuid = str(uuid.uuid4())
+        token_create_timestamp = datetime.utcnow().isoformat()
+        token_payload = {
+                "by": self.uid,
+                "type": "api_token",
+                "created": token_create_timestamp,
+                "uuid": token_uuid,
+                "description": description
+        }
+
+        private_key = self.get_private_key(dbsession)
+        new_token = crypto.jwt_encode(token_payload, private_key)
+        full = {"metadata": token_payload, "token": new_token}
+        _tokens = self.get_api_tokens()
+        _tokens.append(full)
+        self.set_metadata(dbsession, "api_tokens", _tokens)
+
+        return full
+
+    def revoke_api_token(self, dbsession, revoke_uuid):
+        _tokens = self.get_api_tokens()
+
+        revoked = None
+        for api_token in _tokens:
+            api_token_meta = api_token['metadata']
+            if api_token_meta['uuid'] == revoke_uuid:
+                revoked = api_token
+
+        _tokens.remove(revoked)
+        self.set_metadata(dbsession, "api_tokens", _tokens)
+
+        revoked['metadata']['status'] = "REVOKED"
+        return {"revoked": revoked['metadata']}
+
+    def validate_api_token(self, dbsession, token):
+        public_key = self.get_public_key(dbsession)
+        token_data = crypto.jwt_decode(token, public_key)
+
+        if 'uuid' not in token_data:
+            raise crypto.InvalidTokenException("token is missing required attribute - uuid")
+
+        _tokens = self.get_api_tokens()
+
+        uuid_matches = False
+        for stored in _tokens:
+            stored_uuid = stored.get("metadata", {}).get("uuid", None)
+            if stored_uuid is None or stored_uuid != token_data['uuid']:
+                continue
+
+            uuid_matches = True
+            break
+
+        if not uuid_matches:
+            raise crypto.InvalidTokenException("Token is invalid, revoked, or contains an unknown UUID.")
+
+        return token_data
+
+    def get_api_tokens(self, metadata_only=False):
+        _tokens = self.get_metadata("api_tokens", [])
+        if metadata_only:
+            _tokens = [token['metadata'] for token in _tokens]
+        return _tokens
 
     def validate_invite(self, dbsession, token):
         public_key = self.get_public_key(dbsession)
