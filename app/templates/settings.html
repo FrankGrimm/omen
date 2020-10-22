@@ -59,11 +59,16 @@
   </div>
  
   <ul class="api_token_list">
-    {% for api_token in session_user.get_api_tokens(metadata_only=True) %}
-    <li class="row">
+    {% for api_token in session_user.get_api_tokens(metadata_only=True, check_validity=True, dbsession=dbsession) %}
+    <li class="row api_token_list_row">
         <div class="col-8">
             <strong><i class="mdi mdi-key-outline"> </i> {{ api_token.description }}</strong>
             <span>created: {{ api_token.created }}</span>
+            {% if api_token.valid %}
+            <span class="badge badge-success">valid</span>
+            {% else %}
+            <span class="badge badge-warning">invalid</span>
+            {% endif %}
         </div>
         <form method=post class="col-2">
             <input type="hidden" name="action" value="revoke_api_token" />

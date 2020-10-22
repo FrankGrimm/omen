@@ -308,8 +308,15 @@ class User(Base):
 
         return token_data
 
-    def get_api_tokens(self, metadata_only=False):
+    def get_api_tokens(self, metadata_only=False, check_validity=False, dbsession=None):
         _tokens = self.get_metadata("api_tokens", [])
+        if check_validity:
+            if dbsession is None:
+                raise Exception("validity check requires active dbsession")
+
+            for token in _tokens:
+                token_metadata = token['metadata']
+                token_metadata['valid'] = self.validate_api_token(dbsession, token['token']) is not None
         if metadata_only:
             _tokens = [token['metadata'] for token in _tokens]
         return _tokens

@@ -118,7 +118,7 @@ def settings():
                     db.fprint(acterror)
                     flash('%s' % e, "error")
 
-        return render_template('settings.html', session_user=userobj)
+        return render_template('settings.html', session_user=userobj, dbsession=dbsession)
 
 
 @app.route(BASEURI + "/user/invite", methods=["GET", "POST"])
