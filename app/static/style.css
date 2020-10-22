@@ -1228,12 +1228,14 @@ div.alert-timer {
 .sample_content_view {
     display: flex;
     flex-direction: column;
+    width: 100%;
 }
 
 .sample_content_container {
     display: flex;
     flex-direction: row;
     padding-right: 1em;
+    width: 100%;
 }
 
 .sample_content_tagbtns {
@@ -1479,4 +1481,8 @@ ul.analytics_wp_list > li {
 
 ul.api_token_list {
     list-style-type: none;
+}
+
+.api_token_list_row {
+    margin-bottom: 0.5em;
 }
