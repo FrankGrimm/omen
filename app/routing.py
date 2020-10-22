@@ -26,10 +26,10 @@ def index():
         session_user_id = session['user']
 
         session_user = db.User.by_id(dbsession, session_user_id)
-        annotation_tasks = db.annotation_tasks(dbsession, session_user_id)
+        annotation_tasks = db.datasets.annotation_tasks(dbsession, session_user_id)
 
-        my_datasets = db.my_datasets(dbsession, session_user_id)
-        access_datasets = db.accessible_datasets(dbsession, session_user_id)
+        my_datasets = db.datasets.my_datasets(dbsession, session_user_id)
+        access_datasets = db.datasets.accessible_datasets(dbsession, session_user_id)
 
         user_history = session_user.history(dbsession)
 

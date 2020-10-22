@@ -15,6 +15,8 @@ import numpy as np
 from app.lib.viewhelpers import login_required, get_session_user
 from app.web import app, BASEURI, db
 from app.lib.models.comments import Comments
+from app.lib.models import datasets
+
 
 TAGORDER_ACTIONS = ["update_taglist", "rename_tag", "delete_tag", "move_tag_down", "move_tag_up"]
 
@@ -23,7 +25,7 @@ TAGORDER_ACTIONS = ["update_taglist", "rename_tag", "delete_tag", "move_tag_down
 @login_required
 def download(dsid=None):
     with db.session_scope() as dbsession:
-        cur_dataset = db.get_accessible_dataset(dbsession, dsid)
+        cur_dataset = datasets.get_accessible_dataset(dbsession, dsid)
 
         df, _, _ = cur_dataset.annotations(dbsession, foruser=db.User.system_user(dbsession), page_size=-1)
 
@@ -56,8 +58,8 @@ def show_datasets(dsid=None):
 
         userobj = get_session_user(dbsession)
 
-        my_datasets = db.my_datasets(dbsession, session['user'])
-        access_datasets = db.accessible_datasets(dbsession, session['user'])
+        my_datasets = db.datasets.my_datasets(dbsession, session['user'])
+        access_datasets = db.datasets.accessible_datasets(dbsession, session['user'])
 
         dataset = None
         if dsid is not None and dsid in my_datasets:
@@ -88,7 +90,7 @@ def dataset_lookup_or_create(dbsession, dsid, editmode):
     if dsid is None:
         dataset = db.Dataset()
     else:
-        dataset = db.dataset_by_id(dbsession, dsid, user_id=session['user'])
+        dataset = db.Dataset.by_id(dbsession, dsid, user_id=session['user'])
         if dataset is not None:
             editmode = 'edit'
         else:
@@ -211,9 +213,9 @@ def dataset_field_overview(dsid, fieldid):
     with db.session_scope() as dbsession:
         field_overview = {}
 
-        dataset = db.get_accessible_dataset(dbsession, dsid)
+        dataset = datasets.get_accessible_dataset(dbsession, dsid)
         dataset_overview = dataset.get_overview_statistics(dbsession)['columns']
-        for column_name, column_info in dataset_overview.items():
+        for _, column_info in dataset_overview.items():
             column_type = column_info.get("dtype", None)
             if isinstance(column_type, np.dtype):
                 column_info['dtype'] = str(column_type)
@@ -237,7 +239,7 @@ def dataset_overview_json(dsid):
 
     with db.session_scope() as dbsession:
         session_user = get_session_user(dbsession)
-        dataset = db.get_accessible_dataset(dbsession, dsid)
+        dataset = datasets.get_accessible_dataset(dbsession, dsid)
         user_roles = list(dataset.get_roles(dbsession, session_user))
 
         tags = dataset.get_taglist()
@@ -478,7 +480,7 @@ def dataset_comments(dsid=None):
         dataset = None
         try:
             session_user = get_session_user(dbsession)
-            dataset = db.dataset_by_id(dbsession, dsid, user_id=session_user.uid)
+            dataset = db.Dataset.by_id(dbsession, dsid, user_id=session_user.uid)
 
             comments = Comments.fortarget(dbsession,
                                           dataset.activity_target(),

@@ -3,14 +3,13 @@ Data curation related routes.
 """
 import json
 import math
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 
 from flask import flash, render_template, request
 
 from app.lib.viewhelpers import login_required, get_session_user
 import app.lib.config as config
 from app.web import app, BASEURI, db
-from collections import defaultdict
 
 from app.routes.dataset import handle_comment_action
 from app.lib.models.comments import Comments
@@ -213,7 +212,7 @@ def inspect_dataset(dsid=None):
     with db.session_scope() as dbsession:
         ds_filters = inspect_filters()
 
-        cur_dataset = db.get_accessible_dataset(dbsession, dsid)
+        cur_dataset = db.datasets.get_accessible_dataset(dbsession, dsid)
         session_user = get_session_user(dbsession)
 
         # tagstates, restrict_include, restrict_exclude = get_tagstates(cur_dataset)
@@ -258,8 +257,6 @@ def inspect_dataset(dsid=None):
                                                                   user_column="annotations",
                                                                   query=ds_filters.query,
                                                                   splits=ds_filters.split)
-                                                                  #tags_include=restrict_include,
-                                                                  #tags_exclude=restrict_exclude)
 
         df = reorder_dataframe(df, cur_dataset, annotation_columns)
 

@@ -14,12 +14,11 @@ from typing import List
 from sqlalchemy import Column, Integer, JSON, ForeignKey, func, sql, or_, and_, inspect
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.attributes import flag_dirty, flag_modified
-from flask import flash, session
+from flask import flash
 
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 import numpy as np
-
 
 from app.lib.database_internals import Base
 from app.lib.models.datasetcontent import DatasetContent
@@ -309,6 +308,7 @@ class Dataset(Base):
             # gather target IDs
             id_query = dbsession.query(DatasetContent.sample_index).filter_by(dataset_id=self.dataset_id)
             if targetsplit is None or targetsplit == "":
+                # pylint: disable=singleton-comparison
                 id_query = id_query.filter(or_(DatasetContent.split_id == "", DatasetContent.split_id == None))
             else:
                 id_query = id_query.filter_by(split_id=targetsplit)
@@ -377,7 +377,15 @@ class Dataset(Base):
 
     @staticmethod
     def by_id(dbsession, dataset_id, user_id=None, no_error=False):
-        return dataset_by_id(dbsession, dataset_id, user_id=user_id, no_error=no_error)
+        qry = None
+        if user_id is None:
+            qry = dbsession.query(Dataset).filter_by(dataset_id=dataset_id)
+        else:
+            qry = dbsession.query(Dataset).filter_by(owner_id=user_id, dataset_id=dataset_id)
+
+        if no_error:
+            return qry.one_or_none()
+        return qry.one()
 
     def get_option(self, key, default_value=False):
         return bool(self.dsmetadata.get(key, default_value))
@@ -556,12 +564,17 @@ class Dataset(Base):
         if self.dataset_id is None:
             raise Exception("cannot check accessibility. dataset needs to be committed first.")
 
-        for _, ds in accessible_datasets(dbsession, for_user, include_owned=True).items():
-            if ds is None or ds.dataset_id is None:
-                continue
-            if ds.dataset_id == self.dataset_id:
+        if isinstance(for_user, int):
+            for_user = User.by_id(dbsession, for_user)
+
+            if self.owner == for_user:
                 return True
-        return False
+
+        dsacl = self.get_roles(dbsession, for_user)
+
+        if dsacl is None or len(dsacl) == 0:
+            return False
+        return True
 
     def get_task(self, dbsession, for_user):
         if not self.accessible_by(dbsession, for_user):
@@ -638,7 +651,7 @@ class Dataset(Base):
         params = {
                 "dataset_id": self.dataset_id
                 }
-        sql = """
+        sql_raw = """
         SELECT users.uid,
             (CASE WHEN
                 (users.displayname IS NULL OR users.displayname = '')
@@ -656,10 +669,10 @@ class Dataset(Base):
             users.uid, anno.data->'value' #>> '{}'
         """
 
-        sql = prep_sql(sql)
-        logging.debug("DB_SQL_LOG %s %s", sql, params)
+        sql_raw = prep_sql(sql_raw)
+        logging.debug("DB_SQL_LOG %s %s", sql_raw, params)
 
-        df = pd.read_sql(sql,
+        df = pd.read_sql(sql_raw,
                          dbsession.bind,
                          params=params)
 
@@ -704,7 +717,7 @@ class Dataset(Base):
         params = {
                 "dataset_id": self.dataset_id
                 }
-        sql = """
+        sql_raw = """
         SELECT
             anno.sample_index,
             anno.data->'value' #>> '{}' AS anno_tag,
@@ -717,10 +730,10 @@ class Dataset(Base):
             anno.sample_index, anno.data->'value' #>> '{}'
         """
 
-        sql = prep_sql(sql)
-        logging.debug("DB_SQL_LOG %s %s", sql, params)
+        sql_raw = prep_sql(sql_raw)
+        logging.debug("DB_SQL_LOG %s %s", sql_raw, params)
 
-        df = pd.read_sql(sql,
+        df = pd.read_sql(sql_raw,
                          dbsession.bind,
                          params=params)
 
@@ -831,7 +844,9 @@ class Dataset(Base):
             if len(condition_exclude) > 0:
                 sql_where += "\nAND NOT usercol.data->'value' #>> '{}' IN (%s)" % ", ".join(map(lambda p: "%(" + p + ")s", condition_exclude))
 
-        target_users = [foruser] # if user is annotator, only export and show their own annotations
+        # if user is annotator, only export and show their own annotations
+        target_users = [foruser]
+
         if 'curator' in user_roles and not only_user:
             # curator, also implied by owner role
             target_users = list(set(User.userlist(dbsession)) - set([foruser]))
@@ -1055,13 +1070,13 @@ class Dataset(Base):
 
         sample_index = int(sample_index)
 
-        sql = ""
+        sql_raw = ""
         split_where = ""
         if splits is not None and len(splits) > 0:
             split_where += "\nAND dc.split_id = ANY(%(splitlist)s)"
 
         if exclude_annotated:
-            sql = """
+            sql_raw = """
             SELECT
                 dc.sample_index, dc.sample, COUNT(anno.owner_id) AS annocount
             FROM
@@ -1079,7 +1094,7 @@ class Dataset(Base):
             LIMIT 1
             """.format(split_where=split_where).strip()
         else:
-            sql = """
+            sql_raw = """
             SELECT
                 dc.sample_index, dc.sample, COUNT(anno.owner_id) AS annocount
             FROM
@@ -1103,8 +1118,8 @@ class Dataset(Base):
         if splits is not None and len(splits) > 0:
             params["splitlist"] = list(splits)
 
-        logging.debug("DF_SQL_LOG %s\n%s\n%s", "get_next_sample(excl=%s)" % exclude_annotated, sql, params)
-        df = pd.read_sql(sql,
+        logging.debug("DF_SQL_LOG %s\n%s\n%s", "get_next_sample(excl=%s)" % exclude_annotated, sql_raw, params)
+        df = pd.read_sql(sql_raw,
                          dbsession.bind,
                          params=params)
 
@@ -1144,7 +1159,7 @@ class Dataset(Base):
     def get_overview_statistics(self, dbsession):
         overview = {}
 
-        sql = """
+        sql_raw = """
         SELECT
             dc.sample_index, dc.sample, dc.data
         FROM
@@ -1164,11 +1179,11 @@ class Dataset(Base):
         page_size = 10000
         page_offset = 0
         while result_count > 0 or page_offset == 0:
-            logging.debug("DF_SQL_LOG %s\n%s\n%s", "get_overview_statistics()", sql, params)
+            logging.debug("DF_SQL_LOG %s\n%s\n%s", "get_overview_statistics()", sql_raw, params)
             params["page_size"] = page_size
             params["page_offset"] = page_offset
 
-            df = pd.read_sql(sql,
+            df = pd.read_sql(sql_raw,
                              dbsession.bind,
                              params=params)
 
@@ -1195,12 +1210,12 @@ class Dataset(Base):
 
         sample_index = int(sample_index)
 
-        sql = ""
+        sql_raw = ""
         split_where = ""
         if splits is not None and len(splits) > 0:
             split_where += "\nAND dc.split_id = ANY(%(splitlist)s)"
         if exclude_annotated:
-            sql = """
+            sql_raw = """
             SELECT
                 dc.sample_index, dc.sample, COUNT(anno.owner_id) AS annocount
             FROM
@@ -1218,7 +1233,7 @@ class Dataset(Base):
             LIMIT 1
             """.format(split_where=split_where).strip()
         else:
-            sql = """
+            sql_raw = """
             SELECT
                 dc.sample_index, dc.sample, COUNT(anno.owner_id) AS annocount
             FROM
@@ -1242,19 +1257,20 @@ class Dataset(Base):
         if splits is not None and len(splits) > 0:
             params["splitlist"] = list(splits)
 
-        logging.debug("DF_SQL_LOG %s\n%s\n%s", "get_prev_sample(excl=%s)" % exclude_annotated, sql, params)
-        df = pd.read_sql(sql,
+        logging.debug("DF_SQL_LOG %s\n%s\n%s", "get_prev_sample(excl=%s)" % exclude_annotated, sql_raw, params)
+        df = pd.read_sql(sql_raw,
                          dbsession.bind,
                          params=params)
 
         if df.shape[0] == 0 and exclude_annotated:
             return self.get_prev_sample(dbsession, sample_index, user_obj, splits, exclude_annotated=False)
-        elif df.shape[0] > 0:
+
+        if df.shape[0] > 0:
             first_row = df.iloc[df.index[0]]
             return first_row["sample_index"], first_row["sample"]
-        else:
-            # empty dataset
-            return None, None
+
+        # empty dataset
+        return None, None
 
     def setanno(self, dbsession, uid, sample_index, value):
         user_obj = User.by_id(dbsession, uid) if not isinstance(uid, User) else uid
@@ -1484,13 +1500,6 @@ class Dataset(Base):
 
                     dbsession.flush()
                     logging.debug("[import] %s, sample count after: %s", self, len(self.dscontent))
-                    # tmpsample = DatasetContent()
-                    # tmpds = dataset_by_id(dbsession, 1)
-                    # tmpsample.dataset = tmpds
-                    # tmpsample.sample = "12345"
-                    # tmpsample.content = "DELETETHIS"
-                    # dbsession.add(tmpsample)
-                    # dbsession.flush()
 
                 else:
                     success = True
@@ -1611,104 +1620,3 @@ class AnnotationTask:
 def prep_sql(sql_raw):
     sql_raw = "\n".join(filter(lambda line: line != "", map(str.strip, sql_raw.strip().split("\n"))))
     return sql_raw.replace("\n\n", "\n").strip()
-
-
-def dataset_roles(dbsession, user_id):
-    res = {}
-
-    user_obj = User.by_id(dbsession, user_id)
-
-    all_user_datasets = accessible_datasets(dbsession, user_id, include_owned=True)
-
-    for dataset_id, dataset in all_user_datasets.items():
-        res[dataset_id] = dataset.get_roles(dbsession, user_obj)
-
-    return res
-
-
-def dataset_by_id(dbsession, dataset_id, user_id=None, no_error=False):
-    qry = None
-    if user_id is None:
-        qry = dbsession.query(Dataset).filter_by(dataset_id=dataset_id)
-    else:
-        qry = dbsession.query(Dataset).filter_by(owner_id=user_id, dataset_id=dataset_id)
-
-    if no_error:
-        return qry.one_or_none()
-    else:
-        return qry.one()
-
-
-def all_datasets(dbsession):
-    return dbsession.query(Dataset).all()
-
-
-def my_datasets(dbsession, user_id):
-    res = {}
-
-    user_obj = User.by_id(dbsession, user_id)
-
-    for ds in dbsession.query(Dataset).filter_by(owner=user_obj).all():
-        if not ds or not ds.dataset_id:
-            continue
-        res[str(ds.dataset_id)] = ds
-
-    return res
-
-
-def get_accessible_dataset(dbsession, dsid, check_role=None):
-    session_user = User.by_id(dbsession, session['user'])
-
-    access_datasets = accessible_datasets(dbsession, session_user, include_owned=True)
-
-    cur_dataset = None
-    if dsid is not None and dsid in access_datasets:
-        cur_dataset = access_datasets[dsid]
-
-    if check_role is None:
-        return cur_dataset
-
-    if cur_dataset is not None:
-        user_roles = cur_dataset.get_roles(dbsession, session_user)
-        if check_role not in user_roles:
-            return None
-
-    return cur_dataset
-
-
-def accessible_datasets(dbsession, user_id, include_owned=False):
-    res = {}
-
-    user_obj = User.by_id(dbsession, user_id)
-
-    if include_owned:
-        res = my_datasets(dbsession, user_id)
-
-    for ds in all_datasets(dbsession):
-        dsacl = ds.get_roles(dbsession, user_obj)
-
-        if dsacl is None or len(dsacl) == 0:
-            continue
-        res[str(ds.dataset_id)] = ds
-
-    return res
-
-
-def annotation_tasks(dbsession, for_user):
-    datasets = accessible_datasets(dbsession, for_user, include_owned=True)
-    tasks = []
-
-    for dsid, dataset in datasets.items():
-        check_result = dataset.check_dataset()
-        if check_result is not None and len(check_result) > 0:
-            continue
-
-        dsroles = dataset.get_roles(dbsession, for_user)
-        if 'annotator' in dsroles:
-            task = dataset.get_task(dbsession, for_user)
-            tasks.append(task)
-
-    # make sure completed tasks are pushed to the bottom of the list
-    tasks.sort(key=lambda task: (task.progress >= 100.0, task.name))
-
-    return tasks

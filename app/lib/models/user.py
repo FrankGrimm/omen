@@ -34,7 +34,7 @@ class User(Base):
     pwhash = Column(String, nullable=False)
     usermetadata = Column(JSON, nullable=True)
 
-    datasets = relationship("Dataset")
+    datasets = relationship("Dataset", back_populates="owner")
     annotations = relationship("Annotation")
 
     @staticmethod

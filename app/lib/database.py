@@ -1,6 +1,7 @@
 """
 Database model and utilities
 """
+# pylint: disable=unused-import
 from contextlib import contextmanager
 
 import re
@@ -10,17 +11,19 @@ import logging
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from app.lib.database_internals import Base
+
+# include entities in order to satisfy the ORM
+from app.lib.models.datasetcontent import DatasetContent
+from app.lib.models.annotation import Annotation
+from app.lib.models.dataset import Dataset
+import app.lib.models.datasets as datasets
+from app.lib.models.activity import Activity
 
 import app.web as web
 from app.lib import config
 
 
 from app.lib.models.user import User
-from app.lib.models.datasetcontent import DatasetContent
-from app.lib.models.annotation import Annotation
-from app.lib.models.dataset import *
-from app.lib.models.activity import Activity
 
 flask_db = None
 migrate = None
@@ -85,11 +88,14 @@ def init_db():
     with web.app.app_context():
         with session_scope() as dbsession:
 
+            # ensure that the system user account is available
             User.system_user(dbsession)
 
             try:
+                # pylint: disable=no-member
                 logging.info("[users] system contains %s user accounts", dbsession.query(User).count())
                 logging.info("[users] you can create users with the scripts/createuser script")
-            except:
-                logging.warning("[error] could not enumerate users, " +
-                                "make sure database is initialized and up to date (./bin/flaskdb upgrade)")
+            # pylint: disable=bare-except
+            except:  # noqa
+                logging.warning("""[error] could not enumerate users,
+                                make sure database is initialized and up to date (./bin/flaskdb upgrade)""")

@@ -7,18 +7,18 @@ OMEN API endpoint definition.
 - The API itself lives under `/omen/api/1.0/`.
 - A visual instance of Swagger UI is available under `/omen/api/1.0/ui`.
 """
-# pylint: disable=no-self-use
+# pylint: disable=no-self-use,too-many-instance-attributes
 
 import logging
 
 from flask import redirect, request
 from flask.views import MethodView
 from flask_smorest import Api, Blueprint, abort
-import marshmallow as ma
 
-from app.lib.viewhelpers import login_required, get_session_user
+from app.lib.viewhelpers import get_session_user
 from app.lib import config
 from app.lib import crypto
+from app.lib import api_schemas as schemas
 from app import __version__ as app_version
 from app.web import app, BASEURI, db
 app.config["API_TITLE"] = config.get("product_name", "Annotations") + " " + app_version + " API"
@@ -53,13 +53,15 @@ api = Blueprint("api", "api", url_prefix=BASEURI + "/api/1.0",
                 description="OMEN API")
 
 
-class APIUserAuth(ma.Schema):
-    user_id = ma.fields.Integer(required=True)
-    auth_method = ma.fields.String(required=True)
-
-
 def api_get_auth_info(dbsession):
-    authinfo = APIUserAuth()
+    """
+    Tries to establish a user for the current request given one of the
+    implemented authorization strategies:
+
+    a) a simple flask user session, established through interactive login, or
+    b) a bearer token authorization
+    """
+    authinfo = schemas.APIUserAuth()
     api_user = get_session_user(dbsession)
 
     if api_user is not None:
@@ -75,10 +77,14 @@ def api_get_auth_info(dbsession):
     if api_user is None:
         return None
     authinfo.user_id = api_user.uid
-    return authinfo
+    return authinfo, api_user
 
 
 def api_bearer_authentication(dbsession):
+    """
+    Checks and validates any token authorization headers that might be
+    present in the current request.
+    """
     authorization_header = request.headers.get("Authorization", None)
     if authorization_header is None or authorization_header.strip() == "":
         return None, None
@@ -112,24 +118,15 @@ def api_bearer_authentication(dbsession):
 
 @api.before_request
 def api_require_login():
+    """
+    Ensure that all API requests are authenticated.
+    """
     with db.session_scope() as dbsession:
-        authinfo = api_get_auth_info(dbsession)
+        authinfo, _ = api_get_auth_info(dbsession)
         if authinfo is None:
             # unauthorized
             return abort(401, message="Unauthorized")
         return None
-
-
-@app.route(BASEURI + "/api/token")
-@login_required
-def api_retrieve_token():
-    """
-    Retrieve a bearer token for authentication against the API.
-    """
-
-    with db.session_scope() as dbsession:
-        session_user = get_session_user(dbsession)
-        return {"token": session_user.generate_api_token()}
 
 
 @app.route(BASEURI + "/api/")
@@ -140,26 +137,47 @@ def api_redirect_to_current():
     return redirect(BASEURI + "/api/1.0")
 
 
-class APIRootResponse(ma.Schema):
-    version = ma.fields.String(required=True)
-    api_version = ma.fields.String(required=True)
-    openapi_descriptor = ma.fields.Url(required=True)
-    authenticated = ma.fields.Nested(APIUserAuth)
-
-
 @api.route("/")
 class APIRoot(MethodView):
 
-    @api.response(APIRootResponse)
+    @api.response(schemas.APIRootResponse)
     def get(self):
         with db.session_scope() as dbsession:
+            authinfo, _ = api_get_auth_info(dbsession)
+
             api_root_info = {
                     "version": app_version,
                     "api_version": app.config.get("API_VERSION", "1"),
                     "openapi_descriptor": app.config.get("OPENAPI_URL_PREFIX", "") + "/openapi.json",
-                    "authenticated": api_get_auth_info(dbsession)
+                    "authenticated": authinfo
                     }
             return api_root_info
+
+
+@api.route("/tasks")
+class APITasks(MethodView):
+
+    @api.response(schemas.AnnotationTask(many=True))
+    def get(self):
+        with db.session_scope() as dbsession:
+            _, session_user = api_get_auth_info(dbsession)
+            annotation_tasks = db.datasets.annotation_tasks(dbsession, session_user)
+            return [schemas.AnnotationTask.convert_task(task) for task in annotation_tasks]
+
+
+@api.route("/datasets")
+class APIDatasets(MethodView):
+
+    @api.response(schemas.DatasetSchema(many=True))
+    def get(self):
+        with db.session_scope() as dbsession:
+            _, session_user = api_get_auth_info(dbsession)
+
+            datasets = db.datasets.accessible_datasets(dbsession,
+                                                       session_user,
+                                                       include_owned=True)
+
+            return [schemas.DatasetSchema.to_api(dataset) for dataset in datasets.values()]
 
 
 flask_api.register_blueprint(api)
