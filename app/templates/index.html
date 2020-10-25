@@ -54,7 +54,7 @@
         {% if 'curator' in target_roles %}
             {% set targetlink = url_for("inspect_dataset", dsid=target.dataset_id) %}
         {% elif 'owner' in target_roles %}
-            {% set targetlink = url_for("dataset_new", dsid=target.dataset_id) %}
+            {% set targetlink = url_for("dataset_admin", dsid=target.dataset_id) %}
         {% endif %}
     {% endif %}
     {% endif %}

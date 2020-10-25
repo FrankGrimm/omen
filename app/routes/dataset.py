@@ -500,7 +500,7 @@ def dataset_comments(dsid=None):
 @app.route(BASEURI + "/dataset/<dsid>/edit", methods=['GET', 'POST'])
 @app.route(BASEURI + "/dataset/create", methods=['GET', 'POST'])
 @login_required
-def new_dataset(dsid=None):
+def dataset_admin(dsid=None):
     dataset = None
     editmode = 'create'
 
@@ -570,9 +570,9 @@ def new_dataset(dsid=None):
 
         if editmode == 'create' and dataset.dataset_id is not None:
             # redirect to edit URI once dataset has been persisted
-            return redirect(url_for('new_dataset', dsid=dataset.dataset_id))
+            return redirect(url_for('dataset_admin', dsid=dataset.dataset_id))
 
-        template = "dataset_new.html"
+        template = "dataset_admin.html"
 
         if editmode == "tageditor":
             template = "tag_editor.html"

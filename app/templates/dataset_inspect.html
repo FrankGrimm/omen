@@ -21,7 +21,7 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
 
                 {% if 'owner' in userroles %}
                 <li class="nav-item">
-                    <a class="nav-link tablink_external" href="{{ url_for('new_dataset', dsid=dataset.dataset_id) }}" role="tab" >
+                    <a class="nav-link tablink_external" href="{{ url_for('dataset_admin', dsid=dataset.dataset_id) }}" role="tab" >
                         <i class="mdi mdi-open-in-new"></i>
                         Configure
                     </a>
@@ -32,10 +32,10 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
         <div class="card-body">
             <div class="tab-content mt-3">
                 <div class="tab-pane active" id="dscuration" role="tabpanel">
-                    {% include "dataset_curate.html" with context %}
+                    {% include "dataset_inspect_curate.html" with context %}
                 </div>
                 <div class="tab-pane" id="dsanalytics" role="tabpanel">
-                    {% include "dataset_analytics.html" with context %}
+                    {% include "dataset_inspect_analytics.html" with context %}
                 </div>
             </div>
         </div>
