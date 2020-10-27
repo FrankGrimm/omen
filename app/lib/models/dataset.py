@@ -588,20 +588,23 @@ class Dataset(Base):
         if check_result is not None and len(check_result) > 0:
             return None
 
-        annotation_splits = self.get_annotator_splits(dbsession, for_user)
-        if annotation_splits is not None and len(annotation_splits) == 0:
-            annotation_splits = None
-
         task_size = self.get_size()
 
-        if annotation_splits is not None:
-            dataset_splits = self.defined_splits(dbsession)
-            task_size = 0
+        global_roles = self.get_roles(dbsession, for_user, splitroles=False)
 
-            for split_id in annotation_splits:
-                if split_id not in dataset_splits:
-                    continue
-                task_size += dataset_splits[split_id].get("size", 0)
+        annotation_splits = None
+        if "annotator" not in global_roles:
+            annotation_splits = self.get_annotator_splits(dbsession, for_user)
+            if annotation_splits is not None and len(annotation_splits) == 0:
+                annotation_splits = None
+            if annotation_splits is not None:
+                dataset_splits = self.defined_splits(dbsession)
+                task_size = 0
+
+                for split_id in annotation_splits:
+                    if split_id not in dataset_splits:
+                        continue
+                    task_size += dataset_splits[split_id].get("size", 0)
 
         task = AnnotationTask(id=self.dataset_id,
                               name=self.get_name(),

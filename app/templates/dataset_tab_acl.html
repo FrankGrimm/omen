@@ -26,7 +26,7 @@
 <div class="row seprow">
     <ul class="dsacl" id="dsacl">
     {% for userobj in db.User.userlist(dbsession) %}
-        {% set dsroles = dataset.get_roles(dbsession, userobj) %}
+        {% set dsroles = dataset.get_roles(dbsession, userobj, splitroles=False) %}
         <li class="row userlist_row {% if dsroles|length == 0 %} d-none{% endif %}" data-userid="{{userobj.uid}}">
            
             <div class="userlist_userinfo">

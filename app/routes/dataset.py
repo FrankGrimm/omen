@@ -388,7 +388,7 @@ def editdataset_form_actions(dbsession, dataset, userobj):
         annorole = request.form.get("annorole", None)
         dataset.set_role(dbsession, annouser, annorole)
 
-        return {"action": formaction, "new_roles": list(dataset.get_roles(dbsession, annouser))}
+        return {"action": formaction, "new_roles": list(dataset.get_roles(dbsession, annouser, splitroles=False))}
 
     if formaction == 'rem_role' and \
             not request.form.get("annouser", None) is None and \
@@ -397,7 +397,7 @@ def editdataset_form_actions(dbsession, dataset, userobj):
         annorole = request.form.get("annorole", None)
         if annorole in dataset.get_roles(dbsession, annouser):
             dataset.set_role(dbsession, annouser, annorole, remove=True)
-        return {"action": formaction, "new_roles": list(dataset.get_roles(dbsession, annouser))}
+        return {"action": formaction, "new_roles": list(dataset.get_roles(dbsession, annouser, splitroles=False))}
 
     if formaction == 'change_taglist' and not request.form.get("settaglist", None) is None:
         newtags = request.form.get("settaglist", None).split("\n")
