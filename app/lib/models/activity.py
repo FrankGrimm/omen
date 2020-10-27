@@ -55,7 +55,7 @@ class Activity(Base):
         other_accessible_datasets = db.datasets.accessible_datasets(dbsession,
                                                                     owner,
                                                                     include_owned=False,
-                                                                    has_role=["curator"])
+                                                                    has_role=["curator", "owner"])
         other_accessible_datasets = [dataset.activity_target()
                                      for dsid, dataset in other_accessible_datasets.items()]
         excluded_scopes = ["event", "upload_file"]

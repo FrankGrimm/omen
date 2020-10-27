@@ -57,7 +57,12 @@ def get_accessible_dataset(dbsession, dsid, check_role=None):
 def accessible_datasets(dbsession, user_id, include_owned=False, has_role=None):
     res = {}
 
-    user_obj = User.by_id(dbsession, user_id)
+    if isinstance(user_id, int):
+        user_obj = User.by_id(dbsession, user_id)
+    elif isinstance(user_id, User):
+        user_obj = user_id
+    else:
+        raise Exception("invalid type for parameter user_id")
 
     if include_owned:
         res = my_datasets(dbsession, user_id)

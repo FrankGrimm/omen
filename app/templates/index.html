@@ -98,6 +98,8 @@
                 added a private note to {{ render_activity_target(activity, target) }}.
                 {% elif activity.scope == "comment_public" %}
                 commented on {{ render_activity_target(activity, target) }}: <blockquote class="with_markdown feed_comment">{{ activity.content|trim }}</blockquote>
+                {% elif activity.scope == "task_complete" %}
+                completed annotation task on {{ render_activity_target(activity, target) }} {% if activity.content %}({{ activity.content }}){% endif %}
                 {% else %}
                 activity (owner: {{activity.owner}}, scope: {{ activity.scope }}, target: {{ target }})
                 {% endif %}
