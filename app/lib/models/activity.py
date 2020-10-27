@@ -4,7 +4,7 @@ Model for generic activities (e.g. change events, comments).
 import logging
 import json
 
-from sqlalchemy import Column, Integer, String, desc, func, ForeignKey, or_
+from sqlalchemy import Column, Integer, String, desc, func, ForeignKey, and_, or_, not_
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import DateTime
 
@@ -48,20 +48,36 @@ class Activity(Base):
         if owner is None:
             raise Exception("Activity::user_history requires a non-null user object or ID")
 
-        target_filter = db.User.activity_prefix() + str(owner.uid)
+        if isinstance(owner, int):
+            owner = db.User.by_id(dbsession, owner)
+
+        user_target_filter = owner.activity_target()
+        other_accessible_datasets = db.datasets.accessible_datasets(dbsession,
+                                                                    owner,
+                                                                    include_owned=False,
+                                                                    has_role=["curator", "owner"])
+        other_accessible_datasets = [dataset.activity_target()
+                                     for dsid, dataset in other_accessible_datasets.items()]
+        excluded_scopes = ["event", "upload_file"]
 
         if isinstance(owner, db.User):
             qry = qry.filter(or_(
-                                Activity.target == target_filter,
+                                Activity.target == user_target_filter,
                                 Activity.owner == owner,
-                                ))
-        elif isinstance(owner, int):
-            qry = qry.filter(or_(
-                                Activity.target == target_filter,
-                                Activity.owner_id == owner.uid,
-                                ))
+                                and_(
+                                    Activity.target.in_(other_accessible_datasets),
+                                    not_(Activity.scope == "comment_note")
+                                )))
         else:
             raise Exception("Activity::user_history requires the owner argument by of type User or int")
+
+        qry = qry.filter(not_(Activity.scope.in_(excluded_scopes)))
+
+        #     # hides imports that did not affect the dataset
+        #     if activity.scope == "import_complete" and \
+        #             activity.content is not None and \
+        #             activity.content == "total: 0, merged: 0, skipped: 0":
+        #         continue
 
         if scope_in is not None and len(scope_in) > 0:
             qry = qry.filter(Activity.scope.in_(scope_in))
@@ -78,6 +94,35 @@ class Activity(Base):
             return None
 
         return self.created.strftime("%Y-%m-%d")
+
+    @staticmethod
+    def for_user(dbsession, target_user, limit=20):
+        """
+        Gather relevant activity elements to display in the feed on the homepage.
+        """
+
+        user_history = Activity.user_history(dbsession, target_user, limit=limit)
+        result_history = []
+
+        # filter duplicate events of the same type
+        for activity in user_history:
+            if activity is None:
+                continue
+
+            if len(result_history) == 0:
+                result_history.append(activity)
+                continue
+
+            previous_activity = result_history[-1]
+            if previous_activity.owner == activity.owner and \
+                    previous_activity.scope == activity.scope and \
+                    previous_activity.target == activity.target:
+                continue
+            result_history.append(activity)
+
+        result_history = [[activity, activity.load_target(dbsession)] for activity in result_history]
+
+        return result_history
 
     @staticmethod
     def by_owner(dbsession, owner, scope_in=None, limit=None):

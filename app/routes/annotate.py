@@ -132,6 +132,30 @@ def increment_task_states(df, task, annotation_tasks):
                 atask.annos_today += 1
 
 
+def generate_task_complete_activity(dbsession, activity_owner, dataset, task):
+    # check if event was already recorded
+    # this might be the case on page reloads or if re-annotation was allowed
+
+    activity_content = ""
+    if task is not None and task.splits is not None and len(task.splits) > 0:
+        activity_content = "%s work %s: %s" % (len(task.splits),
+                                               "packages" if len(task.splits) > 1 else "package",
+                                               ", ".join(list(sorted(task.splits))))
+
+    qry = dbsession.query(db.Activity)
+    qry = qry.filter(db.Activity.owner == activity_owner,
+                     db.Activity.target == dataset.activity_target(),
+                     db.Activity.scope == "task_complete",
+                     db.Activity.content == activity_content)
+    existing = qry.one_or_none()
+
+    if existing is None:
+        db.Activity.create(dbsession,
+                           activity_owner,
+                           dataset.activity_target(),
+                           "task_complete",
+                           activity_content)
+
 @app.route(BASEURI + "/dataset/<dsid>/annotate", methods=["GET", "POST"])
 @login_required
 def annotate(dsid=None, sample_idx=None):
@@ -176,7 +200,7 @@ def annotate(dsid=None, sample_idx=None):
 
         anno_votes = get_votes(dbsession, dataset, user_roles, session_user, sample_id)
 
-        annotation_tasks = db.datasets.annotation_tasks(dbsession, session['user'])
+        annotation_tasks = db.datasets.annotation_tasks(dbsession, session_user)
         increment_task_states(df, task, annotation_tasks)
 
         task.calculate_progress()
@@ -186,6 +210,7 @@ def annotate(dsid=None, sample_idx=None):
             all_done = task.progress >= 100.0
         if all_done:
             flash("Task complete! You have annotated all samples in this task", "success")
+            generate_task_complete_activity(dbsession, session_user, dataset, task)
 
         if dataset.dsmetadata.get("allow_restart_annotation", False) or \
            "sample_idx" in request.args:

@@ -68,7 +68,7 @@
 {%- endmacro %}
         
         <ul id="index_user_history" class="list-group">
-            {% for activity, target in user_history %}
+            {% for activity, target in user_activities %}
             <li class="list-group-item index_activity">
                 <span class="index_activity_timestamp">{{ activity.formatted_create() }}</span>
                 {% if activity.owner %}
@@ -87,9 +87,9 @@
                 {% elif activity.scope == "update_option" %}
                 updated configuration for dataset {{ render_activity_target(activity, target) }}.
                 {% elif activity.scope == "split_add_annotator" %}
-                added annotator for work package in dataset {{ render_activity_target(activity, target) }}: {{ activity.content }}
+                added an annotator for work package in dataset {{ render_activity_target(activity, target) }}: {{ activity.content }}
                 {% elif activity.scope == "split_remove_annotator" %}
-                removed annotator from work package in dataset {{ render_activity_target(activity, target) }}: {{ activity.content }}
+                removed an annotator from work package in dataset {{ render_activity_target(activity, target) }}: {{ activity.content }}
                 {% elif activity.scope == "split_edit" %}
                 managed work packages for dataset {{ render_activity_target(activity, target) }}.
                 {% elif activity.scope == "bulk_action" %}
@@ -98,6 +98,8 @@
                 added a private note to {{ render_activity_target(activity, target) }}.
                 {% elif activity.scope == "comment_public" %}
                 commented on {{ render_activity_target(activity, target) }}: <blockquote class="with_markdown feed_comment">{{ activity.content|trim }}</blockquote>
+                {% elif activity.scope == "task_complete" %}
+                completed annotation task on {{ render_activity_target(activity, target) }} {% if activity.content %}({{ activity.content }}){% endif %}
                 {% else %}
                 activity (owner: {{activity.owner}}, scope: {{ activity.scope }}, target: {{ target }})
                 {% endif %}
