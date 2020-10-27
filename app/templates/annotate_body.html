@@ -48,7 +48,9 @@
             {% endif %}
             <blockquote class="sampletext {% if additional_content %}sampletext_withadditional{% else %}sampletext_noadditional{% endif %}">
                 <strong>sample</strong>
-                <span>{{sample.content}}</span>
+                <span>
+                {{(sample.content|escape|trim).replace('\n', '<br>'|safe)}}
+                </span>
             </blockquote>
         </div>
     </div>
