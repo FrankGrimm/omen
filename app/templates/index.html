@@ -68,7 +68,7 @@
 {%- endmacro %}
         
         <ul id="index_user_history" class="list-group">
-            {% for activity, target in user_history %}
+            {% for activity, target in user_activities %}
             <li class="list-group-item index_activity">
                 <span class="index_activity_timestamp">{{ activity.formatted_create() }}</span>
                 {% if activity.owner %}

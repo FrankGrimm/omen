@@ -31,7 +31,7 @@ def index():
         my_datasets = db.datasets.my_datasets(dbsession, session_user_id)
         access_datasets = db.datasets.accessible_datasets(dbsession, session_user_id)
 
-        user_history = session_user.history(dbsession)
+        user_activities = db.Activity.for_user(dbsession, session_user)
 
         ds_errors = {}
         for cur_dataset in my_datasets.values():
@@ -50,5 +50,5 @@ def index():
                                dbsession=dbsession,
                                session_user=session_user,
                                tasks=annotation_tasks,
-                               user_history=user_history
+                               user_activities=user_activities
                                )

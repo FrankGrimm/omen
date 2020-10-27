@@ -54,7 +54,7 @@ def get_accessible_dataset(dbsession, dsid, check_role=None):
     return cur_dataset
 
 
-def accessible_datasets(dbsession, user_id, include_owned=False):
+def accessible_datasets(dbsession, user_id, include_owned=False, has_role=None):
     res = {}
 
     user_obj = User.by_id(dbsession, user_id)
@@ -62,11 +62,23 @@ def accessible_datasets(dbsession, user_id, include_owned=False):
     if include_owned:
         res = my_datasets(dbsession, user_id)
 
+    if has_role is not None and isinstance(has_role, str):
+        has_role = [has_role]
+
     for ds in dbsession.query(Dataset).all():
         dsacl = ds.get_roles(dbsession, user_obj)
 
         if dsacl is None or len(dsacl) == 0:
             continue
+        if has_role is not None:
+            matches_role = False
+            for target_role in has_role:
+                if target_role in dsacl:
+                    matches_role = True
+                    break
+            if not matches_role:
+                continue
+
         res[str(ds.dataset_id)] = ds
 
     return res
