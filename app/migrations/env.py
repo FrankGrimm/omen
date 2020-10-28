@@ -28,8 +28,8 @@ config.set_main_option(
     str(current_app.extensions['migrate'].db.engine.url).replace('%', '%%'))
 target_metadata = current_app.extensions['migrate'].db.metadata
 
-import app.lib.database as db
-target_metadata = db.Base.metadata
+from app.lib.database_internals import Base
+target_metadata = Base.metadata
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")

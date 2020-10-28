@@ -1,6 +1,7 @@
 import json
 import multiprocessing
 import os
+import sys
 
 import app.web
 
@@ -8,7 +9,7 @@ import app.web
 workers_per_core_str = os.getenv("WORKERS_PER_CORE", "2")
 web_concurrency_str = os.getenv("WEB_CONCURRENCY", None)
 host = os.getenv("HOST", "0.0.0.0")
-port = os.getenv("PORT", "80")
+port = os.getenv("PORT", "5000")
 bind_env = os.getenv("BIND", None)
 use_loglevel = os.getenv("LOG_LEVEL", "info")
 if bind_env:
@@ -32,6 +33,7 @@ bind = use_bind
 timeout = 60 * 5
 keepalive = 120
 errorlog = "-"
+worker_type = "gevent"
 
 # For debugging and testing
 log_data = {
@@ -51,6 +53,16 @@ if os.path.exists(logdir):
     errorlog = os.path.join(logdir, "error_log.log")
 
 print(json.dumps(log_data))
+
+# log debug hooks
+def fprint(*args, **kwargs):
+    print(*args, **kwargs, file=sys.stderr)
+
+def worker_int(worker):
+    fprint("gunicorn::worker_int(%s)" % worker)
+
+def on_reload(server):
+    fprint("gunicorn::server_reload(%s)" % server)
 
 # startup hooks
 on_starting = app.web.on_starting
