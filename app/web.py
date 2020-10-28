@@ -18,6 +18,12 @@ flask_app = app = Flask(__name__, static_url_path=BASEURI + "/static")
 
 app.secret_key = config.get_flask_secret()
 
+flask_app.config.update(
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+)
+
 logging.basicConfig(level=config.get("log_level", "DEBUG").upper(),
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M')
