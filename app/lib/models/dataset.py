@@ -801,7 +801,7 @@ class Dataset(Base):
                 }
 
         if query is not None:
-            sql_where += "\nAND dc.content LIKE %(query_pattern)s"
+            sql_where += "\nAND dc.content ILIKE %(query_pattern)s"
             if not query.startswith("%") and not query.endswith("%"):
                 query = "%" + query + "%"
             params['query_pattern'] = query
