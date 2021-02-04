@@ -969,6 +969,12 @@ class Dataset(Base):
             for col in drop_columns:
                 annotation_columns.remove(col)
 
+        # remove pseudo-columns if present
+        pseudo_columns = set(['unique_anno_count'])
+        pseudo_columns = pseudo_columns.intersection(set(df.columns))
+        if len(pseudo_columns) > 0:
+            df = df.drop(columns=pseudo_columns)
+
         return df, annotation_columns, df_count
 
     def set_taglist(self, newtags):
