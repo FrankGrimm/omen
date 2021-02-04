@@ -41,7 +41,7 @@
                     <label for="cb_option_{{ option }}_0" class="custom-control-label">{{ title }}</label>
                 </div> 
                 {% if help_text %}
-                <span id="cb_option_{{ option }}HelpBlock" class="form-text text-muted">{{ help_text }}</span>
+                <span id="cb_option_{{ option }}HelpBlock" class="form-text text-muted">{{ help_text|nl2br }}</span>
                 {% endif %}
             </div>
         </div> 
@@ -50,7 +50,7 @@
 {%- endmacro %}
 
 {{ render_option("show_votes", title="Show other users choices during annotation", help_text="Activating this option shows votes to users with owner or curator roles during annotation.", title_left="Miscellaneous Options:") }}
-{{ render_option("allow_restart_annotation", title="Restart annotation after dataset annotation or work package is completed.", help_text="Enabling this option will allow users to reannotate the whole dataset (or work package) once they finish their first pass. Otherwise (default), a finished task is disabled.") }}
+{{ render_option("allow_restart_annotation", title="Restart annotation after dataset annotation or work package is completed.", help_text="Enabling this option will allow users to reannotate the whole dataset (or work package) once they finish their first pass.\n Otherwise (default), a finished task is disabled.") }}
 
 <div class="row seprow">
     <form method="post">
