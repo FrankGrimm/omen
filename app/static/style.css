@@ -1502,3 +1502,10 @@ ul.api_token_list {
     margin: 0;
     padding: 0 1em;
 }
+
+.dssplit_change_global_override {
+    color: gray !important;
+    font-style: italic !important;
+}
+
+

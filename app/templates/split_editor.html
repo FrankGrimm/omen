@@ -100,9 +100,8 @@
                 {% if dsroles and 'annotator' in dsroles %}
                     {% set is_dataset_wide_annotator = true %}
                 {% endif %}
-                {% if not is_dataset_wide_annotator %}
                 <li>
-                    <a href="#" class="btn btn-sm btn-outline-success dssplit_change" data-targetsplit="{{ ds_split_name }}" data-splitaction="rem_annotator" data-targetuser="{{userobj.uid}}">
+                    <a href="#" class="btn btn-sm btn-outline-success dssplit_change {% if is_dataset_wide_annotator %}dssplit_change_global_override{% endif %}" data-targetsplit="{{ ds_split_name }}" data-splitaction="rem_annotator" data-targetuser="{{userobj.uid}}" {% if is_dataset_wide_annotator %}title="global annotator"{% endif %}>
 
                         <span class="aclusericon"><i title="{{userobj.uid}}" class="mdi mdi-account" style="margin-top: 0.5em;"></i></span>
                         &nbsp;
@@ -111,7 +110,6 @@
                         <i class="far fa-check-square"></i>
                     </a>
                 </li>
-                {% endif %}
                 {% else %}
                 <li>
                 No annotators added yet.
