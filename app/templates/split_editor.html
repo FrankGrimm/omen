@@ -95,6 +95,12 @@
         <div class="btn-group split_editor_btn_group split_editor_users">
             <ul class="split_acl">
                 {% for userobj in split_annotators %}
+                {% set dsroles = dataset.get_roles(dbsession, userobj, splitroles=False) %}
+                {% set is_dataset_wide_annotator = false %}
+                {% if dsroles and 'annotator' in dsroles %}
+                    {% set is_dataset_wide_annotator = true %}
+                {% endif %}
+                {% if not is_dataset_wide_annotator %}
                 <li>
                     <a href="#" class="btn btn-sm btn-outline-success dssplit_change" data-targetsplit="{{ ds_split_name }}" data-splitaction="rem_annotator" data-targetuser="{{userobj.uid}}">
 
@@ -105,6 +111,7 @@
                         <i class="far fa-check-square"></i>
                     </a>
                 </li>
+                {% endif %}
                 {% else %}
                 <li>
                 No annotators added yet.
@@ -117,7 +124,21 @@
                 </button>
                 <div class="dropdown-menu" aria-labelledby="adduser_to_dataset">
                 {% for userobj in db.User.userlist(dbsession) if not userobj in split_annotators %}
-                    <button class="dropdown-item dssplit_change" data-targetsplit="{{ ds_split_name }}" data-splitaction="add_annotator" data-targetuser="{{userobj.uid}}">{{ userobj.get_name() }}</button>
+
+                    {% set dsroles = dataset.get_roles(dbsession, userobj, splitroles=False) %}
+                    {% set is_dataset_wide_annotator = false %}
+                    {% if dsroles and 'annotator' in dsroles %}
+                        {% set is_dataset_wide_annotator = true %}
+                    {% endif %}
+
+                    <button class="dropdown-item dssplit_change {% if is_dataset_wide_annotator %}disabled{% endif %}" {% if is_dataset_wide_annotator %}disabled="disabled"{% endif %} data-targetsplit="{{ ds_split_name }}" data-splitaction="add_annotator" data-targetuser="{{userobj.uid}}">
+                        {{ userobj.get_name() }}
+                    </button>
+                    {% if is_dataset_wide_annotator %}
+                    <div class="dropdown-item acl_remark_item disabled">
+                    (can annotate full dataset)
+                    </div>
+                    {% endif %}
                 {% else %}
                     <a class="dropdown-item" href="#" disabled>No more users to add.</a>
                 {% endfor %}

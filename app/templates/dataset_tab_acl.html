@@ -10,7 +10,7 @@
                     <span class="">Add User</span> <i class="mdi mdi-account"></i>
                 </button>
                 <div class="dropdown-menu" aria-labelledby="adduser_to_dataset">
-                {% for userobj in db.User.userlist(dbsession) if dataset.get_roles(dbsession, userobj)|length == 0 %}
+                {% for userobj in db.User.userlist(dbsession) if dataset.get_roles(dbsession, userobj, False)|length == 0 %}
                     <button class="dropdown-item adduser_btn" data-userid="{{userobj.uid}}">{{ userobj.get_name() }}</button>
                 {% else %}
                     <a class="dropdown-item" href="#" disabled>All users already added.</a>

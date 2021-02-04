@@ -1486,3 +1486,19 @@ ul.api_token_list {
 .api_token_list_row {
     margin-bottom: 0.5em;
 }
+
+.dssplit_change.disabled {
+    margin-top: 0;
+    padding-top: 0;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.acl_remark_item {
+    color: red;
+    display: block;
+    font-style: italic;
+    font-size: small;
+    margin: 0;
+    padding: 0 1em;
+}
