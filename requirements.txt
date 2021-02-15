@@ -13,5 +13,5 @@ pylint==2.6.0
 pylint-flask-sqlalchemy==0.2.0
 iso639==0.1.4
 PyJWT==2.0.1
-cryptography==3.3.1
+cryptography==3.4.5
 flask-smorest==0.27.0
