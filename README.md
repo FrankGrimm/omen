@@ -2,7 +2,7 @@
 [![Docker](https://github.com/FrankGrimm/omen/workflows/Docker/badge.svg)](https://github.com/FrankGrimm/omen/packages)
 
 
-# OMEN - A collaborative, annotation platform
+# OMEN - A collaborative annotation platform
 
 ![](docs/img/omen-logo.small.png)
 
