@@ -43,7 +43,7 @@ function hotkeyTitles() {
         $elem.data("content", `hotkey: <span class="kbd">${hotkey}</span>`);
 
         $elem.popover({
-            trigger: "hover focus",
+            trigger: "hover",
             placement: "left",
             html: true,
             title: "",

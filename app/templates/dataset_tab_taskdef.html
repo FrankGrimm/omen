@@ -57,30 +57,25 @@
         <input type="hidden" name="action" value="change_ds_option">
 
         <div class="form-group row">
-            <label for="additional_field_display" class="col-12 col-md-3 col-form-label"> &nbsp; </label> 
+            <label for="additional_field_display" class="col-12 col-md-3 col-form-label"> Additional fields </label> 
             <div class="col-12 col-md-9">
+                {% set add_columns = dataset.get_option_list("additional_column", []) %}
+                <div id="dataset_admin_taskdef_add_columns">
+                </div>
 
                 <select class="taskdef_select" id='additional_field_display' name='additional_field_display' autocomplete="off">
+                    <option value="-" selected="true">add column</option>
 
-                    {% if not dataset.dsmetadata.additional_column or not dataset.dsmetadata.additional_column in previewdf.columns %}
-                    <option value="-" selected="true">none</option>
-                    {% else %}
-                    <option value="-">none</option>
-                    {% endif %}
                     {% for colname in previewdf.columns %}
-                    {% if colname != dataset.dsmetadata.idcolumn and colname != dataset.dsmetadata.textcol and colname != 'split' %}
-                        {% if dataset.dsmetadata.additional_column == colname %}
-                        <option selected='true' value="{{ colname }}">{{ colname }}</option>
-                        {% else %}
-                        <option value="{{ colname }}">{{ colname }}</option>
-                        {% endif %}
+                        {% if colname != dataset.dsmetadata.idcolumn and colname != dataset.dsmetadata.textcol and colname != 'split' and colname not in add_columns %}
+                            <option value="{{ colname }}">{{ colname }}</option>
                         {% endif %}
                     {% endfor %}
                 </select>
                 </select>
 
                 <span id="additional_field_displayHelpBlock" class="form-text text-muted">
-                    Select an additional field in the dataset that is displayed alongside the text during annotation.
+                    Select additional fields in the dataset that are displayed alongside the text during annotation.
                 </span>
 
             </div>

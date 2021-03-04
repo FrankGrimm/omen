@@ -41,10 +41,14 @@
 
         <div class="sample_content_view">
             {% if additional_content %}
-            <blockquote class="sample_additional_content">
-                <strong>{{additional_content_field}}</strong>
-                <span>{{ additional_content }}</span>
-            </blockquote>
+            {% for field_name, field_content in additional_content.items() %}
+                {% if field_name and field_content %}
+                <blockquote class="sample_additional_content">
+                    <strong>{{field_name|trim}}</strong>
+                    <span>{{ field_content }}</span>
+                </blockquote>
+                {% endif %}
+            {% endfor %}
             {% endif %}
             <blockquote class="sampletext {% if additional_content %}sampletext_withadditional{% else %}sampletext_noadditional{% endif %}">
                 <strong>sample</strong>

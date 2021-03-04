@@ -26,7 +26,6 @@
     <div class="card">
         <div class="card-header">
             <ul class="nav nav-tabs card-header-tabs" id="ds-tabslist" role="tablist">
-
                 {{ macros.render_card_nav("dsgeneral", "General", true, icon="tune") }}
                 {{ macros.render_card_nav("taskdefinition", "Task Definition", false, not dataset and not dataset.has_content(), icon="tag-multiple") }}
                 {{ macros.render_card_nav("workpackages", "Work Packages", false, not dataset and not dataset.has_content(), icon="package-variant") }}
@@ -79,6 +78,11 @@
 {% block addscript %}
 <script>
 const ACTIVE_DATASET_ID = {{ dataset.dataset_id }};
+{% if dataset.get_option_list("additional_column", []) %}
+const ACTIVE_DATASET_ADD_COLUMNS = {{ dataset.get_option_list("additional_column", [])|safe }};
+{% else %}
+const ACTIVE_DATASET_ADD_COLUMNS = [];
+{% endif %}
 const API_TARGET_FIELDINFO = decodeURIComponent("{{ url_for("dataset_field_overview", dsid=dataset.dataset_id, fieldid="{field}") }}");
 </script>
 <script src="{{ url_for("static", filename="ds_edit.js") }}"></script>

@@ -180,15 +180,22 @@ def annotate(dsid=None, sample_idx=None):
         sample_id = sample.sample if sample is not None else None
 
         additional_content = None
-        additional_content_field = dataset.dsmetadata.get("additional_column", None)
-        if additional_content_field is not None and not additional_content_field.strip() == "" and \
-                sample is not None and sample.data is not None:
+        additional_content_fields = dataset.dsmetadata.get("additional_column", None)
+        if additional_content_fields is not None:
+            if isinstance(additional_content_fields, str):
+                if additional_content_fields.strip() != "":
+                    additional_content_fields = [additional_content_fields]
+                else:
+                    additional_content_fields = []
 
-            if additional_content_field in sample.data:
-                additional_content = sample.data[additional_content_field]
+            additional_content = {}
+            for additional_content_field in additional_content_fields:
+                additional_content[additional_content_field] = None
 
-            if additional_content is not None:
-                additional_content = str(additional_content)
+                if sample is None or sample.data is None:
+                    continue
+                if additional_content_field in sample.data:
+                    additional_content[additional_content_field] = str(sample.data[additional_content_field])
 
         sample_prev, _ = dataset.get_prev_sample(dbsession, sample_idx, session_user, task.splits)
         sample_next, _ = dataset.get_next_sample(dbsession, sample_idx, session_user, task.splits)
@@ -228,7 +235,6 @@ def annotate(dsid=None, sample_idx=None):
                                sample_idx=sample_idx,
                                sample=sample,
                                additional_content=additional_content,
-                               additional_content_field=additional_content_field,
                                sample_prev=sample_prev,
                                sample_next=sample_next,
                                curanno=curanno,

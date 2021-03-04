@@ -461,6 +461,42 @@ function initOption(cbElem) {
     }
 }
 
+function updateAdditionalColumns() {
+    const add_col_container = "dataset_admin_taskdef_add_columns";
+    const container_dom = document.getElementById(add_col_container);
+    console.log("update", ACTIVE_DATASET_ADD_COLUMNS);
+    
+    container_dom.innerHTML = '';
+
+    for (let idx = 0; idx < ACTIVE_DATASET_ADD_COLUMNS.length; idx++) {
+        const idx_text = ACTIVE_DATASET_ADD_COLUMNS[idx];
+        const new_btn = document.createElement("button");
+        new_btn.innerHTML = idx_text;
+        new_btn.classList.add("btn");
+        new_btn.classList.add("btn-sm");
+        new_btn.classList.add("btn-info");
+        new_btn.classList.add("add_column_remove_button");
+
+        new_btn.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            const remove_val = this.textContent;
+            if (!remove_val) { return; }
+
+            const remove_index = ACTIVE_DATASET_ADD_COLUMNS.indexOf(remove_val);
+            if (remove_index > -1) {
+                ACTIVE_DATASET_ADD_COLUMNS.splice(remove_index, 1);
+            }
+
+            sendOptionValue(container_dom, "additional_column", ACTIVE_DATASET_ADD_COLUMNS);
+            updateAdditionalColumns();
+            return false;
+        });
+
+        container_dom.appendChild(new_btn);
+    }
+}
+
 function initAdditionalFieldOption() {
     const fieldSelect = document.getElementById("additional_field_display");
     if (!fieldSelect) { return; }
@@ -469,8 +505,23 @@ function initAdditionalFieldOption() {
 
     function additionalFieldChange() {
         const new_field = (fieldSelect.value && fieldSelect.value !== "-") ? fieldSelect.value : null;
-        console.log("changing additional display field to", new_field);
-        sendOptionValue(fieldSelect, "additional_column", new_field);
+        if (!new_field) { return; }
+
+        console.log("[additional column+]", new_field);
+        ACTIVE_DATASET_ADD_COLUMNS.push(new_field);
+        console.log("[additional columns]", ACTIVE_DATASET_ADD_COLUMNS);
+        sendOptionValue(fieldSelect, "additional_column", ACTIVE_DATASET_ADD_COLUMNS);
+		
+        console.log("[option remove]", fieldSelect.selectedIndex);
+        if (fieldSelect.selectedIndex) {
+            fieldSelect.remove(fieldSelect.selectedIndex);
+        }
+        console.log("[option remove:b]", );
+        $(fieldSelect).find("option:selected").remove();
+        $(fieldSelect).val('-');
+        $(fieldSelect).selectpicker('refresh');
+
+        updateAdditionalColumns();
     }
 
     fieldSelect.addEventListener("change", additionalFieldChange);
@@ -480,6 +531,7 @@ function initOptions() {
     document.querySelectorAll(".cb_inspect_option").forEach(initOption);
 
     initAdditionalFieldOption();
+    updateAdditionalColumns();
 }
 
 function initLabelAttributes() {

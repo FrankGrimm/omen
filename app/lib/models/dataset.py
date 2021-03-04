@@ -390,6 +390,15 @@ class Dataset(Base):
     def get_option(self, key, default_value=False):
         return bool(self.dsmetadata.get(key, default_value))
 
+    def get_option_list(self, key, default_value=[]):
+        optval = self.dsmetadata.get(key, default_value)
+        if optval is None:
+            return default_value
+        if isinstance(optval, str):
+            optval = [optval]
+
+        return optval
+
     def empty(self):
         return not self.has_content()
 

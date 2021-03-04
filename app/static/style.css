@@ -1188,13 +1188,17 @@ div.alert-timer {
     border-radius: 5px;
 }
 
-.sample_additional_content {
-    position: relative;
-    font-size: 1.5em;
+.sample_additional_content:first-of-type {
     border-top-left-radius: 5px;
     border-top-right-radius: 5px;
     border-bottom-right-radius: 0;
     border-bottom-left-radius: 0;
+}
+
+.sample_additional_content {
+    position: relative;
+    font-size: 1.5em;
+    border-radius: 0;
     border: 1px solid var(--layout_minimal_border);
     background: var(--layout_bg_minimal_contrasted);
     padding: 1.2em 1em 0.5em 1em;
@@ -1521,3 +1525,13 @@ span.kbd {
     cursor: pointer;
 }
 
+#dataset_admin_taskdef_add_columns {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: start;
+}
+
+button.add_column_remove_button {
+    padding: 0.5rem;
+    background-color: grey;
+}
