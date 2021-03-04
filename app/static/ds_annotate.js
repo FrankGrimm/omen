@@ -7,12 +7,59 @@ function markButton(btn) {
     $(btn).addClass("btn-dark tag_current_choice");
 }
 
+function hotkeyTitles() {
+    const hotkeyMap = {
+        "anno_nav_next": "&rarr;",
+        "anno_nav_prev": "&larr;",
+        "anno_nav_random": "R",
+    }
+
+    const hotkeyEntities = {}
+    
+    for (const [dom_target, hotkey_symbol] of Object.entries(hotkeyMap)) {
+        const dom_elem = document.getElementById(dom_target);
+        if (!dom_elem) { continue; }
+        hotkeyEntities[hotkey_symbol] = dom_elem;
+    }
+
+    // document.querySelectorAll(".sample_content_tagbtns a.btn").forEach();
+    $(".sample_content_tagbtns a.btn").each(function() {
+        let $this = $(this);
+        if ($this.data("tagidx") !== undefined) {
+            hotkeyEntities['' + $this.data("tagidx")] = this;
+        }
+    });
+
+    console.log("[hotkeys]", hotkeyMap);
+    console.log("[hotkeys-entities]", hotkeyEntities);
+
+    for (const [hotkey, dom_elem] of Object.entries(hotkeyEntities)) {
+        if (!dom_elem) { continue; }
+
+        const $elem = $(dom_elem);
+        if ($elem.data("original-title")) { continue; }
+
+        $elem.attr("title", `hotkey: {hotkey}`);
+        $elem.data("content", `hotkey: <span class="kbd">${hotkey}</span>`);
+
+        $elem.popover({
+            trigger: "hover focus",
+            placement: "left",
+            html: true,
+            title: "",
+            template: '<div class="popover" role="tooltip"><div class="arrow"></div><div class="popover-body"></div></div>'
+        });
+        $elem.popover("hide");
+    }
+
+}
+
 function initAnnoHotkeys() {
     document.addEventListener("keydown", event => {
         if (event.isComposing || event.keyCode === 229) {
             return;
         }
-        console.log("kbd", event);
+        console.log("[kbd event]", event);
         let $tgtid = null;
 
         if (event.key === "ArrowRight") {
@@ -90,4 +137,5 @@ function initTagButtons() {
 document.addEventListener("DOMContentLoaded",function() {
     initAnnoHotkeys();
     initTagButtons();
+    hotkeyTitles();
 });

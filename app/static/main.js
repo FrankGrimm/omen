@@ -38,6 +38,7 @@ function initPopovers() {
         if (!popoverText) { return; }
 
         const $elem = $(elem);
+        if ($elem.data("original-title")) { return; }
         $elem.popover({
             trigger: "hover focus",
             placement: "auto",
