@@ -140,7 +140,7 @@ def api_redirect_to_current():
 @api.route("/")
 class APIRoot(MethodView):
 
-    @api.response(schemas.APIRootResponse)
+    @api.response(200, schemas.APIRootResponse)
     def get(self):
         with db.session_scope() as dbsession:
             authinfo, _ = api_get_auth_info(dbsession)
@@ -157,7 +157,7 @@ class APIRoot(MethodView):
 @api.route("/tasks")
 class APITasks(MethodView):
 
-    @api.response(schemas.AnnotationTask(many=True))
+    @api.response(200, schemas.AnnotationTask(many=True))
     def get(self):
         with db.session_scope() as dbsession:
             _, session_user = api_get_auth_info(dbsession)
@@ -168,7 +168,7 @@ class APITasks(MethodView):
 @api.route("/datasets")
 class APIDatasets(MethodView):
 
-    @api.response(schemas.DatasetSchema(many=True))
+    @api.response(200, schemas.DatasetSchema(many=True))
     def get(self):
         with db.session_scope() as dbsession:
             _, session_user = api_get_auth_info(dbsession)
