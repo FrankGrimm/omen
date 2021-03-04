@@ -8,6 +8,9 @@ function markButton(btn) {
 }
 
 function hotkeyTitles() {
+    // make sure all other and previous popovers are hidden
+    $("[data-toggle='popover']").popover('hide');
+
     const hotkeyMap = {
         "anno_nav_next": "&rarr;",
         "anno_nav_prev": "&larr;",
@@ -41,6 +44,7 @@ function hotkeyTitles() {
 
         $elem.attr("title", `hotkey: {hotkey}`);
         $elem.data("content", `hotkey: <span class="kbd">${hotkey}</span>`);
+        $elem.data("toggle", "popover");
 
         $elem.popover({
             trigger: "hover",
