@@ -11,14 +11,13 @@ import logging
 
 from datetime import datetime, timedelta
 
-import app.lib.database as db
-
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 
 import jwt
 
+import app.lib.database as db
 import app.lib.config as config
 
 
@@ -59,7 +58,7 @@ def jwt_encode(payload, private_key):
 def jwt_decode(token, public_key):
     if public_key is None or public_key.strip() == "":
         raise InvalidTokenException("public key missing or malformed")
-    return jwt.decode(token, public_key, algorithm="RS256", verify=True)
+    return jwt.decode(token, public_key, algorithms=["RS256"], verify=True)
 
 
 def system_private_key(dbsession):
@@ -74,7 +73,7 @@ def jwt_decode_unsafe(token):
     if token is None:
         return None
     token = token.strip()
-    return jwt.decode(token, algorithm="RS256", verify=False)
+    return jwt.decode(token, algorithms=["RS256"], verify=False)
 
 
 def system_public_key(dbsession):
