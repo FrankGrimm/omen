@@ -86,6 +86,6 @@ def get_flask_secret():
     # auto-generate flask_secret if not available
     generated_secret = b64encode(os.urandom(32)).decode("utf-8")
     cfg = load_config()
-    cfg['flask_secret'] = generated_secret
+    cfg["flask_secret"] = generated_secret
     store_config(cfg)
     return generated_secret

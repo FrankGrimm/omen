@@ -24,9 +24,12 @@ import iso639
 import app.lib.database as db
 import app.lib.config as config
 
+
 class LearningException(Exception):
     """Returned if any OMEN specific error occurred related to the learning component."""
+
     pass
+
 
 class LearningBenchmark:
     def __init__(self, name):
@@ -52,7 +55,10 @@ class LearningBenchmark:
             self.end()
         return f"{self.duration():0.4f}s ({self.name})"
 
+
 _cached_model_compatibility = None
+
+
 def model_compatibility():
     """caching for `spacy_model_compatibility`, since that makes a https request each time"""
     global _cached_model_compatibility
@@ -63,11 +69,13 @@ def model_compatibility():
 
     return _cached_model_compatibility
 
+
 def normalize_dist(d):
     valsum = sum(d.values())
     for k in d.keys():
         d[k] = np.round(d[k] / valsum, 3)
     return d
+
 
 def get_split_data(dbsession, dataset, userobj):
     annocount = dataset.annocount(dbsession, userobj)
@@ -75,21 +83,32 @@ def get_split_data(dbsession, dataset, userobj):
     anno_max_count = config.get_int("learning_max_annos", 1000)
     train_test_ratio = config.get("learning_train_test_ratio", 0.50)
 
-    full_data, _, full_data_total_count = dataset.annotations(dbsession, page=1, page_size=anno_max_count, foruser=userobj,
-                                                            user_column="label", only_user=True, with_content=True,
-                                                            restrict_view="tagged",
-                                                            order_by="random()")
+    full_data, _, full_data_total_count = dataset.annotations(
+        dbsession,
+        page=1,
+        page_size=anno_max_count,
+        foruser=userobj,
+        user_column="label",
+        only_user=True,
+        with_content=True,
+        restrict_view="tagged",
+        order_by="random()",
+    )
     if full_data_total_count:
-        logging.debug("not using %s samples, learning_max_annos (%s) was exceeded" %
-                      (full_data_total_count - full_data.shape[0], anno_max_count))
+        logging.debug(
+            "not using %s samples, learning_max_annos (%s) was exceeded"
+            % (full_data_total_count - full_data.shape[0], anno_max_count)
+        )
     col_renames = {}
     col_renames[dataset.get_text_column()] = "text"
     full_data = full_data.rename(columns=col_renames)
 
     train_samples = int(full_data.shape[0] * train_test_ratio)
     test_samples = full_data.shape[0] - train_samples
-    logging.debug("got %s samples (requested min: %s, max: %s), using %s as train, %s as test" %
-                  (full_data.shape[0], anno_min_count, anno_max_count, train_samples, test_samples))
+    logging.debug(
+        "got %s samples (requested min: %s, max: %s), using %s as train, %s as test"
+        % (full_data.shape[0], anno_min_count, anno_max_count, train_samples, test_samples)
+    )
 
     train_split, test_split = [], []
     dist_train_split = defaultdict(int)
@@ -106,10 +125,13 @@ def get_split_data(dbsession, dataset, userobj):
         target.append(sample)
         target_dist[row["label"]] += 1
 
-    logging.debug("created train (%s) and test (%s) splits for user %s on dataset %s" %
-                  (len(train_split), len(test_split), userobj, dataset))
+    logging.debug(
+        "created train (%s) and test (%s) splits for user %s on dataset %s"
+        % (len(train_split), len(test_split), userobj, dataset)
+    )
     dist_train_split, dist_test_split = normalize_dist(dist_train_split), normalize_dist(dist_test_split)
     return train_split, dist_train_split, test_split, dist_test_split
+
 
 def training(dataset_id, user_id):
     # TODO make sure to exclude data that was already used in a previous training run
@@ -144,14 +166,11 @@ def training(dataset_id, user_id):
 
                 for batch in batches:
                     texts, annotations = zip(*batch)
-                    nlp.update(
-                        texts,
-                        annotations,
-                        drop=0.2,
-                        losses=losses
-                    )
+                    nlp.update(texts, annotations, drop=0.2, losses=losses)
                 loss = losses["textcat"] if "textcat" in losses else "unknown"
-                logging.info("%s training, iteration: %s / %s loss: %s" % (self, n_iter, n_total_iter, np.round(loss, 4)))
+                logging.info(
+                    "%s training, iteration: %s / %s loss: %s" % (self, n_iter, n_total_iter, np.round(loss, 4))
+                )
                 logging.info("training iteration took: %s" % train_timer.end().duration())
 
                 eval_timer = LearningBenchmark("evaluation")
@@ -161,28 +180,31 @@ def training(dataset_id, user_id):
                     gold = [list(goldlabels["cats"].keys())[0] for _, goldlabels in test_data]
                     predictions = [nlp(text).cats for text, _ in test_data]
                     predictions = list(map(lambda cats: max(cats, key=cats.get), predictions))
-                    eval_accuracy = sum([1 for idx in range(len(predictions)) if gold[idx] == predictions[idx]]) / len(predictions)
+                    eval_accuracy = sum([1 for idx in range(len(predictions)) if gold[idx] == predictions[idx]]) / len(
+                        predictions
+                    )
 
-                    logging.info("%s evaluation, iteration: %s / %s loss: %s accuracy: %s" % (self, n_iter, n_total_iter, np.round(loss, 4), np.round(eval_accuracy, 4)))
+                    logging.info(
+                        "%s evaluation, iteration: %s / %s loss: %s accuracy: %s"
+                        % (self, n_iter, n_total_iter, np.round(loss, 4), np.round(eval_accuracy, 4))
+                    )
                 logging.info("evaluation took: %s" % eval_timer.end().duration())
 
                 training_progress_item = {
-                        "iteration": n_iter,
-                        "iterations": n_total_iter,
-                        "train_size": len(train_data),
-                        "test_size": len(test_data),
-                        "distribution": {"train": dist_train, "test": dist_test},
-                        "loss": np.round(loss, 6),
-                        "accuracy": eval_accuracy,
-                        "performance": {"train": train_timer.duration(), "eval": eval_timer.duration()}
-                        }
+                    "iteration": n_iter,
+                    "iterations": n_total_iter,
+                    "train_size": len(train_data),
+                    "test_size": len(test_data),
+                    "distribution": {"train": dist_train, "test": dist_test},
+                    "loss": np.round(loss, 6),
+                    "accuracy": eval_accuracy,
+                    "performance": {"train": train_timer.duration(), "eval": eval_timer.duration()},
+                }
                 training_progress.append(training_progress_item)
-
 
         logging.info("full training took: %s" % training_timer.end().duration())
         self._status = "trained"
     return training_progress
-
 
 
 class LearningModel:
@@ -215,7 +237,12 @@ class LearningModel:
         user_annos = dataset.annocount(dbsession, userobj)
         min_anno_count = config.get_int("training_min_annotations", 5)
         if user_annos is None or user_annos < min_anno_count:
-            return "not enough annotations for user %s on dataset %s yet: %s < %s" % (userobj, dataset, user_annos, min_anno_count)
+            return "not enough annotations for user %s on dataset %s yet: %s < %s" % (
+                userobj,
+                dataset,
+                user_annos,
+                min_anno_count,
+            )
 
         # TODO check when this dataset/user combination was last trained
         # TODO check how many annotations were present when
@@ -247,6 +274,7 @@ class LearningModel:
 
     def __repr__(self):
         return "<LearningModel %s>" % self._filename
+
 
 class LearningModels:
     """manages creationg and configuratio9n of learning models"""
@@ -295,14 +323,14 @@ class LearningModels:
                 pass
 
             current_model = {
-                    "model_id": model_name,
-                    "available": model_supported,
-                    "installed": model_installed,
-                    "version": spacy_version,
-                    "locale_iso3166": model_locale,
-                    "locale": model_locale_long,
-                    "size": model_sizes.get(model_name.split("_")[-1], "unknown")
-                    }
+                "model_id": model_name,
+                "available": model_supported,
+                "installed": model_installed,
+                "version": spacy_version,
+                "locale_iso3166": model_locale,
+                "locale": model_locale_long,
+                "size": model_sizes.get(model_name.split("_")[-1], "unknown"),
+            }
 
             modelinfo.append(current_model)
 
@@ -314,50 +342,51 @@ class LearningModels:
         returns available model architectures and their parameters (with possible values)
         """
         return {
-                "ensemble": {
-                    "pipe": "textcat",
-                    "description": "Stacked ensemble of bag-of-words and a neural network model.",
-                    "parameters": {
-                        "textcat": {
-                            "ngram_size": {
-                                "description": "Which n-grams to compute.",
-                                "values": [2, 3, 4],
-                                "default_value": 2
-                            },
-                            "attr": {
-                                "description": "Which preprocessing to apply.",
-                                "values": [None, "lower"],
-                                "default_value": "lower"
-                                }
-                            }
-                        }
-                },
-                "simple_cnn": {
-                    "pipe": "textcat",
-                    "description": "Simple CNN model with mean pooled tokens.",
-                    "parameters": {}
-                },
-                "bow": {
-                    "pipe": "textcat",
-                    "description": "Fast n-gram based bag-of-words model.",
-                    "parameters": {
-                        "textcat": {
-                            "ngram_size": {
-                                "target": "textcat",
-                                "description": "Which n-grams to compute.",
-                                "values": [2, 3, 4],
-                                "default_value": 2
-                            },
-                            "attr": {
-                                "target": "textcat",
-                                "description": "Which preprocessing to apply.",
-                                "values": [None, "lower"],
-                                "default_value": "lower"
-                                }
-                            }
-                        }
+            "ensemble": {
+                "pipe": "textcat",
+                "description": "Stacked ensemble of bag-of-words and a neural network model.",
+                "parameters": {
+                    "textcat": {
+                        "ngram_size": {
+                            "description": "Which n-grams to compute.",
+                            "values": [2, 3, 4],
+                            "default_value": 2,
+                        },
+                        "attr": {
+                            "description": "Which preprocessing to apply.",
+                            "values": [None, "lower"],
+                            "default_value": "lower",
+                        },
                     }
-                }
+                },
+            },
+            "simple_cnn": {
+                "pipe": "textcat",
+                "description": "Simple CNN model with mean pooled tokens.",
+                "parameters": {},
+            },
+            "bow": {
+                "pipe": "textcat",
+                "description": "Fast n-gram based bag-of-words model.",
+                "parameters": {
+                    "textcat": {
+                        "ngram_size": {
+                            "target": "textcat",
+                            "description": "Which n-grams to compute.",
+                            "values": [2, 3, 4],
+                            "default_value": 2,
+                        },
+                        "attr": {
+                            "target": "textcat",
+                            "description": "Which preprocessing to apply.",
+                            "values": [None, "lower"],
+                            "default_value": "lower",
+                        },
+                    }
+                },
+            },
+        }
+
 
 def init_model(target_filename, base_model, labels, architecture="ensemble", parameters={}, config={}, create_new=True):
     """
@@ -370,8 +399,10 @@ def init_model(target_filename, base_model, labels, architecture="ensemble", par
 
     architecture_config = LearningModels.model_architectures().get(architecture, None)
     if architecture_config is None:
-        raise LearningException("Specified architecture (%s) was not found, possible values: %s." %
-                                (architecture, ", ".join(LearningModels.model_architectures().keys())))
+        raise LearningException(
+            "Specified architecture (%s) was not found, possible values: %s."
+            % (architecture, ", ".join(LearningModels.model_architectures().keys()))
+        )
 
     if base_model is None:
         raise LearningException("base_model cannot be null")
@@ -382,8 +413,10 @@ def init_model(target_filename, base_model, labels, architecture="ensemble", par
 
     nlp = None
     if create_new or not os.path.exists(target_filename):
-        logging.debug("model target file %s does not exist yet or create_new is true. creating base model %s instead" %
-                      (target_filename, base_model))
+        logging.debug(
+            "model target file %s does not exist yet or create_new is true. creating base model %s instead"
+            % (target_filename, base_model)
+        )
         nlp = spacy.load(base_model)
     else:
         logging.debug("model target file %s does exist. loading." % (target_filename))
@@ -410,9 +443,7 @@ def init_model(target_filename, base_model, labels, architecture="ensemble", par
     parameters["exclusive_classes"] = False
     pipe = None
     if create_new or not nlp.has_pipe("textcat"):
-        pipe = nlp.create_pipe(
-                "textcat", config=parameters
-                )
+        pipe = nlp.create_pipe("textcat", config=parameters)
         nlp.add_pipe(pipe, last=True)
     else:
         pipe = nlp.get_pipe("textcat")
@@ -423,22 +454,21 @@ def init_model(target_filename, base_model, labels, architecture="ensemble", par
     loaded_model = LearningModel(target_filename, nlp, pipe, parameters, config, labels)
     return loaded_model
 
+
 def status():
     """gathers information on active and finished training runs"""
 
     status_info = {}
 
-
-
     return status_info
+
 
 def debug():
     with db.session_scope() as dbsession:
         debugdata = {
             "models": LearningModels.spacy_models(),
             "architectures": LearningModels.model_architectures(),
-            }
-
+        }
 
         debugdata["test"] = {}
         dataset = db.Dataset.by_id(dbsession, 1)
@@ -452,18 +482,20 @@ def debug():
         model_params = dataset.dsmetadata.get("learning_parameters", {})
 
         training_config = {
-                "iterations": config.get("learning_iterations", 5),
-                "dropout": config.get("learning_dropout", 0.5)
-                }
+            "iterations": config.get("learning_iterations", 5),
+            "dropout": config.get("learning_dropout", 0.5),
+        }
 
         debugdata["test"]["base_model"] = base_model
-        catmodel = init_model("./testmodel.model",
-                              base_model,
-                              labels=dataset.get_taglist(),
-                              architecture=model_architecture,
-                              parameters=model_params,
-                              config=training_config,
-                              create_new=True)
+        catmodel = init_model(
+            "./testmodel.model",
+            base_model,
+            labels=dataset.get_taglist(),
+            architecture=model_architecture,
+            parameters=model_params,
+            config=training_config,
+            create_new=True,
+        )
         debugdata["test"]["res"] = str(catmodel)
         debugdata["test"]["status1"] = catmodel.status()
 

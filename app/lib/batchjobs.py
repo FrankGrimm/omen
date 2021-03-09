@@ -22,8 +22,10 @@ batch_pool = None
 #     jobstate = Column(String, nullable=False, default="queued")
 #     jobdata = Column(JSON, nullable=False)
 
+
 def accepts_jobs():
     return batch_pool is not None
+
 
 def tick():
     """
@@ -37,6 +39,7 @@ def tick():
         for queued_job in db.queued_jobs():
             logging.debug(f"QUEUED JOB: {queued_job}")
 
+
 def startup():
     """
     creates the pool of worker processes
@@ -48,6 +51,7 @@ def startup():
     logging.debug("initializing pool of max %s batch workers" % max_workers)
     batch_pool = futures.ProcessPoolExecutor(max_workers=max_workers)
 
+
 def teardown(reason=None):
     if batch_pool is None:
         return
@@ -55,8 +59,10 @@ def teardown(reason=None):
     batch_pool.shutdown(wait=True)
     logging.debug("batch processing pool shut down")
 
+
 class BatchJobException(Exception):
     pass
+
 
 class BatchJob:
     def __init__(self, fn_name, metadata, *args, **kwargs):
@@ -124,6 +130,7 @@ def status():
 
     return statusinfo
 
+
 def register(fn_name, fn):
     if batch_pool is None:
         return
@@ -136,15 +143,20 @@ def register(fn_name, fn):
     _COUNTERS["handlers_registered"] += 1
     _HANDLERS[fn_name] = fn
 
+
 def test_hello_batchjob(name_param):
     import time
+
     time.sleep(10)
     return f"hello {name_param}!"
 
+
 register("hello_batchjob", test_hello_batchjob)
+
 
 def schedule_test():
     testjob = BatchJob("hello_batchjob", {"meta": "data"}, "foobar")
+
     def tcb(job):
         logging.debug("CALLBACK " * 7 + " " + str(job.future.result(0)))
         # logging.debug(JOBRES: %s %s" % (job, job.future.result(0)))

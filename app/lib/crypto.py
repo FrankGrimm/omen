@@ -39,7 +39,7 @@ def validate(token, public_key):
         raise InvalidTokenException("failed to decode created attribute: %s" % ve)
 
     max_age_hours = config.get_int("invite_max_age", 48)
-    token_age = (datetime.utcnow() - token_timestamp)
+    token_age = datetime.utcnow() - token_timestamp
     decoded_data["token_age"] = str(token_age)
 
     cur_dt = datetime.utcnow()
@@ -88,18 +88,11 @@ def initialize():
 
 
 def generate_keypair():
-    key = rsa.generate_private_key(
-            backend=default_backend(),
-            public_exponent=65537,
-            key_size=2048)
+    key = rsa.generate_private_key(backend=default_backend(), public_exponent=65537, key_size=2048)
 
     private_key = key.private_bytes(
-            serialization.Encoding.PEM,
-            serialization.PrivateFormat.PKCS8,
-            serialization.NoEncryption())
-    public_key = key.public_key().public_bytes(
-            serialization.Encoding.OpenSSH,
-            serialization.PublicFormat.OpenSSH
-            )
+        serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()
+    )
+    public_key = key.public_key().public_bytes(serialization.Encoding.OpenSSH, serialization.PublicFormat.OpenSSH)
 
     return private_key.decode("utf-8"), public_key.decode("utf-8")

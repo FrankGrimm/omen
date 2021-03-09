@@ -25,11 +25,7 @@ class DatasetContent(Base):
     data = Column(JSON)
 
     def __repr__(self):
-        return "<DatasetContent %s/%s (%s)>" % (
-                self.dataset.get_name(),
-                self.sample_index,
-                self.sample
-                )
+        return "<DatasetContent %s/%s (%s)>" % (self.dataset.get_name(), self.sample_index, self.sample)
 
     def activity_target(self):
         return "SAMPLE:%s" % self.sample_index

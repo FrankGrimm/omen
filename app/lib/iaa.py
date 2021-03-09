@@ -28,9 +28,7 @@ def get_kappa_interpretation(kappa):
 def fleiss_kappa(df, tags, exclude_insufficient=False, filter_target=None):
 
     if df.shape[0] == 0:
-        return {"type": "fleiss",
-                "kappa": None,
-                "interpretation": "Insufficient data"}
+        return {"type": "fleiss", "kappa": None, "interpretation": "Insufficient data"}
 
     # pivot by given tag
     df = df.pivot(index="sample_index", columns="anno_tag")
@@ -62,27 +60,22 @@ def fleiss_kappa(df, tags, exclude_insufficient=False, filter_target=None):
         df["row_total"] = df[tag_columns].sum(axis=1)
         df = df.loc[df.row_total > 1]
     else:
-        df[tag_columns] = df[tag_columns].apply(
-                lambda x: x/(x.sum()/n),
-                axis=1)
+        df[tag_columns] = df[tag_columns].apply(lambda x: x / (x.sum() / n), axis=1)
 
     if df.shape[0] == 0:
-        return {"type": "fleiss", "kappa": None,
-                "interpretation": "Insufficient data"}
+        return {"type": "fleiss", "kappa": None, "interpretation": "Insufficient data"}
 
     df["row_total"] = df[tag_columns].sum(axis=1)
 
     df["p_i"] = np.NAN
     df.loc[df["row_total"] <= 1, "p_i"] = 1.0
-    df.loc[df["row_total"] > 1, "p_i"] = \
-        (1.0 / (df.row_total * (df.row_total - 1))) \
-        * (
-            df[tag_columns].pow(2).sum(axis=1) - df.row_total
-        )
+    df.loc[df["row_total"] > 1, "p_i"] = (1.0 / (df.row_total * (df.row_total - 1))) * (
+        df[tag_columns].pow(2).sum(axis=1) - df.row_total
+    )
 
     p_avg = (1.0 / df.shape[0]) * df.p_i.sum(axis=0)
 
-    p_j = (1.0 / (df.shape[0]*n)) * df[tag_columns].sum(axis=0)
+    p_j = (1.0 / (df.shape[0] * n)) * df[tag_columns].sum(axis=0)
     p_avg_e = p_j.pow(2).sum()
 
     logging.debug("N=%s, n=%s, k=%s, total_sum=%s", df.shape[0], n, k, total_sum)
@@ -98,9 +91,4 @@ def fleiss_kappa(df, tags, exclude_insufficient=False, filter_target=None):
         f_kappa = None
         f_kappa_text = "Unknown"
 
-    return {
-            "type": "fleiss",
-            "kappa": f_kappa,
-            "interpretation": f_kappa_text,
-            "n": df.shape[0]
-            }
+    return {"type": "fleiss", "kappa": f_kappa, "interpretation": f_kappa_text, "n": df.shape[0]}

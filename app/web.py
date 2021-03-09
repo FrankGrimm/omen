@@ -21,12 +21,14 @@ app.secret_key = config.get_flask_secret()
 flask_app.config.update(
     SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_SAMESITE="Lax",
 )
 
-logging.basicConfig(level=config.get("log_level", "DEBUG").upper(),
-                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                    datefmt='%m-%d %H:%M')
+logging.basicConfig(
+    level=config.get("log_level", "DEBUG").upper(),
+    format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
+    datefmt="%m-%d %H:%M",
+)
 
 import app.lib.database as db  # noqa
 import app.lib.crypto as app_crypto  # noqa
@@ -43,8 +45,9 @@ try:
 except Exception as e:  # pylint: disable=broad-except
     print("Failed to initialize database: %s" % e, file=sys.stderr)
 
-    if 'reset_database' not in sys.argv:
+    if "reset_database" not in sys.argv:
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
     else:
@@ -53,25 +56,25 @@ except Exception as e:  # pylint: disable=broad-except
 
 @app.before_request
 def check_auth():
-    if request and request.url_rule and request.url_rule.endpoint in ['login', 'static', 'accept_invite']:
+    if request and request.url_rule and request.url_rule.endpoint in ["login", "static", "accept_invite"]:
         return None
-    if session and 'user' in session and not session['user'] is None:
+    if session and "user" in session and not session["user"] is None:
         return None
-    return redirect(url_for('login'))
+    return redirect(url_for("login"))
 
 
 @app.context_processor
 def inject_globals():
     is_authenticated = False
-    if 'user' in session and session['user'] is not None:
+    if "user" in session and session["user"] is not None:
         is_authenticated = True
 
     annotation_tasks = None
     dataset_roles = {}
     with db.session_scope() as dbsession:
         if is_authenticated:
-            annotation_tasks = db.datasets.annotation_tasks(dbsession, session['user'])
-            dataset_roles = db.datasets.dataset_roles(dbsession, session['user'])
+            annotation_tasks = db.datasets.annotation_tasks(dbsession, session["user"])
+            dataset_roles = db.datasets.dataset_roles(dbsession, session["user"])
 
     def calculate_votes(row, anno_columns):
         if row is None or anno_columns is None:
@@ -96,13 +99,15 @@ def inject_globals():
 
         return votes
 
-    return dict(product_name=config.get("product_name", "Annotations"),
-                is_authenticated=is_authenticated,
-                tasks=annotation_tasks,
-                calculate_votes=calculate_votes,
-                cur_year=datetime.utcnow().year,
-                app_version=app_version,
-                dataset_roles=dataset_roles)
+    return dict(
+        product_name=config.get("product_name", "Annotations"),
+        is_authenticated=is_authenticated,
+        tasks=annotation_tasks,
+        calculate_votes=calculate_votes,
+        cur_year=datetime.utcnow().year,
+        app_version=app_version,
+        dataset_roles=dataset_roles,
+    )
 
 
 @app.errorhandler(404)
@@ -173,5 +178,5 @@ if exec_environment == "flask" and server_status is None:
 
 app = flask_app
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run()

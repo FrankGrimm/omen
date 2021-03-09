@@ -5,9 +5,11 @@ implementation via https://stackoverflow.com/questions/510357/python-read-a-sing
 """
 # pylint: disable=unused-import,import-error,import-outside-toplevel,too-few-public-methods
 
+
 class _Getch:
     """Gets a single character from standard input.  Does not echo to the
-screen."""
+    screen."""
+
     def __init__(self):
         try:
             self.impl = _GetchWindows()
@@ -16,6 +18,7 @@ screen."""
 
     def __call__(self):
         return self.impl()
+
 
 class _GetchUnix:
     def __init__(self):
@@ -43,6 +46,7 @@ class _GetchWindows:
 
     def __call__(self):
         import msvcrt
+
         return msvcrt.getch()
 
 

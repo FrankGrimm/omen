@@ -66,7 +66,7 @@ def connect():
     web.app.config["SQLALCHEMY_DATABASE_URI"] = connection_string
     if not config.get("db_debug", None) is None:
         web.app.config["SQLALCHEMY_ECHO"] = True
-    web.app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    web.app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     flask_db = SQLAlchemy(web.app, session_options={"expire_on_commit": False, "autoflush": False})
     migrate = Migrate(web.app, flask_db)
 
@@ -97,5 +97,7 @@ def init_db():
                 logging.info("[users] you can create users with the scripts/createuser script")
             # pylint: disable=bare-except
             except:  # noqa
-                logging.warning("""[error] could not enumerate users,
-                                make sure database is initialized and up to date (./bin/flaskdb upgrade)""")
+                logging.warning(
+                    """[error] could not enumerate users,
+                                make sure database is initialized and up to date (./bin/flaskdb upgrade)"""
+                )

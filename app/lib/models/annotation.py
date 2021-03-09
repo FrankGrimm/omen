@@ -12,7 +12,7 @@ from app.lib.models.datasetcontent import DatasetContent
 
 
 class Annotation(Base):
-    __tablename__ = 'annotations'
+    __tablename__ = "annotations"
 
     owner_id = Column(Integer, ForeignKey("users.uid"), primary_key=True)
     owner = relationship("User", back_populates="annotations")
@@ -25,9 +25,17 @@ class Annotation(Base):
 
     data = Column(JSON)
     __table_args__ = (
-            ForeignKeyConstraint([dataset_id, sample, sample_index],
-                                 [DatasetContent.dataset_id, DatasetContent.sample, DatasetContent.sample_index]), {})
+        ForeignKeyConstraint(
+            [dataset_id, sample, sample_index],
+            [DatasetContent.dataset_id, DatasetContent.sample, DatasetContent.sample_index],
+        ),
+        {},
+    )
 
     def __repr__(self):
-        return "<Annotation (dataset: %s, owner: %s, sample: %s, data: %s)>" % \
-                (self.dataset_id, self.owner_id, self.sample, self.data)
+        return "<Annotation (dataset: %s, owner: %s, sample: %s, data: %s)>" % (
+            self.dataset_id,
+            self.owner_id,
+            self.sample,
+            self.data,
+        )

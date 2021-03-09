@@ -13,6 +13,7 @@ class CommentScope(Enum):
     NOTE = "comment_note"
     PUBLIC = "comment_public"
 
+
 class Comments:
     @staticmethod
     def comment(dbsession, owner: db.User, target, scope: CommentScope, text: str):
@@ -36,12 +37,16 @@ class Comments:
 
         return result_comments
 
+
 class Comment:
     def __init__(self, activity_entity, session_user=None):
         self.entity = activity_entity
         self.owned = False
-        if session_user is not None and activity_entity.owner is not None \
-                and activity_entity.owner.uid == session_user.uid:
+        if (
+            session_user is not None
+            and activity_entity.owner is not None
+            and activity_entity.owner.uid == session_user.uid
+        ):
             self.owned = True
 
     def visible_to(self, userobj):
@@ -77,10 +82,10 @@ class Comment:
 
     def to_json(self):
         return {
-                "id": self.entity.event_id,
-                "owner": self.entity.owner.get_name(),
-                "isowned": self.owned,
-                "created": self.entity.created.strftime("%b %d %Y %H:%M") if self.entity.created is not None else "",
-                "scope": self.scope.value if self.scope is not None else None,
-                "text": self.entity.content,
-                }
+            "id": self.entity.event_id,
+            "owner": self.entity.owner.get_name(),
+            "isowned": self.owned,
+            "created": self.entity.created.strftime("%b %d %Y %H:%M") if self.entity.created is not None else "",
+            "scope": self.scope.value if self.scope is not None else None,
+            "text": self.entity.content,
+        }

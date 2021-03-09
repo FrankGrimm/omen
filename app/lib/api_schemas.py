@@ -22,6 +22,7 @@ class DatasetSchema(ma.Schema):
     """
     API schema for database entities
     """
+
     id = ma.fields.Integer(required=True)
     name = ma.fields.String(required=True)
     owner = ma.fields.Nested(UserSchema, required=True)

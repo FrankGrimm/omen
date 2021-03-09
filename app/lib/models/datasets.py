@@ -35,7 +35,7 @@ def my_datasets(dbsession, user_id):
 
 
 def get_accessible_dataset(dbsession, dsid, check_role=None):
-    session_user = User.by_id(dbsession, session['user'])
+    session_user = User.by_id(dbsession, session["user"])
 
     access_datasets = accessible_datasets(dbsession, session_user, include_owned=True)
 
@@ -99,7 +99,7 @@ def annotation_tasks(dbsession, for_user):
             continue
 
         dsroles = dataset.get_roles(dbsession, for_user)
-        if 'annotator' in dsroles:
+        if "annotator" in dsroles:
             task = dataset.get_task(dbsession, for_user)
             tasks.append(task)
 

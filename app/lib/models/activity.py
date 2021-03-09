@@ -13,7 +13,7 @@ import app.lib.database as db
 
 
 class Activity(Base):
-    __tablename__ = 'activity'
+    __tablename__ = "activity"
 
     event_id = Column(Integer, primary_key=True)
 
@@ -36,9 +36,9 @@ class Activity(Base):
             return None
 
         if self.target.startswith(db.User.activity_prefix()):
-            return db.User.by_id(dbsession, int(self.target[len(db.User.activity_prefix()):]), no_error=True)
+            return db.User.by_id(dbsession, int(self.target[len(db.User.activity_prefix()) :]), no_error=True)
         if self.target.startswith(db.Dataset.activity_prefix()):
-            return db.Dataset.by_id(dbsession, int(self.target[len(db.Dataset.activity_prefix()):]), no_error=True)
+            return db.Dataset.by_id(dbsession, int(self.target[len(db.Dataset.activity_prefix()) :]), no_error=True)
         return "unknown target %s" % self.target
 
     @staticmethod
@@ -52,22 +52,20 @@ class Activity(Base):
             owner = db.User.by_id(dbsession, owner)
 
         user_target_filter = owner.activity_target()
-        other_accessible_datasets = db.datasets.accessible_datasets(dbsession,
-                                                                    owner,
-                                                                    include_owned=False,
-                                                                    has_role=["curator", "owner"])
-        other_accessible_datasets = [dataset.activity_target()
-                                     for dsid, dataset in other_accessible_datasets.items()]
+        other_accessible_datasets = db.datasets.accessible_datasets(
+            dbsession, owner, include_owned=False, has_role=["curator", "owner"]
+        )
+        other_accessible_datasets = [dataset.activity_target() for dsid, dataset in other_accessible_datasets.items()]
         excluded_scopes = ["event", "upload_file"]
 
         if isinstance(owner, db.User):
-            qry = qry.filter(or_(
-                                Activity.target == user_target_filter,
-                                Activity.owner == owner,
-                                and_(
-                                    Activity.target.in_(other_accessible_datasets),
-                                    not_(Activity.scope == "comment_note")
-                                )))
+            qry = qry.filter(
+                or_(
+                    Activity.target == user_target_filter,
+                    Activity.owner == owner,
+                    and_(Activity.target.in_(other_accessible_datasets), not_(Activity.scope == "comment_note")),
+                )
+            )
         else:
             raise Exception("Activity::user_history requires the owner argument by of type User or int")
 
@@ -114,9 +112,11 @@ class Activity(Base):
                 continue
 
             previous_activity = result_history[-1]
-            if previous_activity.owner == activity.owner and \
-                    previous_activity.scope == activity.scope and \
-                    previous_activity.target == activity.target:
+            if (
+                previous_activity.owner == activity.owner
+                and previous_activity.scope == activity.scope
+                and previous_activity.target == activity.target
+            ):
                 continue
             result_history.append(activity)
 
