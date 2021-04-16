@@ -52,7 +52,7 @@ def validate(token, public_key):
 def jwt_encode(payload, private_key):
     if private_key is None or private_key.strip() == "":
         raise InvalidTokenException("private key missing or malformed")
-    return jwt.encode(payload, private_key, algorithm="RS256").decode("utf-8")
+    return jwt.encode(payload, private_key, algorithm="RS256")
 
 
 def jwt_decode(token, public_key):
@@ -95,4 +95,4 @@ def generate_keypair():
     )
     public_key = key.public_key().public_bytes(serialization.Encoding.OpenSSH, serialization.PublicFormat.OpenSSH)
 
-    return private_key.decode("utf-8"), public_key.decode("utf-8")
+    return private_key, public_key
