@@ -22,6 +22,7 @@ import numpy as np
 
 from app.lib.database_internals import Base
 from app.lib.models.datasetcontent import DatasetContent
+from app.lib.models.task import DatasetTask
 from app.lib.models.user import User
 from app.lib.models.activity import Activity
 from app.lib.models.annotation import Annotation
@@ -91,6 +92,8 @@ class Dataset(Base):
 
     dsannotations = relationship("Annotation", cascade="all, delete-orphan")
     dscontent = relationship("DatasetContent", cascade="all, delete-orphan")
+    dstasks = relationship("DatasetTask", cascade="all, delete-orphan")
+
     dsmetadata = Column(JSON, nullable=False)
 
     persisted = False

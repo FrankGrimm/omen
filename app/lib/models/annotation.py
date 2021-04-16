@@ -23,6 +23,8 @@ class Annotation(Base):
     sample = Column(String, primary_key=True)
     sample_index = Column(Integer, primary_key=True)
 
+    task_id = Column(Integer, nullable=True)
+
     data = Column(JSON)
     __table_args__ = (
         ForeignKeyConstraint(

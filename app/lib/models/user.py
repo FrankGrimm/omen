@@ -263,6 +263,7 @@ class User(Base):
 
         private_key = self.get_private_key(dbsession)
         new_token = crypto.jwt_encode(token_payload, private_key)
+        print("tok", new_token, file=sys.stderr)
         full = {"metadata": token_payload, "token": new_token}
         _tokens = self.get_api_tokens()
         _tokens.append(full)
