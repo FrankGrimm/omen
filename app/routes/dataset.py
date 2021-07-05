@@ -12,10 +12,12 @@ from werkzeug.utils import secure_filename
 from flask import flash, redirect, render_template, request, url_for, session, Response, abort
 import numpy as np
 
+import app.lib.config as config
 from app.lib.viewhelpers import login_required, get_session_user
 from app.web import app, BASEURI, db
 from app.lib.models.comments import Comments
 from app.lib.models import datasets
+from app.lib.models.task import DatasetTask
 
 
 TAGORDER_ACTIONS = ["update_taglist", "rename_tag", "delete_tag", "move_tag_down", "move_tag_up"]
@@ -104,21 +106,41 @@ def dataset_lookup_or_create(dbsession, dsid, editmode):
 
 def handle_option_update(dbsession, session_user, dataset):
 
+    action = request.json.get("action", "")
     set_key = request.json.get("option_key", "")
     set_value = request.json.get("option_value", None)
+    target_task = request.json.get("target_task", None)
+    task = None
+
+    if target_task is not None and target_task != "" and action != "update_option" and set_key != "":
+        _, task = dataset.task_by_id(target_task)
+
+        task.taskconfig[set_key] = set_value
+        task.dirty(dbsession)
+        dbsession.commit()
+        dbsession.flush()
+
+        db.Activity.create(dbsession,
+                           session_user,
+                           dataset,
+                           "update_option",
+                           "task %s %s => %s" % (task, set_key, set_value))
+
+        return {"action": "update_option",
+                "set_key": set_key}
 
     if set_key == "" or set_key not in dataset.valid_option_keys:
         raise Exception("did not recognize option key in JSON data")
-
-    if set_key == "show_votes":
-        set_value = bool(set_value)
 
     dataset.dsmetadata[set_key] = set_value
     dataset.dirty(dbsession)
     dbsession.commit()
     dbsession.flush()
 
-    db.Activity.create(dbsession, session_user, dataset, "update_option", "%s => %s" % (set_key, set_value))
+    db.Activity.create(dbsession,
+                       session_user,
+                       dataset,
+                       "update_option", "%s => %s" % (set_key, set_value))
 
     return {"action": "update_option",
             "set_key": set_key}
@@ -167,12 +189,20 @@ def handle_split_update(dbsession, session_user, dataset):
 
 def handle_tag_update(dbsession, session_user, dataset):
     update_action = request.json.get("tagaction", "")
+    update_taskdef_id = str(request.json.get("taskdef_id", ""))
+    if update_taskdef_id == "":
+        raise Exception("request did not contain taskdef_id")
+
+    update_taskdef = dataset.taskdef_by_id(update_taskdef_id)
+
+    if update_taskdef is None:
+        raise Exception("invalid taskdef_id, %s" % update_taskdef_id)
 
     if update_action in TAGORDER_ACTIONS:
         new_tags = request.json.get("newtags", [])
 
-        original_tagmetadata = dataset.get_taglist(include_metadata=True)
-        dataset.set_taglist(new_tags)
+        original_tagmetadata = update_taskdef.get_taglist(include_metadata=True)
+        update_taskdef.set_taglist(new_tags)
 
         if update_action == "rename_tag":
             old_name = list(set(original_tagmetadata.keys()) - set(new_tags))
@@ -185,9 +215,9 @@ def handle_tag_update(dbsession, session_user, dataset):
                 new_name = None
             if old_name and new_name and old_name in original_tagmetadata:
                 if not original_tagmetadata[old_name] is None:
-                    dataset.update_tag_metadata(new_name, original_tagmetadata[old_name])
+                    update_taskdef.update_tag_metadata(new_name, original_tagmetadata[old_name])
                 db.fprint("RENAME_TAG", old_name, "=>", new_name, original_tagmetadata[old_name])
-                migrated_annotations = dataset.migrate_annotations(dbsession, old_name, new_name)
+                migrated_annotations = dataset.migrate_annotations(dbsession, update_taskdef, old_name, new_name)
                 db.fprint("RENAME_TAG", migrated_annotations, "migrated from %s to %s" % (old_name, new_name))
 
                 db.Activity.create(dbsession,
@@ -203,9 +233,25 @@ def handle_tag_update(dbsession, session_user, dataset):
 
         if update_tag is not None:
             if update_action == "change_tag_color":
-                dataset.update_tag_metadata(update_tag, {"color": update_value})
+                update_taskdef.update_tag_metadata(update_tag, {"color": update_value})
             elif update_action == "change_tag_icon":
-                dataset.update_tag_metadata(update_tag, {"icon": update_value})
+                update_taskdef.update_tag_metadata(update_tag, {"icon": update_value})
+
+    update_taskdef.dirty(dbsession)
+    dbsession.commit()
+    dbsession.flush()
+
+
+@app.route(BASEURI + "/dataset/<dsid>/guidelines", methods=["GET"])
+def dataset_guidelines(dsid):
+    with db.session_scope() as dbsession:
+        userobj = get_session_user(dbsession)
+        dataset = datasets.get_accessible_dataset(dbsession, dsid)
+
+        return render_template("dataset_guidelines.html",
+                               userobj=userobj,
+                               userroles=dataset.get_roles(dbsession, userobj),
+                               dataset=dataset)
 
 
 @app.route(BASEURI + "/dataset/<dsid>/field/<fieldid>.json", methods=["GET"])
@@ -233,22 +279,23 @@ def dataset_field_overview(dsid, fieldid):
         return field_overview
 
 
-@app.route(BASEURI + "/dataset/<dsid>/overview.json", methods=["GET"])
-def dataset_overview_json(dsid):
+@app.route(BASEURI + "/dataset/<dsid>/<taskid>/overview.json", methods=["GET"])
+def dataset_overview_json(dsid, taskid):
     dataset = None
 
     with db.session_scope() as dbsession:
         session_user = get_session_user(dbsession)
         dataset = datasets.get_accessible_dataset(dbsession, dsid)
+        taskid, task = dataset.task_by_id(taskid)
         user_roles = list(dataset.get_roles(dbsession, session_user))
 
-        tags = dataset.get_taglist()
-        tag_metadata = dataset.get_taglist(include_metadata=True)
+        tags = task.get_taglist()
+        tag_metadata = task.get_taglist(include_metadata=True)
         ds_total = dataset.get_size()
 
-        annotations_by_user, all_annotations = dataset.annotation_counts(dbsession)
+        annotations_by_user, all_annotations = task.annotation_counts(dbsession)
 
-        agreement_fleiss = dataset.annotation_agreement(dbsession, by_tag=False)
+        agreement_fleiss = task.annotation_agreement(dbsession, by_tag=False)
 
         dsoverview = {
                 "dataset": dataset.dataset_id,
@@ -273,7 +320,7 @@ def editdataset_post_actions(editmode, dbsession, userobj, dataset):
         editmode = "tageditor"
         handle_tag_update(dbsession, userobj, dataset)
 
-    if request.json is not None and request.json.get("action", "") == "update_option":
+    if request.json is not None and request.json.get("action", "") in ["update_option", "update_task_option"]:
         editmode = "update_option"
         return handle_option_update(dbsession, userobj, dataset)
 
@@ -321,7 +368,17 @@ def handle_comment_action(dbsession, userobj, dataset):
     return None
 
 
-def editdataset_form_action_metadata(dataset, formaction):
+def get_default_dataset_delimiter():
+    default_dataset_delimiter = config.get("dataset_default_delimiter", ",")
+    if default_dataset_delimiter is None or default_dataset_delimiter.strip() == "":
+        default_dataset_delimiter = ","
+    default_dataset_delimiter = default_dataset_delimiter.strip()
+    if default_dataset_delimiter.lower() == "tab":
+        default_dataset_delimiter = "\t"
+    return default_dataset_delimiter
+
+
+def editdataset_form_action_metadata(dbsession, dataset, formaction):
     if formaction == 'change_name':
         dsname = request.form.get('dataset_name', None)
         if dsname is not None and dsname.strip() != '':
@@ -332,8 +389,10 @@ def editdataset_form_action_metadata(dataset, formaction):
         if ds_description is not None:
             dataset.dsmetadata['description'] = ds_description.strip()
 
+    default_dataset_delimiter = get_default_dataset_delimiter()
+
     if formaction == "change_delimiter":
-        newdelim = dataset.dsmetadata.get("sep", ",")
+        newdelim = dataset.dsmetadata.get("sep", default_dataset_delimiter)
         valid_separators = {"comma": ",", "tab": "\t", "semicolon": ";"}
         for field, separator in valid_separators.items():
             if request.form.get(field, "") != "":
@@ -376,7 +435,7 @@ def editdataset_form_actions(dbsession, dataset, userobj):
     if formaction is None:
         return None
 
-    editdataset_form_action_metadata(dataset, formaction)
+    editdataset_form_action_metadata(dbsession, dataset, formaction)
     delete_result = editdataset_form_action_delete(dbsession, dataset, userobj, formaction)
     if delete_result is not None:
         return delete_result
@@ -399,9 +458,8 @@ def editdataset_form_actions(dbsession, dataset, userobj):
             dataset.set_role(dbsession, annouser, annorole, remove=True)
         return {"action": formaction, "new_roles": list(dataset.get_roles(dbsession, annouser, splitroles=False))}
 
-    if formaction == 'change_taglist' and not request.form.get("settaglist", None) is None:
-        newtags = request.form.get("settaglist", None).split("\n")
-        dataset.set_taglist(newtags)
+    if formaction == "update_dataset_prelude":
+        dataset.dsmetadata['prelude'] = request.form.get("dsPreludeContent", "").strip()
 
     # move uploaded file content to temporary file and store details in the dataset metadata
     if formaction == 'upload_file':
@@ -497,6 +555,54 @@ def dataset_comments(dsid=None):
             return abort(404, description="Dataset not found or access denied")
 
 
+def editdataset_taskaction(dbsession, dataset, userobj):
+    formaction = request.form.get("action", None)
+
+    if formaction is None:
+        return False
+
+    if formaction == "task_order_up" or formaction == "task_order_down":
+        taskorder_change = 1 if formaction == "task_order_down" else -1
+        target_task = request.form.get("target_task", None)
+        if target_task is not None:
+            target_task = int(target_task)
+            dataset.taskorder(target_task, taskorder_change)
+            return True
+
+    if formaction == "task_delete":
+        if request.form.get("task_delete_confirm", "false") != "true":
+            return False
+        target_task = request.form.get("target_task", None)
+        if target_task is not None:
+            target_task = int(target_task)
+            if dataset.task_delete(dbsession, target_task):
+                return True
+
+    if formaction == "task_rename":
+        new_name = request.form.get("task_newname", None)
+        if new_name is None or new_name.strip() == "":
+            return False
+
+        new_name = new_name.strip()
+        target_task = request.form.get("target_task", None)
+        if target_task is not None:
+            target_task = int(target_task)
+            dataset.task_rename(dbsession, target_task, new_name)
+            return True
+
+    if formaction == "change_ds_addtask":
+        newtaskdef_type = request.form.get("add_new_task", "")
+        if newtaskdef_type != "":
+            newtaskdef = DatasetTask.create(dbsession, dataset, newtaskdef_type)
+            taskorder = dataset.dsmetadata.get("taskorder", [])
+            taskorder.append(newtaskdef.task_id)
+            dataset.dsmetadata["taskorder"] = taskorder
+            dataset.invalidate()
+            return True
+
+    return False
+
+
 @app.route(BASEURI + "/dataset/<dsid>/edit", methods=['GET', 'POST'])
 @app.route(BASEURI + "/dataset/create", methods=['GET', 'POST'])
 @login_required
@@ -505,6 +611,14 @@ def dataset_admin(dsid=None):
     editmode = 'create'
 
     with db.session_scope() as dbsession:
+        userobj = get_session_user(dbsession)
+
+        dataset_exists = datasets.get_accessible_dataset(dbsession, dsid) is not None
+
+        # if dataset does not exist, check if the current user can create new ones
+        if not dataset_exists and not userobj.can_create():
+            flash("Action not allowed. Please contact an administrator to create datasets.", "error")
+            return redirect(url_for("show_datasets"))
 
         preview_df = None
         import_alerts = None
@@ -517,7 +631,6 @@ def dataset_admin(dsid=None):
             flash("Dataset not found or access denied", "error")
             return abort(404, description="Dataset not found or access denied")
 
-        userobj = get_session_user(dbsession)
         if dataset.owner is None:
             dataset.owner = userobj
 
@@ -525,9 +638,15 @@ def dataset_admin(dsid=None):
         dataset.validate_owner(userobj)
         dataset.ensure_id(dbsession)
 
+        dataset.reorder_tasks()
+
         if request.method == 'POST':
             editmode = editdataset_post_actions(editmode, dbsession, userobj, dataset)
             formaction_result = editdataset_form_actions(dbsession, dataset, userobj)
+
+            if editdataset_taskaction(dbsession, dataset, userobj):
+                dbsession.commit()
+                return redirect(url_for('dataset_admin', dsid=dataset.dataset_id, _anchor="taskdefinition"))
 
             new_comment_result = handle_comment_action(dbsession, userobj, dataset)
             if new_comment_result is not None:
@@ -574,7 +693,12 @@ def dataset_admin(dsid=None):
 
         template = "dataset_admin.html"
 
+        dataset_task = None
         if editmode == "tageditor":
+            req_taskdef_id = str(request.json.get("taskdef_id", ""))
+            if req_taskdef_id == "":
+                raise Exception("request did not contain taskdef_id")
+            dataset_task = dataset.taskdef_by_id(req_taskdef_id)
             template = "tag_editor.html"
 
         if editmode == "spliteditor":
@@ -595,8 +719,10 @@ def dataset_admin(dsid=None):
                                db=db,
                                ds_errors=ds_errors,
                                dbsession=dbsession,
+                               dataset_task=dataset_task,
                                can_import=can_import,
                                has_upload_content=has_upload_content,
                                sample_stats=dataset.get_overview_statistics(dbsession),
                                userroles=dataset.get_roles(dbsession, userobj),
+                               default_dataset_delimiter=get_default_dataset_delimiter(),
                                comments=comments)

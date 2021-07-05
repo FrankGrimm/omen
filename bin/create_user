@@ -1,7 +1,0 @@
-#!/bin/bash
-set -e
-
-BASEDIR="$HOME/projects/omen-annotator"
-cd "$BASEDIR"
-source .venv/bin/activate
-python -c "import app.lib.database as db; db.create_user()"

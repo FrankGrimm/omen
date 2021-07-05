@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+# example:
+# ./bin/alembic -c ./migrations/alembic.ini upgrade --sql head       
+
+CONTAINER=$(docker ps | grep "omen-annotator_web" | cut -d " " -f1)
+
+docker exec -e "PYTHONPATH=.." -w "/home/omenuser/app" -it "$CONTAINER" "alembic" "-c" "./migrations/alembic.ini" "$@"

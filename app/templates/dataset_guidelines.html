@@ -1,0 +1,28 @@
+{% extends "dataset_layout.html" %}
+{% block page_title %}
+Dataset &quot;<span class="guideline_meta">{{ dataset.dsmetadata.name }}</span>&quot; 
+{% endblock %}
+
+{% block pagebody %}
+
+<div id="pagebody">
+    {% if dataset and dataset.get_description() %}
+    {{ dataset.get_description() }}
+    {% else %}
+    No dataset description for {{ dataset.dsmetadata.name }}.
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block addscript %}
+    <script>
+window.addEventListener('DOMContentLoaded', (event) => {
+    const elem = document.getElementById("pagebody");
+    const mdcontent = elem.textContent.trim();
+    const mdconverted = marked(mdcontent);
+    elem.innerHTML = mdconverted;
+});
+    </script>
+
+{% endblock %}

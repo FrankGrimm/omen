@@ -44,6 +44,11 @@ window.chartColors = initChartPalette();
 
 function initOverviewChart(target) {
     const ctx = document.getElementById(target);
+    if (!ctx) {
+        console.log("skipping chart initialization, target not found in DOM");
+        return;
+    }
+    
     const config = {
         type: 'doughnut',
         data: {
@@ -80,26 +85,34 @@ function initOverviewChart(target) {
 
     const overviewChart = new Chart(ctx, config);
 
-    fetch(window.OMEN_BASE + "dataset/" + ACTIVE_DATASET_ID + "/overview.json")
-        .then(response => response.json())
-        .then(overviewData => {
-            updateOverviewChart(overviewChart, overviewData, config);
-            updateAnnotatorAgreement(overviewData);
-        });
+    if (ACTIVE_TASK_ID) {
+        fetch(window.OMEN_BASE + "dataset/" + ACTIVE_DATASET_ID + "/" + ACTIVE_TASK_ID + "/overview.json")
+            .then(response => response.json())
+            .then(overviewData => {
+                updateOverviewChart(overviewChart, overviewData, config);
+                updateAnnotatorAgreement(overviewData);
+            });
+    }
 
     return overviewChart;
+}
+
+const show_all_annotators = document.getElementById("show_all_annotators");
+if (show_all_annotators) {
+    show_all_annotators.addEventListener("click", () => {
+        updateOverviewChart(overviewChart, overviewDataCache, overviewChartConfig, "all");
+    });
+}
+const show_individual_annotators = document.getElementById("show_individual_annotators");
+if (show_individual_annotators) { 
+    show_individual_annotators.addEventListener("click", () => {
+        updateOverviewChart(overviewChart, overviewDataCache, overviewChartConfig, "single");
+    });
 }
 
 const overviewChart = initOverviewChart("overview-chart");
 let overviewDataCache = null;
 let overviewChartConfig = null;
-
-document.getElementById("show_all_annotators").addEventListener("click", () => {
-    updateOverviewChart(overviewChart, overviewDataCache, overviewChartConfig, "all");
-});
-document.getElementById("show_individual_annotators").addEventListener("click", () => {
-    updateOverviewChart(overviewChart, overviewDataCache, overviewChartConfig, "single");
-});
 
 function updateAnnotatorAgreement(overviewData) {
     if (!overviewData || !overviewData.fleiss) {
@@ -434,8 +447,20 @@ function initTagSelection() {
     document.querySelectorAll(".cb_show_tag_elem").forEach(initTagSelect);
 }*/
 
+function initTaskSwitcher() {
+    document.querySelectorAll(".inspect_task_switch").forEach((switcher) => {
+        switcher.addEventListener("change", (evt) => {
+            console.log(evt, evt.target);
+            const navigate_target = evt.target.selectedOptions[0]?.dataset?.href;
+            if (!navigate_target) { return; }
+            window.location.href = navigate_target;
+        });
+    });
+}
+
 document.addEventListener("DOMContentLoaded",function(){
     // initTagSelection();
+    initTaskSwitcher();
     initEditorButtons();
     initWorkpackageFilters();
     initActionButtons();

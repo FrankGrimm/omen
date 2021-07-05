@@ -10,6 +10,7 @@ import os.path
 import re
 from dataclasses import dataclass, field
 from typing import List
+from urllib.parse import urlparse
 
 from sqlalchemy import Column, Integer, JSON, ForeignKey, func, sql, or_, and_, inspect
 from sqlalchemy.orm import relationship
@@ -20,32 +21,16 @@ import pandas as pd
 from pandas.api.types import is_numeric_dtype
 import numpy as np
 
+import app.lib.config as config
 from app.lib.database_internals import Base
 from app.lib.models.datasetcontent import DatasetContent
 from app.lib.models.task import DatasetTask
 from app.lib.models.user import User
 from app.lib.models.activity import Activity
 from app.lib.models.annotation import Annotation
-import app.lib.iaa as iaa
+from app.lib.npencoder import NpEncoder
 
 DATASET_CONTENT_CACHE = {}
-
-
-class NpEncoder(json.JSONEncoder):
-    """
-    numpy safe JSON converter
-    adapted from https://stackoverflow.com/a/57915246
-    """
-    def default(self, o):
-        if isinstance(o, np.integer):
-            return int(o)
-        if isinstance(o, np.floating):
-            return float(o)
-        if isinstance(o, np.ndarray):
-            return o.tolist()
-        if isinstance(o, np.bool_):
-            return bool(o)
-        return super(NpEncoder, self).default(o)
 
 
 def pd_expand_json_column(df, json_column):
@@ -82,6 +67,15 @@ def calculate_row_state(row, additional_user_columns):
     return row_state
 
 
+def restore_anno_values(v):
+    if v is not None and isinstance(v, str):
+        try:
+            v = json.loads(v)
+        except:
+            return v
+    return v
+
+
 class Dataset(Base):
     __tablename__ = 'datasets'
 
@@ -92,13 +86,13 @@ class Dataset(Base):
 
     dsannotations = relationship("Annotation", cascade="all, delete-orphan")
     dscontent = relationship("DatasetContent", cascade="all, delete-orphan")
-    dstasks = relationship("DatasetTask", cascade="all, delete-orphan")
+    dstasks = relationship("DatasetTask", cascade="all, delete-orphan", order_by="DatasetTask.taskorder")
 
     dsmetadata = Column(JSON, nullable=False)
 
     persisted = False
     _cached_df = None
-    valid_option_keys = set(["hide_votes", "annotators_can_comment", "allow_restart_annotation", "additional_column"])
+    valid_option_keys = set(["annotators_can_comment", "allow_restart_annotation", "additional_column"])
 
     def defined_splits(self, dbsession):
         split_content_counts = dbsession.query(DatasetContent.split_id, func.count(DatasetContent.sample))
@@ -436,6 +430,22 @@ class Dataset(Base):
             return ""
         return self.dsmetadata.get("description", "")
 
+    def description_is_link(self):
+        description = self.get_description().strip()
+        description_l = description.lower()
+        if not description_l.startswith("http://") and \
+                not description_l.startswith("https://"):
+            return False
+        if " " in description:
+            return False
+
+        try:
+            res = urlparse(description)
+            return all([res.scheme, res.netloc])
+        except: # noqa
+            return False
+        return False
+
     def get_text_column(self):
         textcol = self.dsmetadata.get("textcol", None)
         if textcol is None:
@@ -523,6 +533,58 @@ class Dataset(Base):
 
         return set(roles)
 
+    def reorder_tasks(self):
+        """
+        ensures that all tasks for this dataset have unique ordering criteria
+        """
+        if self.dstasks is None:
+            return
+        if len(self.dstasks) == 0:
+            return
+
+        for idx, task in enumerate(self.dstasks):
+            if idx != task.taskorder:
+                task.taskorder = idx
+
+    def task_by_taskorder(self, taskorder: int):
+        target = None
+        for task in self.dstasks:
+            if task.taskorder == taskorder:
+                target = task
+                break
+        return target
+
+    def task_rename(self, dbsession, taskorder: int, new_name: str):
+        target = self.task_by_taskorder(taskorder)
+        if target is None:
+            return False
+        target.taskconfig['title'] = new_name
+        flag_dirty(target)
+        flag_modified(target, 'taskconfig')
+
+    def task_delete(self, dbsession, taskorder: int):
+        target = self.task_by_taskorder(taskorder)
+        if target is None:
+            return False
+        dbsession.delete(target)
+        return True
+
+    def taskorder(self, taskorder: int, change: int):
+        target = self.task_by_taskorder(taskorder)
+        if target is None:
+            return
+        swap_target_taskorder = taskorder + change
+
+        if swap_target_taskorder == taskorder:
+            return
+
+        swap_target = self.task_by_taskorder(swap_target_taskorder)
+        target.taskorder, swap_target.taskorder = swap_target.taskorder, target.taskorder
+        flag_dirty(target)
+        flag_dirty(swap_target)
+        flag_modified(target, "taskorder")
+        flag_modified(swap_target, "taskorder")
+
     def check_dataset(self):
         errorlist = []
 
@@ -537,8 +599,11 @@ class Dataset(Base):
         if self.dsmetadata.get("hasdata", None) is None:
             errorlist.append("no data")
 
-        if len(self.get_taglist()) == 0:
-            errorlist.append("no tags defined")
+        if self.dstasks is None or len(self.dstasks) == 0:
+            errorlist.append("no tasks defined")
+
+        for taskdef in self.dstasks:
+            taskdef.validate(errorlist)
 
         if self.empty():
             errorlist.append("no data")
@@ -641,18 +706,19 @@ class Dataset(Base):
         dbsession.add(self)
         return True
 
-    def migrate_annotations(self, dbsession, old_name, new_name):
+    def migrate_annotations(self, dbsession, update_taskdef, old_name, new_name):
         migrated_annotations = 0
 
-        for anno in dbsession.query(Annotation).filter_by(dataset_id=self.dataset_id).all():
-
+        for anno in dbsession.query(Annotation).filter_by(dataset_id=self.dataset_id, task_id=update_taskdef.anno_task_id).all():
             if anno.data is None:
                 continue
+
             anno_tag = anno.data.get("value", None)
             if anno_tag is None or not anno_tag == old_name:
                 continue
 
             anno.data["value"] = new_name
+
             flag_dirty(anno)
             flag_modified(anno, "data")
             dbsession.add(anno)
@@ -662,127 +728,19 @@ class Dataset(Base):
 
         return migrated_annotations
 
-    def annotation_counts(self, dbsession):
-        params = {
-                "dataset_id": self.dataset_id
-                }
-        sql_raw = """
-        SELECT users.uid,
-            (CASE WHEN
-                (users.displayname IS NULL OR users.displayname = '')
-                THEN users.email
-                ELSE users.displayname
-                END) AS username,
-            anno.data->'value' #>> '{}' AS anno_tag,
-            COUNT(anno.sample_index) AS cnt
-        FROM annotations as anno
-        LEFT JOIN users
-            ON users.uid = anno.owner_id
-        WHERE
-            anno.dataset_id = %(dataset_id)s
-        GROUP BY
-            users.uid, anno.data->'value' #>> '{}'
-        """
+    def taskdef_by_id(self, taskdef_id):
+        if taskdef_id is None:
+            raise Exception("taskdef_id cannot be null")
 
-        sql_raw = prep_sql(sql_raw)
-        logging.debug("DB_SQL_LOG %s %s", sql_raw, params)
+        if self.dstasks is None:
+            return None
 
-        df = pd.read_sql(sql_raw,
-                         dbsession.bind,
-                         params=params)
+        for taskdef in self.dstasks:
+            if str(taskdef.task_id) == str(taskdef_id):
+                return taskdef
+        return None
 
-        result_data = df.replace(np.nan, "", regex=True).to_dict()
-        result_data = json.dumps(result_data, cls=NpEncoder)
-        result_data = json.loads(result_data)
-
-        annotations_by_user = {}
-        all_annotations = {}
-        tags = self.get_taglist()
-
-        for tag in tags:
-            all_annotations[tag] = 0
-
-        if 'uid' in result_data:
-            for rowidx, uid in result_data['uid'].items():
-                row_username = result_data['username'].get(rowidx, str(uid))
-                row_tag = result_data['anno_tag'].get(rowidx, None)
-
-                if row_tag not in tags:
-                    continue
-
-                row_cnt = result_data['cnt'].get(rowidx, 0)
-
-                if row_username not in annotations_by_user:
-                    annotations_by_user[row_username] = {}
-                annotations_by_user[row_username][row_tag] = row_cnt
-                all_annotations[row_tag] += row_cnt
-
-        return annotations_by_user, all_annotations
-
-    def annotation_agreement(self, dbsession, exclude_insufficient=False, by_tag=False):
-        """
-        calculates Fleiss' Kappa statistic on the annotations
-        for this dataset
-
-        if exclude_insufficient is set, rows with annotations by only one user are excluded.
-        """
-
-        tags = self.get_taglist()
-
-        params = {
-                "dataset_id": self.dataset_id
-                }
-        sql_raw = """
-        SELECT
-            anno.sample_index,
-            anno.data->'value' #>> '{}' AS anno_tag,
-            COUNT(anno.owner_id) AS cnt
-        FROM
-            annotations as anno
-        WHERE
-            anno.dataset_id = %(dataset_id)s
-        GROUP BY
-            anno.sample_index, anno.data->'value' #>> '{}'
-        """
-
-        sql_raw = prep_sql(sql_raw)
-        logging.debug("DB_SQL_LOG %s %s", sql_raw, params)
-
-        df = pd.read_sql(sql_raw,
-                         dbsession.bind,
-                         params=params)
-
-        if not by_tag:
-            # return overall IAA
-            return iaa.fleiss_kappa(df, tags, exclude_insufficient=exclude_insufficient)
-
-        iaa_result = {}
-        iaa_result['__overall'] = iaa.fleiss_kappa(df, tags, exclude_insufficient=False)
-
-        for tag in tags:
-            not_tag = "!%s" % tag
-            cur_tags = [tag, not_tag]
-            cur_df = df.copy()
-
-            cur_df.loc[cur_df.anno_tag != tag, 'anno_tag'] = not_tag
-
-            cur_df = cur_df.groupby(["sample_index", "anno_tag"], as_index=False)[["cnt"]].sum()
-
-            cols = ["sample_index", "anno_tag"]
-            midf = pd.MultiIndex.from_product([cur_df.sample_index, [tag, not_tag]], names=cols)
-            cur_df = cur_df.reset_index()
-            cur_df = cur_df.set_index(cols).reindex(midf, fill_value=0).reset_index().drop(columns=["index"])
-            cur_df.drop_duplicates(inplace=True)
-
-            logging.debug("FLEISS %s\n%s\n%s", tag, cur_df, cur_df.shape)
-            iaa_result[tag] = iaa.fleiss_kappa(cur_df,
-                                               cur_tags,
-                                               filter_target=tag,
-                                               exclude_insufficient=False)
-
-        return iaa_result
-
-    def annotations(self, dbsession, page=1, page_size=50, foruser=None,
+    def annotations(self, dbsession, fortask=None, page=1, page_size=50, foruser=None,
                     user_column=None, restrict_view=None, only_user=False, with_content=True,
                     query=None, order_by=None, min_sample_index=None,
                     splits=None,
@@ -834,7 +792,10 @@ class Dataset(Base):
             """.format(join_type=join_type)
             col_renames["usercol_value"] = user_column
             params['foruser_join'] = foruser.uid
-            field_list.append("usercol.data->'value' #>> '{}' AS usercol_value")
+            if fortask:
+                field_list.append("usercol.data->'%s'->'value' #>> '{}' AS usercol_value" % str(fortask.task_id))
+            else:
+                field_list.append("usercol.data #>> '{}' AS usercol_value")
             annotation_columns.append(user_column)
 
             if tags_include is None:
@@ -844,20 +805,25 @@ class Dataset(Base):
             condition_include = []
             condition_exclude = []
 
-            for tag_idx, tag in enumerate(self.get_taglist()):
-                if tag not in tags_include and tag not in tags_exclude:
-                    continue
+            target_tasks = [fortask] if fortask else self.dstasks
+            for curtask in target_tasks:
+                for tag_idx, tag in enumerate(curtask.get_taglist()):
+                    if tag not in tags_include and tag not in tags_exclude:
+                        continue
 
-                params["tag_%s" % tag_idx] = tag
-                if tag in tags_include:
-                    condition_include.append("tag_%s" % tag_idx)
-                if tag in tags_exclude:
-                    condition_exclude.append("tag_%s" % tag_idx)
+                    params["tag_%s" % tag_idx] = tag
+                    if tag in tags_include:
+                        condition_include.append("tag_%s" % tag_idx)
+                    if tag in tags_exclude:
+                        condition_exclude.append("tag_%s" % tag_idx)
 
-            if len(condition_include) > 0:
-                sql_where += "\nAND usercol.data->'value' #>> '{}' IN (%s)" % ", ".join(map(lambda p: "%(" + p + ")s", condition_include))
-            if len(condition_exclude) > 0:
-                sql_where += "\nAND NOT usercol.data->'value' #>> '{}' IN (%s)" % ", ".join(map(lambda p: "%(" + p + ")s", condition_exclude))
+                """
+                TODO taskdef id inclusion not tested yet
+                """
+                if len(condition_include) > 0:
+                    sql_where += "\nAND usercol.data->'%s'->'value' #>> '{}' IN (%s)" % (str(curtask.task_id), ", ".join(map(lambda p: "%(" + p + ")s", condition_include)))
+                if len(condition_exclude) > 0:
+                    sql_where += "\nAND NOT usercol.data->'%s'->'value' #>> '{}' IN (%s)" % (str(curtask.task_id), ", ".join(map(lambda p: "%(" + p + ")s", condition_exclude)))
 
         # if user is annotator, only export and show their own annotations
         target_users = [foruser]
@@ -878,7 +844,10 @@ class Dataset(Base):
                 {join_type} JOIN annotations AS "anno-{uid}" ON "anno-{uid}".dataset_id = dc.dataset_id AND "anno-{uid}".sample_index = dc.sample_index AND "anno-{uid}".owner_id = %(foruser_{uid})s
                 """.format(join_type=join_type, uid=user_obj.uid)
                 params["foruser_{uid}".format(uid=user_obj.uid)] = user_obj.uid
-                field_list.append("\"anno-{uid}\".data->'value' AS \"anno-{uid}\"".format(uid=user_obj.uid))
+                if fortask:
+                    field_list.append("\"anno-{uid}\".data->'{taskid}'->'value' AS \"anno-{uid}\"".format(taskid=fortask.task_id, uid=user_obj.uid))
+                else:
+                    field_list.append("\"anno-{uid}\".data AS \"anno-{uid}\"".format(uid=user_obj.uid))
                 annotation_columns.append("anno-{uid}-{uname}".format(uid=user_obj.uid, uname=user_obj.email))
                 additional_user_columns.append("anno-{uid}-{uname}".format(uid=user_obj.uid, uname=user_obj.email))
                 additional_user_columns_raw.append("anno-{uid}".format(uid=user_obj.uid))
@@ -987,99 +956,105 @@ class Dataset(Base):
         if len(pseudo_columns) > 0:
             df = df.drop(columns=pseudo_columns)
 
+        for col in annotation_columns:
+            df[col] = df[col].apply(restore_anno_values)
+
         return df, annotation_columns, df_count
 
-    def set_taglist(self, newtags):
-        if self.dsmetadata is None:
-            self.dsmetadata = {}
+    def task_by_id(self, task_id):
+        if isinstance(task_id, str):
+            task_id = int(task_id)
+        for task in self.dstasks:
+            if task.task_id == task_id:
+                return task_id, task
+        return task_id, None
 
-        newtags = filter(lambda l: l is not None and l.strip() != '', newtags)
-        newtags = map(lambda l: l.strip(), newtags)
-        newtags = list(newtags)
-        self.dsmetadata['taglist'] = newtags
-
-    def update_tag_metadata(self, tag, newvalues):
-        tag_metadata = self.dsmetadata.get("tagdetails", {})
-        if tag not in tag_metadata:
-            tag_metadata[tag] = {}
-
-        for k, v in newvalues.items():
-            tag_metadata[tag][k] = v
-
-        self.dsmetadata['tagdetails'] = tag_metadata
-
-    def get_taglist(self, include_metadata=False):
-        tags = self.dsmetadata.get("taglist", None)
-        tags = tags or []
-
-        if not include_metadata:
-            return tags
-
-        tagdata = {}
-        tag_metadata = self.dsmetadata.get("tagdetails", {})
-
-        for tag in tags:
-            curtag_metadata = tag_metadata.get(tag, {})
-            tagdata[tag] = {
-                    "icon": curtag_metadata.get("icon", None),
-                    "color": curtag_metadata.get("color", "")
-                    }
-
-        return tagdata
-
-    def get_anno_votes(self, dbsession, sample_id, exclude_user=None):
+    def get_anno_votes(self, dbsession, task_id, sample_id, exclude_user=None):
         anno_votes = {}
         if not isinstance(sample_id, str):
             sample_id = str(sample_id)
 
-        for tag in self.get_taglist():
+        task_id, task = self.task_by_id(task_id)
+
+        for tag in task.get_taglist():
             anno_votes[tag] = []
 
         for anno in dbsession.query(Annotation).filter_by(
                 dataset_id=self.dataset_id,
+                task_id=task_id,
                 sample=sample_id).all():
 
             if exclude_user is not None and exclude_user is anno.owner:
                 continue
-            if anno.data is None or 'value' not in anno.data or anno.data['value'] is None or \
-                    not anno.data['value'] in self.get_taglist():
+            if anno.data is None or anno.data.get('value', None) is None or \
+                    not anno.data['value'] in task.get_taglist():
                 continue
             anno_votes[anno.data['value']].append(anno.owner)
 
         return anno_votes
 
-    def getannos(self, dbsession, uid, asdict=False):
+    def supports_simple_annotation(self):
+        if len(self.dstasks) > 1:
+            return False
+        for task in self.dstasks:
+            if task.tasktype == "tagging" and task.taskconfig.get("multiselect", False):
+                return False
+            if task.tasktype == "text":
+                return False
+
+        return True
+
+    def getannos(self, dbsession, uid, task_id, asdict=False):
+        """
+        @deprecated
+        """
         user_obj = User.by_id(dbsession, uid)
         annores = dbsession.query(Annotation).filter_by(
-                    owner_id=user_obj.uid, dataset_id=self.dataset_id).all()
+                    owner_id=user_obj.uid, dataset_id=self.dataset_id, task_id=task_id).all()
         if not asdict:
             return annores
 
-        resdict = {"sample": [], "uid": [], "annotation": []}
+        resdict = {"task_id": task_id, "sample": [], "uid": [], "annotation": []}
         for anno in annores:
             resdict['uid'].append(anno.owner_id)
             resdict['sample'].append(anno.sample)
-            resdict['annotation'].append(anno.data['value']
-                                         if 'value' in anno.data and anno.data['value'] is not None else None)
+            resdict['annotation'].append(anno.data.get('value', None))
 
         return resdict
 
-    def getanno(self, dbsession, uid, sample):
+    def getanno_for_task(self, dbsession, uid, task_id, sample):
         user_obj = User.by_id(dbsession, uid)
-        sample = str(sample)
-        anno_obj_data = {}
+        task_id = int(task_id)
 
         anno_obj = dbsession.query(Annotation).filter_by(owner_id=user_obj.uid,
                                                          dataset_id=self.dataset_id,
+                                                         task_id=task_id,
                                                          sample=sample).one_or_none()
 
-        if anno_obj is not None:
-            anno_obj_data = anno_obj.data or {}
+        anno_obj_data = anno_obj.data if anno_obj is not None else {}
+        return anno_obj_data
 
-        return {
-                "sample": sample,
-                "data": anno_obj_data
-               }
+    def getanno(self, dbsession, uid, task_id, sample):
+        sample = str(sample)
+        anno_obj_data = {}
+
+        if task_id != "*":
+            anno_obj_data = self.getanno_for_task(dbsession, uid, task_id, sample)
+
+            return {
+                    "sample": sample,
+                    "task": task_id,
+                    "data": anno_obj_data
+                   }
+        else:
+            for query_task in self.dstasks:
+                task_anno = self.getanno_for_task(dbsession, uid, query_task.task_id, sample)
+                anno_obj_data[query_task.task_id] = task_anno
+
+            return {
+                    "sample": sample,
+                    "data": anno_obj_data
+                   }
 
     def sample_by_index(self, dbsession, sample_index):
         qry = self.content_query(dbsession).filter_by(sample_index=int(sample_index))
@@ -1293,11 +1268,25 @@ class Dataset(Base):
         # empty dataset
         return None, None
 
-    def setanno(self, dbsession, uid, sample_index, value):
+    def setanno(self, dbsession, uid, sample_index, task_id, value):
         user_obj = User.by_id(dbsession, uid) if not isinstance(uid, User) else uid
 
         if user_obj is None:
             raise Exception("setanno() requires a user object or id")
+
+        if isinstance(task_id, str):
+            try:
+                task_id = int(task_id)
+            except ValueError:
+                raise Exception("setanno() requires a task_id (int)")
+
+        if value is not None and isinstance(value, str):
+            value = value.strip()
+            if value.startswith("[") and value.endswith("]"):
+                try:
+                    value = json.loads(value)
+                except ValueError as ve:
+                    raise Exception(f"could not decode {value}: {ve}")
 
         anno_data = {"updated": datetime.now().timestamp(), "value": value}
 
@@ -1310,7 +1299,8 @@ class Dataset(Base):
                 owner_id=user_obj.uid,
                 dataset_id=self.dataset_id,
                 sample=sample_obj.sample,
-                sample_index=sample_obj.sample_index
+                sample_index=sample_obj.sample_index,
+                task_id=task_id,
                 ).one_or_none()
 
         if existing_anno is None:
@@ -1318,11 +1308,14 @@ class Dataset(Base):
                                  dataset=self,
                                  sample=sample_obj.sample,
                                  sample_index=sample_obj.sample_index,
+                                 task_id=task_id,
                                  data=anno_data)
             dbsession.add(newanno)
             logging.debug("created annotation %s for sample %s with value %s" % (newanno, sample_obj, value))
         else:
-            existing_anno.data = anno_data
+            existing_anno.data.update(anno_data)
+            flag_modified(existing_anno, "data")
+
             logging.debug("updated annotation %s for sample %s with value %s" % (existing_anno, sample_obj, value))
             dbsession.merge(existing_anno)
 
@@ -1331,6 +1324,7 @@ class Dataset(Base):
         dbsession.commit()
 
     def annocount_today(self, dbsession, uid, splits=None):
+        # TODO return counts by task ID or distinct
         if isinstance(uid, User):
             uid = uid.uid
         query = dbsession.query(Annotation).filter_by(
@@ -1428,19 +1422,45 @@ class Dataset(Base):
         errors = []
         preview_df = None
 
-        sep = self.dsmetadata.get("sep", ",")
+        default_dataset_delimiter = config.get("dataset_default_delimiter", ",")
+        if default_dataset_delimiter is None or default_dataset_delimiter.strip() == "":
+            default_dataset_delimiter = ","
+        default_dataset_delimiter = default_dataset_delimiter.strip()
+        if default_dataset_delimiter.lower() == "tab":
+            default_dataset_delimiter = "\t"
+
+        sep = self.dsmetadata.get("sep", default_dataset_delimiter)
         quotechar = self.dsmetadata.get("quotechar", '"')
+
+        column_names = self.dsmetadata.get("prelude", "").strip()
+        if column_names is not None:
+            column_names = [col.strip() for col in column_names.split(",") if col.strip() != ""]
+            if len(column_names) == 0:
+                column_names = None
 
         if os.path.exists(filename):
             df = None
             try:
-                df = pd.read_csv(filename, sep=sep, header='infer', quotechar=quotechar, escapechar="\\")
+                if column_names is None:
+                    df = pd.read_csv(filename,
+                                     sep=sep,
+                                     header='infer',
+                                     quotechar=quotechar,
+                                     escapechar="\\")
+                else:
+                    df = pd.read_csv(filename,
+                                     sep=sep,
+                                     header=None,
+                                     quotechar=quotechar,
+                                     escapechar="\\",
+                                     names=column_names)
+
                 if df is not None:
                     preview_df = df.head()
                     success = True
                 else:
                     errors.append("could not load data")
-            except Exception as pd_error:
+            except Exception as pd_error: # noqa
                 errors.append(str(pd_error))
                 success = False
 

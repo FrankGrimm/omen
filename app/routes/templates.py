@@ -5,6 +5,7 @@ import re
 
 from markupsafe import Markup
 from jinja2 import evalcontextfilter, escape
+import json
 
 from app.web import app, BASEURI, db
 _paragraph_re = re.compile(r'(?:\r\n|\r(?!\n)|\n){2,}')
@@ -26,3 +27,59 @@ def highlight(value, query):
                        value, flags=re.IGNORECASE)
 
     return Markup(value)
+
+@app.template_filter(name="swaplistitem")
+def swaplistitem(value, item):
+    if isinstance(value, str):
+        value = json.loads(value)
+        if not isinstance(value, list):
+            value = [value]
+    if item in value:
+        value = list(set(value) - set([item]))
+    else:
+        value = value + [item]
+    return value
+
+@app.template_filter(name="addlistitem")
+def addlistitem(value, item):
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except:
+            pass
+        if not isinstance(value, list):
+            value = [value]
+    if value is None:
+        return [item]
+
+    if item not in value:
+        value = value + [item]
+    return value
+
+@app.template_filter(name="list_to_str")
+@evalcontextfilter
+def list_to_str(eval_ctx, value):
+    if isinstance(value, list):
+        return ",".join(map(str, value))
+    return value
+
+
+@app.template_filter(name="json_dump")
+@evalcontextfilter
+def json_dump(eval_ctx, value):
+    return json.dumps(value)
+
+@app.template_filter(name="json_load")
+@evalcontextfilter
+def json_load(eval_ctx, value):
+    try:
+        return json.loads(value)
+    except:
+        return value
+
+@app.template_filter(name="typename")
+@evalcontextfilter
+def json_load(eval_ctx, value):
+    return type(value)
+
+

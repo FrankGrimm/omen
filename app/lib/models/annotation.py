@@ -23,7 +23,7 @@ class Annotation(Base):
     sample = Column(String, primary_key=True)
     sample_index = Column(Integer, primary_key=True)
 
-    task_id = Column(Integer, nullable=True)
+    task_id = Column(Integer, primary_key=True)
 
     data = Column(JSON)
     __table_args__ = (
@@ -35,8 +35,9 @@ class Annotation(Base):
     )
 
     def __repr__(self):
-        return "<Annotation (dataset: %s, owner: %s, sample: %s, data: %s)>" % (
+        return "<Annotation (dataset: %s, task: %s, owner: %s, sample: %s, data: %s)>" % (
             self.dataset_id,
+            self.task_id,
             self.owner_id,
             self.sample,
             self.data,

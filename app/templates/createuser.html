@@ -22,9 +22,40 @@
 {% endif %}
 
 {% if feature_user_invite %}
+{% if feature_email_invite %}
 <div class="row">
     <div class="col-12">
-        <h3>Account Creation via Invitation</h3>
+        <h3>Account Creation via E-Mail</h3>
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">Please enter the e-mail of the user you want to invite. Note that the invitations are sent out immediately and expire after 48 hours.
+    </div>
+</div>
+<div class="row">
+        <div class="col-4">
+            &nbsp;
+        </div>
+        <div class="col-8">
+            <form id="inviteMailForm" method="post" action="">
+            <input id="action" name="action" type="hidden" value="generate_invitemail" />
+            <div class="input-group">
+                <input id="inviteMail" name="inviteMail" autocomplete="off" type="email" required="required" placeholder="user@example.com" class="form-control" />
+                <div class="input-group-append">
+                    <button class="input-group-text btn btn-success" id="sendInvite" autocomplete="off" title="Send">
+                        <i class="mdi mdi-email-send"></i>
+                    </button>
+                </div>
+            </div>
+            </form>
+        </div>
+</div>
+{% endif %}
+<div class="createuser_invite_row"></div>
+<hr />
+<div class="row">
+    <div class="col-12">
+        <h3>Account Creation via Invite Link</h3>
     </div>
 </div>
 <div class="row">

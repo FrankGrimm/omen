@@ -100,6 +100,8 @@
                 commented on {{ render_activity_target(activity, target) }}: <blockquote class="with_markdown feed_comment">{{ activity.content|trim }}</blockquote>
                 {% elif activity.scope == "task_complete" %}
                 completed annotation task on {{ render_activity_target(activity, target) }} {% if activity.content %}({{ activity.content }}){% endif %}
+                {% elif activity.scope == "rename_tag" %}
+                managed tags on {{ render_activity_target(activity, target) }}
                 {% else %}
                 activity (owner: {{activity.owner}}, scope: {{ activity.scope }}, target: {{ target }})
                 {% endif %}

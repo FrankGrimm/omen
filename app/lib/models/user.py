@@ -10,6 +10,7 @@ import sys
 from passlib.hash import scrypt
 
 from sqlalchemy import Column, Integer, String, JSON
+from sqlalchemy import exc as sqlexc
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.attributes import flag_dirty, flag_modified
 
@@ -113,16 +114,20 @@ class User(Base):
 
     @staticmethod
     def system_user(dbsession):
-        system_account = User.by_email(dbsession, "SYSTEM", doraise=False)
-        if system_account is None:
-            logging.debug("System account not found, creating.")
-            newobj = User(email="SYSTEM", pwhash=LOGIN_DISABLED, displayname="System")
-            dbsession.add(newobj)
-            dbsession.commit()
-            logging.debug("System account created.")
-        else:
-            logging.debug("System account found.")
-        return system_account
+        try:
+            system_account = User.by_email(dbsession, "SYSTEM", doraise=False)
+            if system_account is None:
+                logging.debug("System account not found, creating.")
+                newobj = User(email="SYSTEM", pwhash=LOGIN_DISABLED, displayname="System")
+                dbsession.add(newobj)
+                dbsession.commit()
+                logging.debug("System account created.")
+            else:
+                logging.debug("System account found.")
+            return system_account
+        except sqlexc.ProgrammingError as e:
+            logging.warn(f"database not initialized yet ({e})")
+            return None
 
     @staticmethod
     def by_email(dbsession, email, doraise=True):
@@ -180,6 +185,21 @@ class User(Base):
 
         return self.verify_password(pw1)
 
+    def can_create(self):
+        """
+        Checks if a group of administrator accounts is configured
+        via setting `ADMIN_USERS`. If so, checks if
+        the email associated with this account is listed there.
+        """
+        admin_users = config.get("ADMIN_USERS", None)
+        if admin_users is None:
+            return True
+        admin_users = admin_users.lower().strip().split(",")
+        if len(admin_users) == 0:
+            return True
+
+        return self.email.lower() in admin_users
+
     def has_keypair(self):
         privkey = self.get_metadata("jwt_privkey", None)
         pubkey = self.get_metadata("jwt_pubkey", None)
@@ -226,8 +246,11 @@ class User(Base):
     def set_metadata(self, dbsession, key, new_value):
         if self.usermetadata is None:
             self.usermetadata = {}
+        if isinstance(new_value, bytes):
+            new_value = new_value.decode('utf-8')
         self.usermetadata[key] = new_value
         self.dirty(dbsession)
+        return new_value
 
     def get_metadata(self, key, default_value=None):
         if self.usermetadata is None:

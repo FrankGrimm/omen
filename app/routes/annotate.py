@@ -12,20 +12,29 @@ def handle_set_annotation(dbsession, dataset):
 
     set_sample_idx = None
     set_sample_value = None
+    set_task_id = None
     try:
         if request.args.get("set_sample_idx", None) is not None:
             set_sample_idx = str(int(request.args.get("set_sample_idx", None)))
     except ValueError:
         pass
+    try:
+        if request.args.get("set_taskid", None) is not None:
+            set_task_id = int(request.args.get("set_taskid", None))
+    except ValueError:
+        pass
 
     if set_sample_idx is not None:
-        set_sample_value = request.args.get("set_value", "")[:500]
+        set_sample_value = request.args.get("set_value", "")[:1000]
 
-    if set_sample_idx is not None and set_sample_value is not None:
-        dataset.setanno(dbsession, get_session_user(dbsession), set_sample_idx, set_sample_value)
+    if set_sample_idx is not None and set_sample_value is not None and set_task_id is not None:
+        dataset.setanno(dbsession, get_session_user(dbsession), set_sample_idx, set_task_id, set_sample_value)
 
 
-def get_votes(dbsession, dataset, user_roles, session_user, sample_id):
+def get_votes_disabled(dbsession, dataset, user_roles, session_user, sample_id):
+    """
+    @deprecated
+    """
     if sample_id is None:
         return None
 
@@ -200,12 +209,10 @@ def annotate(dsid=None, sample_idx=None):
         sample_prev, _ = dataset.get_prev_sample(dbsession, sample_idx, session_user, task.splits)
         sample_next, _ = dataset.get_next_sample(dbsession, sample_idx, session_user, task.splits)
 
-        curanno_data = dataset.getanno(dbsession, session_user, sample_id) if sample_id is not None else None
+        curanno_data = dataset.getanno(dbsession, session_user, "*", sample_id) if sample_id is not None else None
         curanno = None
-        if curanno_data and 'data' in curanno_data and 'value' in curanno_data['data']:
-            curanno = curanno_data['data']['value']
-
-        anno_votes = get_votes(dbsession, dataset, user_roles, session_user, sample_id)
+        if curanno_data and 'data' in curanno_data:
+            curanno = curanno_data
 
         annotation_tasks = db.datasets.annotation_tasks(dbsession, session_user)
         increment_task_states(df, task, annotation_tasks)
@@ -237,5 +244,4 @@ def annotate(dsid=None, sample_idx=None):
                                additional_content=additional_content,
                                sample_prev=sample_prev,
                                sample_next=sample_next,
-                               curanno=curanno,
-                               votes=anno_votes)
+                               curanno=curanno)

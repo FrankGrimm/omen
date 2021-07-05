@@ -61,7 +61,23 @@
 <h3>Data</h3>
 {% include "dataset_preview.html" with context %}
 
+    <div class="row" id="dataset_prelude">
+        <form method="post" id="form_update_dataset_prelude" class="col-12">
+            <input type="hidden" name="action" value="update_dataset_prelude" />
+            <div class="col-12">
+          <div class="form-group">
+            <label for="dsPreludeContent">Dataset header fields (comma-separated)</label>
+            <textarea class="form-control" id="dsPreludeContent" name="dsPreludeContent" rows="1">{{ dataset.dsmetadata.get('prelude', '') }}</textarea>
+          </div> 
+          <button type="submit" class="btn btn-primary mb-2">Update</button>
+          <br />
+            </div>
+
+        </form>
+    </div>
+
 <div class="row" id="dataset_content">
+    <h4 class="col-12">Content</h4>
     <form method="post" id="form_upload_file" enctype="multipart/form-data" class="col-12">
         <div class="input-group input-group-with-tagtext col-12">
             <input type="hidden" name="action" value="upload_file" />
@@ -69,8 +85,7 @@
                 <div class="input-group-tagtext">
                     Import New Samples
                 </div>
-                <input type="file" class="custom-file-input" id="upload_file" name="upload_file" required="required">
-                <label class="custom-file-label" for="upload_file">Choose file</label>
+                <input type="file" class="form-control" autocomplete="off" id="upload_file" name="upload_file" required="required">
             </div>
             <div class="input-group-append">
                 <button class="btn btn-primary input-group-text" id="form_upload_file_submit" onclick="return $('#form_upload_file').submit();">
@@ -89,6 +104,7 @@
 </div>
 
 {% if has_upload_content %}
+
     <div class="row upload_meta">
         <div class="col-12">
             <span class="dsmeta">Original filename:</span> <span class="dsmetaval">{{ dataset.dsmetadata.upload_filename }}</span></div>
@@ -101,7 +117,7 @@
         <div class="col-12 col-md-3" style="margin-top: 0.7em;">Delimiter:</div>
         <form class="dropdown col-3" method="post">
             <input type="hidden" name="action" value="change_delimiter" />
-            {% set ds_sep = dataset.dsmetadata.sep or ',' %}
+            {% set ds_sep = dataset.dsmetadata.sep or default_dataset_delimiter %}
             <a class="btn btn-primary dropdown-toggle dataset_edit_action" role="button" data-toggle="dropdown">
                 {% if ds_sep == "\t" %}tab{% else %}{{ ds_sep }}{% endif %}
             </a>

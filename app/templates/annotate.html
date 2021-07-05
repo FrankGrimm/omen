@@ -13,7 +13,9 @@ Annotate &quot;<span class="annometa">{{ task.name }}</span>&quot;
 
 {% block addscript %}
     <script>
-        const tagcount = {{ dataset.get_taglist()|length }};
+        const tagcounts = {
+            {% for task in dataset.dstasks %} {{ task.task_id }}: {{ task.get_taglist()|length }}; {% endfor %},
+        }
     </script>
     <script src="{{ url_for("static", filename="ds_annotate.js") }}"></script>
 {% endblock %}

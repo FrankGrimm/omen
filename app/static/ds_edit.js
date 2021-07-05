@@ -114,22 +114,25 @@ function sendUpdatesplits(action_payload) {
     });
 }
 
-function updateTags(tag_action, newtags) {
+function updateTags(taskdef_id, tag_action, newtags) {
     newtags = newtags || [];
 
     console.log("setting new tags", newtags);
     
-    $("#tag_editor").css("opacity", "0.5");
-    $("#tag_editor").find(".ajax-loading").show();
+    $("#tag_editor_" + taskdef_id).css("opacity", "0.5");
+    $("#tag_editor_" + taskdef_id).find(".ajax-loading").show();
 
     jQuery.ajax({
         url: window.location.href,
-        data: JSON.stringify({"action": "tageditor", "tagaction": tag_action || "update_taglist", "newtags": newtags}),
+        data: JSON.stringify({"taskdef_id": taskdef_id,
+                              "action": "tageditor",
+                              "tagaction": tag_action || "update_taglist",
+                              "newtags": newtags}),
         cache: false,
         contentType: "application/json",
         method: 'POST',
         success: function(data){
-            document.getElementById("tag_editor_container").innerHTML = data;
+            document.getElementById("tag_editor_container_" + taskdef_id).innerHTML = data;
             initializeTagEditor();
         },
         error: function(jqXHR, textstatus, err) {
@@ -139,20 +142,24 @@ function updateTags(tag_action, newtags) {
     });
 }
 
-function updateTagMetadata(tag_action, current_tag, tag_value) {
+function updateTagMetadata(taskdef_id, tag_action, current_tag, tag_value) {
     console.log("updating tag metadata", tag_action, current_tag, tag_value);
     
-    $("#tag_editor").css("opacity", "0.5");
-    $("#tag_editor").find(".ajax-loading").show();
+    $("#tag_editor_" + taskdef_id).css("opacity", "0.5");
+    $("#tag_editor_" + taskdef_id).find(".ajax-loading").show();
 
     jQuery.ajax({
         url: window.location.href,
-        data: JSON.stringify({"action": "tageditor", "tagaction": tag_action, "tag": current_tag, "value": tag_value}),
+        data: JSON.stringify({"taskdef_id": taskdef_id,
+                              "action": "tageditor",
+                              "tagaction": tag_action,
+                              "tag": current_tag,
+                              "value": tag_value}),
         cache: false,
         contentType: "application/json",
         method: 'POST',
         success: function(data){
-            document.getElementById("tag_editor_container").innerHTML = data;
+            document.getElementById("tag_editor_container_" + taskdef_id).innerHTML = data;
             initializeTagEditor();
         },
         error: function(jqXHR, textstatus, err) {
@@ -163,12 +170,18 @@ function updateTagMetadata(tag_action, current_tag, tag_value) {
 }
 
 
-function getCurrentTags() {
+function getCurrentTags(taskdef_id) {
     const all_tags = [];
 
-    $("div.tageditor_entry").each((idx, elem) => {
+    const target_container = document.querySelector("form[data-taskdefid='" + taskdef_id + "']");
+
+    if (!target_container) {
+        return null;
+    }
+
+    target_container.querySelectorAll("div.tageditor_entry").forEach((elem, idx) => {
         const $elem = $(elem);
-        const cur_tag = $elem.data("tag").trim();
+        const cur_tag = elem.dataset.tag ? ("" + elem.dataset.tag).trim() : "";
         const cur_position = $elem.data("position");
         const total_tag_count = $elem.data("tagcount");
         all_tags.push( $elem.find("input.tageditor_taginput")[0].value );
@@ -234,7 +247,21 @@ function initializeSplitEditor() {
 }
 
 function initializeTagEditor() {
-    $("div.tageditor_entry").each((idx, elem) => {
+    const target_containers = document.querySelectorAll("form[data-taskdefid]");
+
+    if (!target_containers) {
+        console.log("no taskdef containers found")
+        return null;
+    }
+
+    target_containers.forEach((container) => {
+        console.log("initializing task container", container);
+        initializeTagEditorContainer(container)
+    });
+}
+
+function initializeTagEditorContainer(target_container) {
+    target_container.querySelectorAll("div.tageditor_entry").forEach((elem, idx) => {
         const $elem = $(elem);
         const cur_tag = $elem.data("tag");
         const cur_position = $elem.data("position");
@@ -246,7 +273,7 @@ function initializeTagEditor() {
             const $changed_input = $(this);
             const $entry = $($changed_input.parents("div.tageditor_entry")[0]);
             
-            const entry_tag = $entry.data("tag").trim();
+            const entry_tag = ("" + $entry.data("tag")).trim();
             const input_tag = $changed_input.val().trim();
 
             // enable action button if a rename was detected
@@ -289,7 +316,9 @@ function initializeTagEditor() {
             const tag_value = $btn.data("value") || null;
             const current_tag = $btn.data("tag");
 
-            const initial_tags = getCurrentTags();
+            const taskdef_id = e.target.closest("form").dataset.taskdefid;
+
+            const initial_tags = getCurrentTags(taskdef_id);
             let updated_tags = [...initial_tags];
 
             const tag_index = updated_tags.indexOf(current_tag);
@@ -312,21 +341,22 @@ function initializeTagEditor() {
 
             if (!is_metadata_action) {
                 console.log("TAGACTION", tag_action, initial_tags, "=>", updated_tags);
-                updateTags(tag_action, updated_tags);
+                updateTags(taskdef_id, tag_action, updated_tags);
                 return false;
             } else {
-                updateTagMetadata(tag_action, current_tag, tag_value);
+                updateTagMetadata(taskdef_id, tag_action, current_tag, tag_value);
                 return true; // required to close the dropdowns
             }
         });
 
     });
 
-    const createTagInput = $("input#tageditor_add_tag");
-    const createTagButton = $("button#tageditor_add_tag_action");
+    const createTagInput = $("input.tageditor_add_tag");
+    const createTagButton = $("button.tageditor_add_tag_action");
 
-    createTagInput.on("input change", function handleTagEditorNewTagChange() {
-        const current_tags = getCurrentTags();
+    createTagInput.on("input change", function handleTagEditorNewTagChange(e) {
+        const taskdef_id = e.target.closest("form").dataset.taskdefid;
+        const current_tags = getCurrentTags(taskdef_id);
         const new_tag_value = createTagInput.val().trim();
 
         if (new_tag_value.length && current_tags.indexOf(new_tag_value) === -1) {
@@ -338,15 +368,16 @@ function initializeTagEditor() {
     createTagButton.on("click", function createNewTag(e) {
         e.preventDefault();
         const new_tag_value = createTagInput.val().trim();
-
-        const current_tags = getCurrentTags();
+        const taskdef_id = e.target.closest("form").dataset.taskdefid;
+        const current_tags = getCurrentTags(taskdef_id);
         current_tags.push(new_tag_value);
-
-        updateTags("update_taglist", current_tags);
+        
+        console.log("tag::create", current_tags);
+        updateTags(taskdef_id, "update_taglist", current_tags);
         return false;
     });
     
-    console.log("initializeTagEditor(), current:", getCurrentTags());
+    console.log("initializeTagEditor(), current:", getCurrentTags(target_container.dataset.taskdefid));
 
 }
 
@@ -357,6 +388,74 @@ function initializeDataFramePreview() {
             $(this).find("td").wrapInner('<div class="tdwrap">');
         });
     }
+}
+
+function confirmDeleteTask(e) {
+    e.preventDefault();
+
+    const target_form = e.target.closest("form");
+    const target_confirm = target_form.querySelector("input[name='task_delete_confirm']");
+
+    bootbox.confirm({
+        title: "Confirm task deletion?",
+        message: "Warning: You are about to delete a task.\nData already entered for this task can not be recovered.\nAre you sure?",
+        buttons: {
+            cancel: {
+                label: '<i class="mdi mdi-close"></i> Cancel',
+                className: 'btn-default'
+            },
+            confirm: {
+                label: '<i class="mdi mdi-check"></i> Confirm',
+                className: 'btn-danger'
+            }
+        },
+        size: "large",
+        backdrop: true,
+        callback: function (result) {
+            if (!result) { return; }
+
+            target_confirm.value = "true";
+            target_form.submit();
+        }
+    });
+    return false;
+}
+
+function renameTask(e) {
+    e.preventDefault();
+
+    const target_form = e.target.closest("form");
+    const target_newname = target_form.querySelector("input[name='task_newname']");
+
+    bootbox.prompt({
+        title: "Rename task?",
+        message: "Please enter a new name for the task '" + target_newname.value + "'",
+        value: target_newname.value,
+        buttons: {
+            cancel: {
+                label: '<i class="mdi mdi-close"></i> Cancel',
+                className: 'btn-default'
+            },
+            confirm: {
+                label: '<i class="mdi mdi-check"></i> Confirm',
+                className: 'btn-primary'
+            }
+        },
+        size: "large",
+        backdrop: true,
+        callback: function (result) {
+            if (!result) { return; }
+
+            target_newname.value = result;
+            target_form.submit();
+        }
+    });
+    return false;
+}
+
+function setupTaskEditElements() {
+    document.querySelectorAll(".taskeditor_delete").forEach(btn => btn.addEventListener("click", confirmDeleteTask));
+    document.querySelectorAll(".taskeditor_rename").forEach(btn => btn.addEventListener("click", renameTask));
 }
 
 function setupDeleteConfirmation() {
@@ -409,14 +508,18 @@ function setupDeleteConfirmation() {
     });
 }
 
-function sendOptionValue(target, key, newvalue) {
+function sendOptionValue(target, key, newvalue, target_task) {
     console.log("updateOption", key, "=>", newvalue);
 
     const data = {
         "action": "update_option",
         "option_key": key,
-        "option_value": newvalue
-    };
+        "option_value": newvalue,
+    }
+    if (target_task) {
+        data["target_task"] = target_task;
+        data["action"] = "update_task_option";
+    }
 
     if (target.domLabel) {
         target = target.domLabel;
@@ -452,7 +555,8 @@ function initOption(cbElem) {
         const opt_newvalue = event.target.checked;
         const opt_key = event.target.value;
         
-        sendOptionValue(event.target, opt_key, opt_newvalue);
+        let target_task = event.target.closest("input").dataset?.targettask;
+        sendOptionValue(event.target, opt_key, opt_newvalue, target_task);
     }
 
     cbElem.addEventListener("change", updateOption);
@@ -465,8 +569,10 @@ function updateAdditionalColumns() {
     const add_col_container = "dataset_admin_taskdef_add_columns";
     const container_dom = document.getElementById(add_col_container);
     console.log("update", ACTIVE_DATASET_ADD_COLUMNS);
-    
-    container_dom.innerHTML = '';
+   
+    if (container_dom) {
+        container_dom.innerHTML = '';
+    }
 
     for (let idx = 0; idx < ACTIVE_DATASET_ADD_COLUMNS.length; idx++) {
         const idx_text = ACTIVE_DATASET_ADD_COLUMNS[idx];
@@ -589,6 +695,7 @@ document.addEventListener("DOMContentLoaded",function(){
     initializeSplitEditor();
     initializeDataFramePreview();
     setupDeleteConfirmation();
+    setupTaskEditElements();
 
     $("a.toggleacl").click(function(e) {
         e.preventDefault();

@@ -1,7 +1,7 @@
 {% extends "dataset_layout.html" %}
 
 {% block page_title %}
-{% if editmode == 'create' %}Create Dataset{% else %}Edit Dataset{% endif %}
+{% if editmode == 'create' %}Create Dataset{% else %}Edit {% if dataset.dsmetadata.name %}<span class="ds_header_edit_name">{{ dataset.dsmetadata.name }}<span>{% else %}Dataset{% endif %}{% endif %}
 {% endblock %}
 
 {% block pagebody %}

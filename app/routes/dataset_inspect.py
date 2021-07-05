@@ -134,7 +134,7 @@ def inspect_filters():
     return ds_filters
 
 
-def inspect_handle_action(dbsession, cur_dataset, session_user, ds_filters):
+def inspect_handle_action(dbsession, cur_dataset, session_user, ds_filters, task):
     if request.method != "POST" or request.json is None:
         return None
 
@@ -155,6 +155,7 @@ def inspect_handle_action(dbsession, cur_dataset, session_user, ds_filters):
     # retrieve all samples that match the current criteria, up to 10000 per default
     df, annotation_columns, results = cur_dataset.annotations(dbsession,
                                                               foruser=system_user,
+                                                              fortask=task,
                                                               page=1,
                                                               page_size=config.get_int("bulk_action_max", 10000),
                                                               restrict_view=ds_filters.viewfilter,
@@ -194,7 +195,7 @@ def inspect_handle_action(dbsession, cur_dataset, session_user, ds_filters):
                         break
 
         if new_value is not None:
-            cur_dataset.setanno(dbsession, system_user, bulk_sample, new_value)
+            cur_dataset.setanno(dbsession, system_user, bulk_sample, task.task_id, new_value)
             bulk_action_result['applied'] += 1
 
     db.Activity.create(dbsession,
@@ -206,9 +207,10 @@ def inspect_handle_action(dbsession, cur_dataset, session_user, ds_filters):
     return bulk_action_result
 
 
-@app.route(BASEURI + "/dataset/<dsid>/inspect", methods=["GET", "POST"])
+@app.route(BASEURI + "/dataset/<dsid>/<taskid>/inspect", methods=["GET", "POST"])
+@app.route(BASEURI + "/dataset/<dsid>/inspect", methods=["GET"])
 @login_required
-def inspect_dataset(dsid=None):
+def inspect_dataset(dsid=None, taskid=None):
     with db.session_scope() as dbsession:
         ds_filters = inspect_filters()
 
@@ -217,13 +219,23 @@ def inspect_dataset(dsid=None):
 
         # tagstates, restrict_include, restrict_exclude = get_tagstates(cur_dataset)
 
+        task = None
+        if taskid is not None:
+            if isinstance(taskid, str):
+                taskid = int(taskid)
+            _, task = cur_dataset.task_by_id(taskid)
+
         template_name = "dataset_inspect.html"
         ctx_args = {}
 
         req_sample = inspect_get_requested_sample()
         if req_sample is not None and not req_sample == "":
             if request.json is not None and "set_tag" in request.json:
-                cur_dataset.setanno(dbsession, db.User.system_user(dbsession), req_sample, request.json.get("set_tag", None))
+                cur_dataset.setanno(dbsession,
+                                    db.User.system_user(dbsession),
+                                    req_sample,
+                                    task.task_id,
+                                    request.json.get("set_tag", None))
 
         # pagination
         pagination = namedtuple("Pagination", ["page_size", "page", "pages"])
@@ -241,7 +253,7 @@ def inspect_dataset(dsid=None):
             # flash("Invalid value for param 'page': %s" % e, "error")
             pagination.page = 1
 
-        inspect_action_result = inspect_handle_action(dbsession, cur_dataset, session_user, ds_filters)
+        inspect_action_result = inspect_handle_action(dbsession, cur_dataset, session_user, ds_filters, task)
         if inspect_action_result is not None:
             return inspect_action_result
 
@@ -250,6 +262,7 @@ def inspect_dataset(dsid=None):
             return new_comment_result
 
         df, annotation_columns, results = cur_dataset.annotations(dbsession,
+                                                                  fortask=task,
                                                                   foruser=db.User.system_user(dbsession),
                                                                   page=pagination.page,
                                                                   page_size=pagination.page_size,
@@ -269,6 +282,7 @@ def inspect_dataset(dsid=None):
             template_name = "dataset_inspect_row.html"
 
         return render_template(template_name, dataset=cur_dataset,
+                               task=task,
                                df=df,
                                dbsession=dbsession,
                                pagination=pagination,

@@ -6,9 +6,11 @@ import logging
 
 from flask import flash, redirect, render_template, request, url_for, session, abort
 
+import urllib.parse
 from passlib.hash import scrypt
 
 from app.lib.viewhelpers import login_required, get_session_user
+import app.lib.email as lib_email
 import app.lib.config as config
 import app.lib.crypto as crypto
 from app.web import app, BASEURI, db
@@ -192,6 +194,7 @@ def createuser():
         allowed_actions = set()
         if config.get_bool("feature_user_invite", True):
             allowed_actions.add("generate_invite")
+            allowed_actions.add("generate_invitemail")
         if config.get_bool("feature_user_manualcreate", True):
             allowed_actions.add("docreate")
 
@@ -205,6 +208,49 @@ def createuser():
                 invite_token = session_user.create_invite(dbsession)
                 invite_uri = url_for("accept_invite")
                 return {"token": invite_token, "uri": invite_uri, "by": session_user.uid}
+
+            if req_action == "generate_invitemail":
+                email = request.form.get("inviteMail", None)
+                if email is None or "@" not in email:
+                    flash("Could not interpret e-mail address", "error")
+                    return redirect(url_for("createuser"))
+                email = email.strip().lower()
+
+                userobj = db.User.by_email(dbsession, email, doraise=False)
+                if userobj is not None:
+                    flash(f"Account {email} already exists.", "warning")
+                    return redirect(url_for("createuser"))
+
+                inv_host = request.headers.get("Host", "localhost")[:500].strip()
+                inv_schema = "https"
+                if request.headers.get("Referer", "").startswith("http://"):
+                    inv_schema = "http"
+
+                invite_token = session_user.create_invite(dbsession)
+                invite_uri = url_for("accept_invite")
+
+                by_enc = str(session_user.uid)
+                token_enc = urllib.parse.quote(invite_token)
+
+                platform_link = inv_schema + "://" + inv_host
+                full_link = inv_schema + "://" + inv_host + invite_uri + f"?by={by_enc}&token={token_enc}"
+
+                subject_line = "[omen] Invitation to OMEN annotation platform"
+
+                message_text = f"""Hello,
+
+{session_user.email} has invited you to join the OMEN annotation platform at {platform_link}.
+
+Follow this link (valid for 48h) to create an account:
+
+{full_link}
+
+If you received this e-mail erroneously, please ignore it.
+                """
+
+                flash(f"Account invitation sent to {email}", "success")
+                lib_email.send(email, subject_line, message_text)
+                return redirect(url_for("createuser"))
 
             if req_action == "docreate":
                 email = request.form.get("newuser_email", None)
@@ -230,5 +276,6 @@ def createuser():
 
         return render_template("createuser.html",
                                pending_invites=pending_invites,
+                               feature_email_invite=lib_email.is_available(),
                                feature_user_invite="generate_invite" in allowed_actions,
                                feature_user_manualcreate="docreate" in allowed_actions)

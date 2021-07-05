@@ -1,34 +1,85 @@
-{% macro render_tag_buttons(dataset, nextsampleidx, votes={}, data_sample='', group_id='', add_classes='') -%}
-{% if not dataset.get_option("show_votes", False) %}
-{% set votes = {} %}
+{% macro render_tag_buttons(dataset, nextsampleidx, data_sample='', group_id='', add_classes='') -%}
+
+{% set tagidx = namespace(value=1) %}
+{% for task in dataset.dstasks %}
+{% set annoval = curanno.data.get(task.task_id|string, None) %}
+{% if annoval %}
+    {% set annoval = annoval.get("value", None) %}
 {% endif %}
-<div class="btn-group{% if add_classes != ''%} {{ add_classes }}{% endif %}"{% if group_id != '' %} id="{{ group_id }}"{% endif %}{% if data_sample !='' %} data-sample="{{ data_sample }}"{% endif %}>
-{% for tag,tagmetadata in dataset.get_taglist(include_metadata=True).items() %}
-    {% set css_colortag = "" %}
-    {% set tag_col = tagmetadata.color or "white" %}
-    {% if tag_col and tag == curanno %}
-        {% set css_colortag = "tagcolor_active_" + tag_col %}
-    {% elif tag_col %}
-        {% set css_colortag = "tagcolor_" + tag_col %}
+{% if annoval and annoval is string %}
+    {% set annoval = annoval|json_load %}
+{% endif %}
+{% if annoval and annoval is string %}
+    {% set annoval = [annoval] %}
+{% endif %}
+{% if not annoval %}
+    {% set annoval = [] %}
+{% endif %}
+<div class="anno_taskname {% if annoval %}anno_taskname_hasvalue{% else %}anno_taskname_novalue{% endif %}">
+    {% if annoval %}
+    <i class="mdi mdi-checkbox-marked-outline"></i>
+    {% else %}
+    <i class="mdi mdi-checkbox-blank-outline"></i>
     {% endif %}
+    {{ task.name }}
+</div>
+{% if task.tasktype == "tags" %}
 
-    {% set css_btnclass = "" %}
+{% set task_multiselect = task.taskconfig.get("multiselect", false) %}
 
-    {% set css_votetag = "" %}
-    {% if votes and tag in votes and votes[tag]|length %}
-        {% set css_votetag = "with_anno_vote" %}
+<div class="btn-group btn-group-vertical annotation_task_{{task.tasktype}} {% if add_classes != ''%} {{ add_classes }}{% endif %}"{% if group_id != '' %} id="{{ group_id }}"{% endif %}{% if data_sample !='' %} data-sample="{{ data_sample }}"{% endif %} data-multiselect="{{ task_multiselect }}" data-annoval="{{annoval}}">
+    {% for tag, tagmetadata in task.get_taglist(include_metadata=True).items() %}
+        {% set css_colortag = "" %}
+        {% set tag_col = tagmetadata.color or "white" %}
+        {% if tag_col and tag in annoval %}
+            {% set css_colortag = "tagcolor_active_" + tag_col %}
+        {% elif tag_col %}
+            {% set css_colortag = "tagcolor_" + tag_col %}
+        {% endif %}
+
+        {% set css_btnclass = "" %}
+
+        {% set new_value = tag %}
+        {% if task_multiselect %}
+            {% set new_value = annoval|swaplistitem(tag) %}
+        {% endif %}
+        {% set new_value = new_value|json_dump %}
+
+        <a data-tagidx="{{tagidx.value}}" class="btn {{ css_btnclass }} {{ css_colortag }}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=nextsampleidx, set_sample_idx=sample_idx, set_taskid=task.task_id, set_value=new_value) }}">
+        {% set tagidx.value = tagidx.value + 1 %}
+
+        {% if tagmetadata.icon %}<i class="{{ tagmetadata.icon }}"> </i>{% endif %}
+        {{ tag }} 
+        </a>
+    {% else %}
+        ERROR: no tags defined
+    {% endfor %}
+    </div>
+{% elif task.tasktype == "text" %}
+
+{% if annoval and annoval is not string and annoval|length > 0 %}
+    {% set annoval = annoval[0] %}
+{% endif %}
+
+<div class="annotation_task_{{task.tasktype}} {% if add_classes != ''%} {{ add_classes }}{% endif %}" data-taskid="{{task.task_id|string}}" data-curvalue="{% if annoval %}{{annoval}}{% endif %}" data-target="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=nextsampleidx, set_sample_idx=sample_idx, set_taskid=task.task_id) }}">
+    {% set task_multiline = task.taskconfig.get("multiline", false) %}
+    <div class="input-group">
+    {% if task_multiline %}
+        <textarea autocomplete="off" class="form-control anno_textinput">{% if annoval %}{{annoval}}{% endif %}</textarea>
+    {% else %}
+        <input class="form-control anno_textinput" autocomplete="off" type="text" value="{% if annoval %}{{annoval}}{%endif%}" />
     {% endif %}
-
-    <a data-tagidx="{{loop.index - 1}}" class="btn {{ css_btnclass }} {{ css_votetag }} {{ css_colortag }}" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=nextsampleidx, set_sample_idx=sample_idx, set_value=tag) }}" {% if votes and tag in votes and votes[tag]|length %}title="{{votes[tag]|length}} vote(s) by {{votes[tag]|join(", ")}}"{% endif %}>
-
-    {% if tagmetadata.icon %}<i class="{{ tagmetadata.icon }}"> </i>{% endif %}
-    {{ tag }} {% if votes and tag in votes and votes[tag]|length %}<span class="anno_vote badge badge-dark">{{votes[tag]|length}}</span>{% endif %}
-    </a>
-{% else %}
-    ERROR: no tags defined
-{% endfor %}
+    <div class="input-group-append">
+        <button class="btn btn-outline-secondary anno_textinput_copyselection" aria-label="copy selection" type="button" disabled><i class="mdi mdi-arrow-left"></i></button>
+    </div>
+    </div>
 </div>
 
+{% else %}
+    <div>task type rendering: {{task.tasktype}}</div>
+{% endif %}
+
+{% endfor %}
 {%- endmacro %}
 
 {% macro render_progress(task, addclass="") -%}
@@ -88,7 +139,7 @@
 
 {%- endmacro %}
 
-{% macro render_description_modal(modal_id, description, modal_title="Description") -%}
+{% macro render_description_modal(modal_id, description, dataset, modal_title="Description") -%}
 {% if description %}
 
 <div class="modal fade description_modal" id="{{ modal_id }}" tabindex="-1" role="dialog" aria-labelledby="{{modal_id}}Label" aria-hidden="true">
@@ -103,8 +154,11 @@
       <div class="modal-body description_modal_text">
           {{ description }}
       </div>
+      <div class="modal-body">
+          <a target="_new" href="{{ url_for("dataset_guidelines", dsid=dataset.dataset_id) }}" type="button" class="btn btn-info">pop out <i class="mdi mdi-open-in-new"></i></a>
+      </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
       </div>
     </div>
   </div>

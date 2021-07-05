@@ -35,8 +35,11 @@
                 {% endif %}
             </div>
 
-            {% set add_classes = "btn-group-vertical" %}
-            {{ macros.render_tag_buttons(dataset, sample_next, votes, add_classes=add_classes) }}
+            {% set sample_on_annotation = sample_next %}
+            {% if not dataset.supports_simple_annotation() %}
+                {% set sample_on_annotation = sample_idx %}
+            {% endif %}
+            {{ macros.render_tag_buttons(dataset, sample_on_annotation) }}
         </div>
 
         <div class="sample_content_view">
@@ -61,7 +64,8 @@
 </div>
 <div class="row">
     <div class="col-12 d-flex justify-content-center">
-        <span class="sample_metadata">ID: {{sample.sample}}</span>
+        <span class="sample_metadata">ID: <span id="sample_metadata_id">{{sample.sample}}</span></span> 
+        <span id="sample_metadata_id_copied"><i class="mdi mdi-clipboard-multiple-outline"></i> copied</span>
         {% if sample.split_id %}
         &nbsp;
         <span class="sample_metadata">WP: {{sample.split_id}}</span>

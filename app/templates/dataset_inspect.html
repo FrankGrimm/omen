@@ -1,16 +1,43 @@
 {% extends "dataset_layout.html" %}
 
 {% block page_title %}
-Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
+Curation <span class="dataset_meta">{{ dataset.get_name() }}</span>{% if task %} / <span class="dataset_meta">{{task.name}}</span>{% endif %}
 {% endblock %}
 
-{% macro filterurl(template="inspect_dataset", dsid=dataset.dataset_id, split=ds_filters.split[0] or None, query=ds_filters.query, viewfilter=ds_filters.viewfilter, page=pagination.page) -%}{{
-    url_for(template, dsid=dsid, split=split, query=query, viewfilter=viewfilter, page=page)
+{% set active_task_id = none %}
+{% if task %}
+    {% set active_task_id = task.task_id %}
+{% endif %}
+
+{% macro filterurl(template="inspect_dataset", dsid=dataset.dataset_id, taskid=active_task_id, split=ds_filters.split[0] or None, query=ds_filters.query, viewfilter=ds_filters.viewfilter, page=pagination.page) -%}{{
+    url_for(template, dsid=dsid, taskid=active_task_id, split=split, query=query, viewfilter=viewfilter, page=page)
 }}{%- endmacro %}
 
+{% macro render_taskswitcher(dataset=dataset, active=task) %}
+<div class="inspect_task_switcher">
+    <div class="input-group">
+        <div class="input-group-prepend">
+            <i class="mdi mdi-source-branch"></i>
+        </div>
+    <select class="inspect_task_switch form-control form-control-sm" name="inspect_task_switch" autocomplete="off">
+        {% if not active %}
+        <option selected="true" value="" disabled>Tasks</option>
+        {% endif %}
+        {% for stask in dataset.dstasks %}
+        {% set task_uri = url_for("inspect_dataset", dsid=dataset.dataset_id, taskid=stask.task_id) %}
+        <option {% if active and stask.task_id == active.task_id%}selected="true" {% endif %}value="{{ stask.task_id }}" data-href="{{task_uri}}">{{ stask.name }}</option>
+        {% endfor %}
+    </select>
+    </div>
+</div>
+
+{%- endmacro %}
 
 {% block pagebody %}
 
+{{ render_taskswitcher(dataset, task) }}
+
+{% if task %}
 <div class="row ds-tabslist-container">
     <div class="card">
         <div class="card-header">
@@ -41,12 +68,18 @@ Data &quot;<span class="dataset_meta">{{ dataset.get_name() }}</span>&quot;
         </div>
     </div>
 </div>
+{% endif %}
 
 {% endblock %}
 
 {% block addscript %}
 <script>
 const ACTIVE_DATASET_ID = {{ dataset.dataset_id }};
+{% if task %}
+const ACTIVE_TASK_ID = {{ task.task_id|string }};
+{% else %}
+const ACTIVE_TASK_ID = null;
+{% endif %}
 </script>
 <script src="{{ url_for("static", filename="inspect.js") }}"></script>
 {% endblock %}

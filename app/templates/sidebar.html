@@ -45,9 +45,11 @@
 
         <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
             <span>Datasets</span>
+      {% if userobj and userobj.can_create() %}
             <a class="d-flex align-items-center text-muted" href="{{ url_for('dataset_admin') }}">
                 <i class="mdi mdi-plus-circle-outline"></i>
             </a>
+            {% endif %}
         </h6>
         <ul class="nav flex-column mb-2">
             {{ sideitem("mdi mdi-server", "show_datasets", "Manage") }}
@@ -68,12 +70,12 @@
                     
                         <p class="navbar-text nav-active-task-data d-none d-md-block row">
                         <strong>Annotations:</strong>
-                        <span>{{ task.annos }} / {{ task.size }}</span>
+                        <span class="sidemeta sidemeta_active_total">{{ task.annos }} / {{ task.size }}</span>
                         </p>
                         {% if task.annos_today %}
                         <p class="navbar-text nav-active-task-data d-none d-md-block row">
                         <strong>Today:</strong>
-                        <span>{{ task.annos_today }}</span>
+                        <span class="sidemeta sidemeta_active_today">{{ task.annos_today }}</span>
                         </p>
                         {% endif %}
                         {{ macros.render_progress(sbtask, addclass="sideprogress-active") }}

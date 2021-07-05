@@ -1,9 +1,9 @@
 {% set available_colors = ["red", "green", "blue", "yellow", "gray"] %}
 {% set available_icons = ["mdi mdi-account-outline", "mdi mdi-check", "mdi mdi-check-bold", "mdi mdi-check-all", "mdi mdi-checkbox-blank-outline", "mdi mdi-checkbox-marked-outline", "mdi mdi-close-box-outline", "mdi mdi-close", ] %}
 
-<div id="tag_editor" class="row form-group">
+<div id="tag_editor_{{dataset_task.task_id}}" class="row form-group">
     <div class="col-12 col-md-3">
-        <div class="{% if dataset.get_taglist()|length == 0 %}ds_new_field_error alert alert-warning{% endif %}">Define a tag list
+        <div class="{% if dataset_task.get_taglist()|length == 0 %}ds_new_field_error alert alert-warning{% endif %}">Define a tag list
 
             <div class="ajax-loading" style="display: none;">
                 <img src="{{ url_for("static", filename="img/loading.gif") }}" alt="updating" />
@@ -13,9 +13,9 @@
     </div>
     <div class="col-12 col-md-9">
         <ul class="list-group">
-            {% for tag, tagmetadata in dataset.get_taglist(include_metadata=True).items() %}
+            {% for tag, tagmetadata in dataset_task.get_taglist(include_metadata=True).items() %}
             <li class="list-group-item">
-                <div class="tageditor_entry input-group" data-tag="{{ tag }}" data-position="{{ loop.index }}" data-tagcount="{{ dataset.get_taglist()|length }}">
+                <div class="tageditor_entry input-group" data-tag="{{ tag }}" data-position="{{ loop.index }}" data-tagcount="{{ dataset_task.get_taglist()|length }}">
                     <div class="input-group-prepend">
                         <div class="dropdown">
                             <a class="btn btn-outline-primary dropdown-toggle" role="button" data-tag="{{ tag }}" data-toggle="dropdown" title="Tag Icon">
@@ -53,7 +53,7 @@
                             <button data-action="rename_tag" data-tag="{{ tag }}" class="tageditor_action tageditor_action_rename btn btn-outline-primary input-group-text" title="Rename" disabled>
                                 <i class="mdi mdi-square-edit-outline"></i>
                             </button> 
-                        <button data-action="move_tag_down" data-tag="{{ tag }}" class="tageditor_action btn btn-outline-primary input-group-text" title="Move Down"{% if loop.index == dataset.get_taglist()|length %} disabled{% endif %}>
+                        <button data-action="move_tag_down" data-tag="{{ tag }}" class="tageditor_action btn btn-outline-primary input-group-text" title="Move Down"{% if loop.index == dataset_task.get_taglist()|length %} disabled{% endif %}>
                             <i class="mdi mdi-arrow-down"></i>
                         </button> 
                         <button data-action="move_tag_up" data-tag="{{ tag }}" class="tageditor_action btn btn-outline-primary input-group-text" title="Move Up"{% if loop.index == 1 %} disabled{% endif %}>
@@ -70,10 +70,10 @@
             <li class="list-group-item">
             
                 <div class="input-group">
-                    <input autocomplete="off" id="tageditor_add_tag" name="tageditor_add_tag" placeholder="add new tag" type="text" class="form-control" value=""> 
+                    <input autocomplete="off" name="tageditor_add_tag" placeholder="add new tag" type="text" class="form-control tageditor_add_tag" value="">
                     <div class="input-group-append">
                         <div class="btn-group">
-                        <button class="btn btn-outline-primary input-group-text" id="tageditor_add_tag_action" title="Add Tag" disabled>
+                        <button class="btn btn-outline-primary input-group-text tageditor_add_tag_action" title="Add Tag" disabled>
                             <i class="mdi mdi-plus"></i>
                         </button>
                         </div>

@@ -1,6 +1,6 @@
 {% import "macros.html" as macros with context %}
 
-{% macro render_vote_button(tagmetadata, sample, votes, tag) -%}
+{% macro render_vote_button(tagmetadata, sample, votes, tag, newstate) -%}
     {% set css_colortag = "tagcolor_white" %}
     {% if tagmetadata.color %}
         {% set css_colortag = "tagcolor_" + tagmetadata.color %}
@@ -28,7 +28,7 @@
         {% set votetitle = votes[tag]|length|string + votetitle_prefix + votes[tag]|join(", ") %}
     {% endif %}
 
-    <button class="btn df_inspect_changeaction df_inspect_votebtn with_anno_vote {{ css_btnclass }} {{ css_votetag }} {{ css_colortag }}" {% if votetitle %}title="{{votetitle}}"{% endif %} data-sample="{{sample}}" data-tag="{{tag}}">
+    <button class="btn df_inspect_changeaction df_inspect_votebtn with_anno_vote {{ css_btnclass }} {{ css_votetag }} {{ css_colortag }}" {% if votetitle %}title="{{votetitle}}"{% endif %} data-sample="{{sample}}" data-tag="{{newstate}}">
 
     {% if tagmetadata.icon %}<i class="{{ tagmetadata.icon }}"> </i>{% endif %}
     {{ tag }} {% if votes and tag in votes and votes[tag]|length %}<span class="anno_vote badge badge-dark">{{votes[tag]|length}}</span>{% endif %}
@@ -37,10 +37,8 @@
 {% if row is defined and row is not none %}
 <div class="df_inspect_table_row" data-sample-idx="{{ row.sample_index }}" data-sample-id="{{ row[id_column] }}">
     {% set row_sample = row.sample_index %}
-    {% set all_tags = dataset.get_taglist(include_metadata=True) %}
+    {% set all_tags = task.get_taglist(include_metadata=True) %}
     {% set tag = row['annotations'] %}
-    {% set tagmetadata = all_tags.get(tag, None) %}
-
     <div class="df_inspect_textcol df_inspect_col_content d-md-flex">
         {% if not (hide_nans and not row[text_column].is_na()) %}
         <div class="df_col_content df_inspect_col_content">
@@ -49,6 +47,7 @@
         {% endif %}
 
         {% set votes = calculate_votes(row, annotation_columns) %}
+        
         {% if votes|length %}
         <div class="row">
             <hr style="width: 100%;" />
@@ -58,7 +57,12 @@
                 <div class="df_inspect_userannos">
                     {% for tag in all_tags %}
                     {% if tag in votes and votes[tag]|length %}
-                    {{ render_vote_button(all_tags.get(tag, {}), row_sample, votes, tag) }}
+                        {% if not task_multiselect %}
+                            {{ render_vote_button(all_tags.get(tag, {}), row_sample, votes, tag, tag) }}
+                        {% else %}
+                            {% set newstate = row.get('annotations', [])|addlistitem(tag)|json_dump %}
+                            {{ render_vote_button(all_tags.get(tag, {}), row_sample, votes, tag, newstate) }}
+                        {% endif %}
                     {% endif %}
                     {% endfor %}
                 </div>
@@ -66,8 +70,20 @@
         </div>
         {% endif %}
     </div>
-    <div class="df_inspect_col_sel d-md-flex">
+   
+    {% set active_tags = tag %}
+    {% if tag is string %}
+        {% set active_tags = [tag] %}
+    {% endif %}
+    {% if tag is none %}
+        {% set active_tags = [None] %}
+    {% endif %}
+    
+    {% set task_multiselect = task.taskconfig.get("multiselect", false) %}
 
+    <div class="df_inspect_col_sel d-md-flex">
+    {% for tag in active_tags %}
+    {% set tagmetadata = all_tags.get(tag, None) %}
         <div class="btn-group inspect_tageditor_actions">
             {% set css_colortag = "" %}
             {% set tag_col = tagmetadata.color or "white" %}
@@ -115,7 +131,7 @@
                 {% endfor %}
             </div><!-- dropdown-menu -->
         </div><!-- btn-group -->
-
+    {% endfor %}
     </div><!-- col-* -->
 </div><!-- /df_inspect_table_row -->
 {% endif %}

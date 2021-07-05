@@ -63,7 +63,9 @@ class Activity(Base):
                 or_(
                     Activity.target == user_target_filter,
                     Activity.owner == owner,
-                    and_(Activity.target.in_(other_accessible_datasets), not_(Activity.scope == "comment_note")),
+                    and_(Activity.target.in_(other_accessible_datasets),
+                        not_(Activity.scope == "comment_note"),
+                        not_(Activity.scope == "rename_tag")),
                 )
             )
         else:

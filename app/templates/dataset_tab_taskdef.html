@@ -26,22 +26,37 @@
     </form>
 </div>
 
-{% macro render_option(option, title, help_text="", title_left="") -%}
+{% macro render_option(option, title, help_text="", title_left="", target_task=none) -%}
 <div class="row seprow">
     <form method="post">
-        <input type="hidden" name="action" value="change_ds_option">
+        {% set outputid = 0 %}
+        {% set optionactive = false %}
+
+        {% if target_task %}
+            <input type="hidden" name="action" value="change_task_option">
+            <input type="hidden" name="target_task" value="{{ target_task }}">
+            {% set outputid = target_task.task_id %}
+            {% if target_task.taskconfig.get(option, false) %}
+                {% set optionactive = true %}
+            {% endif %}
+        {% else %}
+            <input type="hidden" name="action" value="change_ds_option">
+            {% if dataset.dsmetadata[option] %}
+                {% set optionactive = true %}
+            {% endif %}
+        {% endif %}
 
         <div class="form-group row">
-            <label for="cb_option_{{ option }}_0" class="col-12 col-md-3 col-form-label">
+            <label for="cb_option_{{ option }}_{{outputid}}" class="col-12 col-md-3 col-form-label">
                 {% if title_left %}<div>{{title_left}}</div>{% endif %}
             </label> 
             <div class="col-12 col-md-9">
                 <div class="custom-control custom-checkbox custom-control-inline">
-                    <input name="cb_option_{{ option }}" id="cb_option_{{ option }}_0" type="checkbox" class="custom-control-input cb_inspect_option" value="{{ option }}" autocomplete="off" {% if dataset.dsmetadata[option] %} checked{% endif %} > 
-                    <label for="cb_option_{{ option }}_0" class="custom-control-label">{{ title }}</label>
+                    <input name="cb_option_{{ option }}" id="cb_option_{{ option }}_{{ outputid}}" type="checkbox" class="custom-control-input cb_inspect_option" value="{{ option }}" {% if target_task %} data-targettask="{{target_task.task_id}}"{% endif %} autocomplete="off" {% if optionactive %} checked{% endif %} > 
+                    <label for="cb_option_{{ option }}_{{ outputid }}" class="custom-control-label">{{ title }}</label>
                 </div> 
                 {% if help_text %}
-                <span id="cb_option_{{ option }}HelpBlock" class="form-text text-muted">{{ help_text|nl2br }}</span>
+                <span id="cb_option_{{ option }}_{{outputid}}HelpBlock" class="form-text text-muted">{{ help_text|nl2br }}</span>
                 {% endif %}
             </div>
         </div> 
@@ -49,7 +64,6 @@
 </div>
 {%- endmacro %}
 
-{{ render_option("show_votes", title="Show other users choices during annotation", help_text="Activating this option shows votes to users with owner or curator roles during annotation.", title_left="Miscellaneous Options:") }}
 {{ render_option("allow_restart_annotation", title="Restart annotation after dataset annotation or work package is completed.", help_text="Enabling this option will allow users to reannotate the whole dataset (or work package) once they finish their first pass.\n Otherwise (default), a finished task is disabled.") }}
 
 <div class="row seprow">
@@ -67,7 +81,7 @@
                     <option value="-" selected="true">add column</option>
 
                     {% for colname in previewdf.columns %}
-                        {% if colname != dataset.dsmetadata.idcolumn and colname != dataset.dsmetadata.textcol and colname != 'split' and colname not in add_columns %}
+                        {% if colname != dataset.dsmetadata.textcol and colname != 'split' and colname not in add_columns %}
                             <option value="{{ colname }}">{{ colname }}</option>
                         {% endif %}
                     {% endfor %}
@@ -83,33 +97,89 @@
     </form>
 </div>
 
-<div class="row seprow">
-    <form method="post" id="tag_editor_container">
-        {% include "tag_editor.html" with context %}
-    </form>
-</div>
+{% for dataset_task in dataset.dstasks %}
+<div class="row seprow taskmeta_row">
+    <div class="col">
+        <div class="input-group-append taskmeta_orderelem">
+            <div class="btn-group">
 
-<noscript>
-<div class="row seprow">
-    <form method="post">
-        <input type="hidden" name="action" value="change_taglist" />
-        <div class="row">
-            <label for="settaglist" class="col-12 col-md-3 col-form-label">
-                <div class="{% if dataset.get_taglist()|length == 0 %}ds_new_field_error alert alert-warning{% endif %}">Define a tag list</div>
-            </label> 
-            <div class="col-12 col-md-9">
-                <textarea id="settaglist" name="settaglist" cols="40" rows="5" class="form-control" aria-describedby="settaglistHelpBlock" required="required">{% if dataset.get_taglist()|length > 0 %}{{ dataset.get_taglist()|join('\n') }}{% endif %}</textarea> 
-                <span id="settaglistHelpBlock" class="form-text text-muted">separate single entries by newlines</span>
+            <form method="post">
+                <input type="hidden" name="action" value="task_rename" />
+                <input type="hidden" name="target_task" value="{{ dataset_task.taskorder }}" />
+                <input type="hidden" name="task_newname" value="{{ dataset_task.name }}" />
+                <button data-action="rename_task" class="taskeditor_action taskeditor_rename btn btn-outline-primary input-group-text" title="Rename">
+                    <i class="mdi mdi-square-edit-outline"></i>
+                </button> 
+            </form>
+            <form method="post">
+                <input type="hidden" name="action" value="task_order_down" />
+                <input type="hidden" name="target_task" value="{{ dataset_task.taskorder }}" />
+                <button class="taskeditor_action btn btn-outline-primary input-group-text" title="Move Task Down"{% if loop.index == dataset.dstasks|length %} disabled{% endif %}>
+                    <i class="mdi mdi-arrow-down"></i>
+                </button> 
+            </form>
+            <form method="post">
+                <input type="hidden" name="action" value="task_order_up" />
+                <input type="hidden" name="target_task" value="{{ dataset_task.taskorder }}" />
+                <button class="taskeditor_action btn btn-outline-primary input-group-text" title="Move Task Up"{% if loop.index == 1 %} disabled{% endif %}>
+                    <i class="mdi mdi-arrow-up"></i>
+                </button> 
+            </form>
+            <form method="post">
+                <input type="hidden" name="action" value="task_delete" />
+                <input type="hidden" name="target_task" value="{{ dataset_task.taskorder }}" />
+                <input type="hidden" name="task_delete_confirm" value="false" />
+                <button class="taskeditor_action btn btn-outline-primary input-group-text taskeditor_delete" title="Delete Task">
+                    <i class="mdi mdi-trash-can-outline"></i>
+                </button> 
+            </form>
             </div>
         </div> 
-        <div class="row">
-            <div class="col-12 offset-md-4 col-md-9">
-                <button name="submit" type="submit" class="btn btn-primary">Submit</button>
+        <span class="taskeditor_title">{{ dataset_task.name }}</span>
+    </div>
+</div> 
+
+    {% if dataset_task.tasktype == "tags" %}
+{{ render_option("multiselect", title="Allow multi-select", help_text="Enabling this option will allow users to select more than one tag per document.", target_task=dataset_task) }}
+    <div class="row seprow">
+        <form method="post" id="tag_editor_container_{{ dataset_task.task_id }}"
+              data-datasetid="{{dataset.dataset_id}}"
+              data-taskdefid="{{ dataset_task.task_id }}">
+            {% include "tag_editor.html" with context %}
+        </form>
+    </div>
+    {% elif dataset_task.tasktype == "text" %}
+    <div class="row seprow">
+        <div class="col">
+{{ render_option("multiline", title="Multiline Input", help_text="Enabling this option will render this input as a multiline text area.", target_task=dataset_task) }}
+        </div>
+    </div>
+    {% else %}
+<div class="row seprow">
+DS Task {{ dataset_task }}
+</div>
+    {% endif %}
+{% endfor %}
+
+<div class="row seprow">
+    <form method="post">
+        <input type="hidden" name="action" value="change_ds_addtask">
+
+        <div class="form-group row">
+            <label for="add_new_task" class="col-12 col-md-3 col-form-label"> Add task </label>
+            <div class="col-12 col-md-9">
+                <select class="taskdef_select" id='add_new_task' name='add_new_task' autocomplete="off">
+                    <option selected="true" value="tags">Tagging</option>
+                    <option value="text">Text</option>
+                    <option value="span">Span</option>
+                </select>
+
+                <br /><br />
+                <button name="submit" type="submit" class="btn btn-sm btn-primary"><i class="mdi mdi-square-edit-outline"></i> Create</button>
             </div>
         </div>
     </form>
 </div>
-</noscript>
 
 <div class="row seprow">
     <form method="post">
@@ -117,7 +187,10 @@
         <div class="row">
             <label for="setdescription" class="col-12 col-md-3 col-form-label">
                 <div><strong>Description</strong> or annotation guidelines.<br />
-                    This is visible to all users.</div>
+                    This is visible to all users.
+                    <br /><br />
+                    If this field is set to a link to an external guideline document (no markdown link), it is displayed in an external window instead.
+                </div>
             </label> 
             <div class="col-12 col-md-9">
                 <textarea id="setdescription" name="setdescription" cols="40" rows="5" class="form-control with-markdown" aria-describedby="setdescriptionHelpBlock" required="required">{% if dataset.dsmetadata.description %}{{ dataset.dsmetadata.description }}{% endif %}</textarea> 

@@ -75,4 +75,4 @@ Check out our [milestones](https://github.com/FrankGrimm/omen/milestones) and [i
     docker-compose --env-file /dev/null -f docker-compose.prod.yml up
     ```
 
-
+[3rd party licenses](./3rd-party-licenses.md)

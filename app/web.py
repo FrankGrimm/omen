@@ -85,13 +85,16 @@ def inject_globals():
             if "-" not in column or column not in row:
                 continue
             row_user = column.split("-", 2)[-1]
-            row_tag = row[column]
-            if row_tag is None or row_tag == "":
-                continue
+            row_tags = row[column]
+            if isinstance(row_tags, str):
+                row_tags = [row_tags]
+            for row_tag in row_tags:
+                if row_tag is None or row_tag == "":
+                    continue
 
-            if row_tag not in vote_count:
-                vote_count[row_tag] = []
-            vote_count[row_tag].append(row_user)
+                if row_tag not in vote_count:
+                    vote_count[row_tag] = []
+                vote_count[row_tag].append(row_user)
 
         votes = {}
         for k, v in reversed(sorted(vote_count.items(), key=lambda i: i[1])):

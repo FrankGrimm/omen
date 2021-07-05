@@ -281,6 +281,10 @@ h1 {
     font-size: 26pt;
 }
 
+h4 {
+    font-size: 12pt;
+}
+
 h1, h2, h3, h4 {
     margin-bottom: 0.8em;
     margin-top: 0.5em;
@@ -657,6 +661,11 @@ div.df_pagination a:hover {
     color: var(--theme_fg_link_hover);
 }
 
+div.df_pagination > div > .input-group {
+    padding-left: 1rem;
+    padding-top: 0.3rem;
+}
+
 .nav-active-task {
     background-color: var(--theme_bg_nav_active);
     padding-bottom: 0;
@@ -788,42 +797,42 @@ div.df_pagination a:hover {
     color: var(--tag_fg_color);
     border-style: solid;
     border-width: var(--tag_border_size);
-    border-color: var(--tag_border_active);
+    border-color: var(--tag_border_active_inverted);
 }
 .tagcolor_active_red {
     background-color: rgb(var(--tag_color_red));
     color: var(--tag_fg_color);
     border-style: solid;
     border-width: var(--tag_border_size);
-    border-color: var(--tag_border_active);
+    border-color: var(--tag_border_active_inverted);
 }
 .tagcolor_active_green {
     background-color: rgb(var(--tag_color_green));
     color: var(--tag_fg_color);
     border-style: solid;
     border-width: var(--tag_border_size);
-    border-color: var(--tag_border_active);
+    border-color: var(--tag_border_active_inverted);
 }
 .tagcolor_active_blue {
     background-color: rgb(var(--tag_color_blue));
     color: var(--tag_fg_color);
     border-style: solid;
     border-width: var(--tag_border_size);
-    border-color: var(--tag_border_active);
+    border-color: var(--tag_border_active_inverted);
 }
 .tagcolor_active_yellow {
     background-color: rgb(var(--tag_color_yellow));
     color: var(--tag_fg_color);
     border-style: solid;
     border-width: var(--tag_border_size);
-    border-color: var(--tag_border_active);
+    border-color: var(--tag_border_active_inverted);
 }
 .tagcolor_active_gray {
     background-color: rgb(var(--tag_color_gray));
     color: var(--tag_fg_color);
     border-style: solid;
     border-width: var(--tag_border_size);
-    border-color: var(--tag_border_active);
+    border-color: var(--tag_border_active_inverted);
 }
 .tag_current_choice {
     border-style: solid;
@@ -1274,6 +1283,8 @@ div.alert-timer {
     flex-direction: column;
     justify-content: center;
     padding: 0;
+    margin-bottom: 1rem;
+    width: 100%;
 }
 
 .btn-group-vertical > .btn {
@@ -1534,4 +1545,104 @@ span.kbd {
 button.add_column_remove_button {
     padding: 0.5rem;
     background-color: grey;
+}
+
+.taskeditor_action {
+    padding: 0.2em 0.3em;
+}
+.taskeditor_action > i:before {
+    font-size: 12pt;
+}
+
+.taskmeta_row {
+    border-bottom: 1px solid rgb(0, 0, 0, 0.2);
+    background-color: #f4f7ff;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+
+.taskmeta_orderelem {
+    display: inline-block;
+}
+
+.taskeditor_title {
+    margin-left: 2em;
+}
+
+.taskeditor_delete {
+    color: var(--palette_darkred);
+}
+
+.anno_taskname {
+    display: block;
+    padding: 0 0 0 0.4rem;
+    margin: 0;
+    width: 100%;
+    font-style: italic;
+    font-size: 0.9rem;
+    border-color: #00000036;
+    border-style: solid;
+    border-width: 0 0 0 2px;
+}
+.anno_taskname > i:before {
+    font-size: 12pt;
+}
+
+.anno_taskname_hasvalue {
+}
+.anno_taskname_novalue {
+}
+
+.annotation_task_text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0;
+    margin-bottom: 1rem;
+    width: 100%;
+}
+.annotation_task_text > .input-group {
+}
+.annotation_task_text > .input-group > .form-control {
+
+}
+.annotation_task_text > .input-group > .input-group-append {
+    margin-left: 0;
+}
+.annotation_task_text > .input-group > .input-group-append > * {
+    padding-left: 0.2rem;
+    padding-right: 0.2rem;
+}
+
+input.text_input_changed {
+    border: 1px solid var(--palette_indianred);
+}
+textarea.text_input_changed {
+    border: 1px solid var(--palette_indianred);
+}
+
+.inspect_task_switcher {
+    margin-top: -1rem;
+    margin-bottom: 1rem;
+}
+
+span.dataset_meta {
+    font-style: italic;
+    font-size: 0.8em;
+}
+
+#sample_metadata_id_copied i::before {
+    font-size: 12pt;
+    line-height: 12pt;
+}
+#sample_metadata_id_copied {
+    margin-left: 5px;
+    color: rgb(var(--tag_color_green));
+    font-size: 12pt;
+    line-height: 12pt;
+}
+
+.ds_header_edit_name {
+    font-style: italic;
+    font-size: 0.9em;
 }

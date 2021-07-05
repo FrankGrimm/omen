@@ -66,33 +66,36 @@
 </nav>
 <div class="row df_pagination">
     <div class="col-12">
-        Entries: {{results}}<br />
-    <div class="btn-group">
-        {% set addclass="" %}
-        {% if pagination.page == 1 %}{% set addclass="active" %}{% endif %}
+        <div class="input-group">
+            <div class="btn-group">
+                {% set addclass="" %}
+                {% if pagination.page == 1 %}{% set addclass="active" %}{% endif %}
 
-        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ filterurl(page=1) }}"><i class="fa fa-angle-double-left"> </i></a>
-        {% if not 1 in pagination_elements and pagination.pages > 0 %}
-        <a class="btn btn-sm btn-outline-secondary" disabled href="{{ filterurl(page=1) }}"><i class="fas fa-ellipsis-h"></i> </a>
-        {% endif %}
+                <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ filterurl(page=1) }}"><i class="fa fa-angle-double-left"> </i></a>
+                {% if not 1 in pagination_elements and pagination.pages > 0 %}
+                <a class="btn btn-sm btn-outline-secondary" disabled href="{{ filterurl(page=1) }}"><i class="fas fa-ellipsis-h"></i> </a>
+                {% endif %}
 
-        {% for pagination_page in pagination_elements %}
+                {% for pagination_page in pagination_elements %}
 
-        {% set addclass="" %}
-        {% if pagination.page == pagination_page %}{% set addclass="active" %}{% endif %}
-        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ filterurl(page=pagination_page) }}">{{ pagination_page }}</a>
+                {% set addclass="" %}
+                {% if pagination.page == pagination_page %}{% set addclass="active" %}{% endif %}
+                <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ filterurl(page=pagination_page) }}">{{ pagination_page }}</a>
 
-        {% endfor %}
+                {% endfor %}
 
-        {% if not pagination.pages in pagination_elements and pagination.pages > 0 %}
-        <a class="btn btn-sm btn-outline-secondary" disabled href="{{ filterurl(page=1) }}"><i class="fas fa-ellipsis-h"></i> </a>
-        {% endif %}
+                {% if not pagination.pages in pagination_elements and pagination.pages > 0 %}
+                <a class="btn btn-sm btn-outline-secondary" disabled href="{{ filterurl(page=1) }}"><i class="fas fa-ellipsis-h"></i> </a>
+                {% endif %}
 
-        {% set addclass="" %}
-        {% if pagination.page == pagination.pages %}{% set addclass="active" %}{% endif %}
-        <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ filterurl(page=pagination.pages) }}"><i class="fa fa-angle-double-right"> </i></a>
-    </div>
-
+                {% set addclass="" %}
+                {% if pagination.page == pagination.pages %}{% set addclass="active" %}{% endif %}
+                <a class="btn btn-sm btn-outline-primary {{addclass}}" href="{{ filterurl(page=pagination.pages) }}"><i class="fa fa-angle-double-right"> </i></a>
+            </div>
+            <div class="input-group-append">
+                Entries: {{results}}
+            </div>
+        </div>
     </div>
 
 </div>
