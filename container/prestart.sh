@@ -10,5 +10,5 @@ sleep 5;
 # make sure the database schema is up to date
 cd /home/omenuser/app/
 echo "prestart: db upgrade"
-flask db upgrade
+flask db upgrade 2>&1
 echo "prestart complete"

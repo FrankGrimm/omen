@@ -261,6 +261,11 @@ function initializeTagEditor() {
 }
 
 function initializeTagEditorContainer(target_container) {
+    if (target_container.tag_editor_initialized) {
+        console.log("already initialized");
+        return;
+    }
+
     target_container.querySelectorAll("div.tageditor_entry").forEach((elem, idx) => {
         const $elem = $(elem);
         const cur_tag = $elem.data("tag");
@@ -357,7 +362,7 @@ function initializeTagEditorContainer(target_container) {
     createTagInput.on("input change", function handleTagEditorNewTagChange(e) {
         const taskdef_id = e.target.closest("form").dataset.taskdefid;
         const current_tags = getCurrentTags(taskdef_id);
-        const new_tag_value = createTagInput.val().trim();
+        const new_tag_value = e.target.value.trim();
 
         if (new_tag_value.length && current_tags.indexOf(new_tag_value) === -1) {
             createTagButton.removeAttr("disabled");
@@ -367,7 +372,8 @@ function initializeTagEditorContainer(target_container) {
     });
     createTagButton.on("click", function createNewTag(e) {
         e.preventDefault();
-        const new_tag_value = createTagInput.val().trim();
+        const containerInput = e.target.closest("form").querySelector("input.tageditor_add_tag");
+        const new_tag_value = containerInput.value.trim();
         const taskdef_id = e.target.closest("form").dataset.taskdefid;
         const current_tags = getCurrentTags(taskdef_id);
         current_tags.push(new_tag_value);
