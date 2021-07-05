@@ -1338,6 +1338,8 @@ class Dataset(Base):
             query = query.filter(DatasetContent.split_id.in_(splits))
         allannos = query.all()
 
+        idxset = set()
+
         count_today = 0
         for anno in allannos:
             if anno.data is None:
@@ -1351,6 +1353,9 @@ class Dataset(Base):
                 logging.warning("malformed annotation timestamp %s" % anno_upd)
                 continue
 
+            if anno.sample_index in idxset:
+                continue
+            idxset.add(anno.sample_index)
             if anno_upd.date() != datetime.today().date():
                 continue
 
@@ -1371,7 +1376,14 @@ class Dataset(Base):
                                                     DatasetContent.sample_index == Annotation.sample_index))
             query = query.filter(DatasetContent.split_id.in_(splits))
 
-        return query.count()
+        idxset = set()
+        count = 0
+        for anno in query.all():
+            if anno.sample_index in idxset:
+                continue
+            idxset.add(anno.sample_index)
+            count += 1
+        return count
 
     def set_role(self, dbsession, uid, role, remove=False):
         if not User.is_valid_role(role):

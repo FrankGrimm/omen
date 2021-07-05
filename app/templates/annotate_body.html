@@ -2,7 +2,7 @@
 {% import "macros.html" as macros with context %}
 {% include "flash.html" with context %}
 {% endif %}
-{{ macros.render_progress(task, addclass="annoprogress") }}
+{{ macros.render_progress(task, addclass="annoprogress", for_active_task=True) }}
 
 {% if all_done %}
 <div class="row">

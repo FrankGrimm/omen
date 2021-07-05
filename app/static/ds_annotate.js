@@ -119,6 +119,19 @@ function submitAnnotationChange(targetHref) {
         $(".popover").hide();
         // replace content area
         const containerTarget = document.getElementById("pagebody");
+        let scriptSection = "";
+        if (annotationResponse.indexOf("<script") > -1) {
+            scriptSection = annotationResponse.substring(annotationResponse.indexOf("<script>") + "<script>".length);
+            if (scriptSection.indexOf("</script>") > -1) {
+                scriptSection = scriptSection.substring(0, scriptSection.indexOf("</script>"));
+                scriptSection = scriptSection.replace('document.addEventListener("DOMContentLoaded",function() {', '');
+                scriptSection = scriptSection.replace("});");
+                scriptSection = scriptSection.trim();
+                eval(scriptSection);
+            } else {
+                scriptSection = "";
+            }
+        }
         containerTarget.innerHTML = annotationResponse;
         // rebind events for the new content
         initTagButtons();
@@ -257,3 +270,8 @@ document.addEventListener("DOMContentLoaded",function() {
 window.addEventListener("popstate", function(e) {
     window.location = window.location.href;
 });
+
+function updateSidebarProgress(annos, today, total) {
+    document.querySelector(".sidemeta_active_total").textContent = annos + " / " + total;
+    document.querySelector(".sidemeta_active_today").textContent = "" + today;
+}

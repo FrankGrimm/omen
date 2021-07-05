@@ -82,10 +82,18 @@
 {% endfor %}
 {%- endmacro %}
 
-{% macro render_progress(task, addclass="") -%}
+{% macro render_progress(task, addclass="", for_active_task=False) -%}
 <div class="progress {{ addclass }}">
         <div class="progress-bar bg-info" role="progressbar" style="width: {{task.progress_beforetoday}}%"></div>
         <div class="progress-bar bg-success" role="progressbar" style="width: {{task.progress_today}}%"></div>
+        {% if for_active_task %}
+    <script>
+
+document.addEventListener("DOMContentLoaded",function() {
+        updateSidebarProgress({{ task.annos }}, {{ task.annos_today}}, {{ task.size }});
+});
+    </script>
+        {% endif %}
     </div>
 {%- endmacro %}
 
