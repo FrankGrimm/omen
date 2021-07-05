@@ -2,7 +2,7 @@
 
 {% set tagidx = namespace(value=1) %}
 {% for task in dataset.dstasks %}
-{% set annoval = curanno.data.get(task.task_id|string, None) %}
+{% set annoval = curanno.data.get(task.task_id, None) %}
 {% if annoval %}
     {% set annoval = annoval.get("value", None) %}
 {% endif %}

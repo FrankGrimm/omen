@@ -29,7 +29,7 @@
                 </a>
                 {% endif %}
                 {% if sample_next %}
-                <a id="anno_nav_next" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_next) }}" title="skip (next)">
+                <a id="anno_nav_next" class="btn btn-info btn-lg" href="{{ url_for('annotate', dsid=dataset.dataset_id, sample_idx=sample_next, prev_sample_ptr=sample_idx) }}" title="skip (next)">
                     <i class="mdi mdi-arrow-right"></i>
                 </a>
                 {% endif %}

@@ -385,6 +385,7 @@ function initializeTagEditorContainer(target_container) {
     
     console.log("initializeTagEditor(), current:", getCurrentTags(target_container.dataset.taskdefid));
 
+    target_container.tag_editor_initialized = true;
 }
 
 function initializeDataFramePreview() {

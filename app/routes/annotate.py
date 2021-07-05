@@ -2,7 +2,7 @@
 Annotation routes
 """
 
-from flask import request, session, abort, flash, render_template
+from flask import request, session, abort, flash, render_template, url_for, redirect
 
 from app.lib.viewhelpers import login_required, get_session_user
 from app.web import app, BASEURI, db
@@ -115,14 +115,16 @@ def get_sample_index(dbsession, task, session_user, random_order=False):
     if no_anno_df.empty:
         return sample_idx, sample_id, no_anno_df, annotation_columns, total
 
+    requires_redirect = False
     if sample_idx is None:
+        requires_redirect = True
         if task.dataset.dsmetadata.get("annoorder", "sequential") == 'random':
             sample_idx, sample_id = get_random_sample(no_anno_df, task.dataset.get_id_column())
         else:
             first_row = no_anno_df.iloc[no_anno_df.index[0]]
             sample_idx = first_row['sample_index']
             sample_id = first_row[task.dataset.get_id_column()]
-    return sample_idx, sample_id, no_anno_df, annotation_columns, total
+    return sample_idx, sample_id, no_anno_df, annotation_columns, total, requires_redirect
 
 
 def increment_task_states(df, task, annotation_tasks):
@@ -165,9 +167,10 @@ def generate_task_complete_activity(dbsession, activity_owner, dataset, task):
                            "task_complete",
                            activity_content)
 
+
 @app.route(BASEURI + "/dataset/<dsid>/annotate", methods=["GET", "POST"])
 @login_required
-def annotate(dsid=None, sample_idx=None):
+def annotate(dsid=None, sample_idx=None, prev_sample_ptr=None):
     dataset = None
 
     with db.session_scope() as dbsession:
@@ -177,11 +180,12 @@ def annotate(dsid=None, sample_idx=None):
         if dataset is None:
             return abort(404, description="Forbidden. User does not have annotation access to the requested dataset.")
 
-        user_roles = dataset.get_roles(dbsession, session_user)
-
         task = dataset.get_task(dbsession, session_user)
 
-        sample_idx, sample_id, df, _, _ = get_sample_index(dbsession, task, session_user)
+        sample_idx, sample_id, df, _, _, redirect_to_sample = get_sample_index(dbsession, task, session_user)
+
+        if redirect_to_sample:
+            return redirect(url_for("annotate", dsid=dsid, sample_idx=sample_idx))
 
         handle_set_annotation(dbsession, dataset)
 
@@ -206,7 +210,9 @@ def annotate(dsid=None, sample_idx=None):
                 if additional_content_field in sample.data:
                     additional_content[additional_content_field] = str(sample.data[additional_content_field])
 
-        sample_prev, _ = dataset.get_prev_sample(dbsession, sample_idx, session_user, task.splits)
+        sample_prev = prev_sample_ptr
+        if sample_prev is None:
+            sample_prev, _ = dataset.get_prev_sample(dbsession, sample_idx, session_user, task.splits)
         sample_next, _ = dataset.get_next_sample(dbsession, sample_idx, session_user, task.splits)
 
         curanno_data = dataset.getanno(dbsession, session_user, "*", sample_id) if sample_id is not None else None
@@ -242,6 +248,7 @@ def annotate(dsid=None, sample_idx=None):
                                sample_idx=sample_idx,
                                sample=sample,
                                additional_content=additional_content,
+                               userroles=dataset.get_roles(dbsession, session_user),
                                sample_prev=sample_prev,
                                sample_next=sample_next,
                                curanno=curanno)

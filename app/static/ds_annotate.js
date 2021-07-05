@@ -116,12 +116,15 @@ function submitAnnotationChange(targetHref) {
             window.history.pushState({"from": window.location.href, "to": targetHref}, "Annotation", targetHref);
         }
         console.log("received annotation response data");
+        $(".popover").hide();
         // replace content area
         const containerTarget = document.getElementById("pagebody");
         containerTarget.innerHTML = annotationResponse;
         // rebind events for the new content
         initTagButtons();
         initTextEditors();
+        initCopyID();
+        hotkeyTitles();
         window.KBD_IN_INPUT = false;
 
         // make sure flashed messages are handled if any were added
@@ -249,4 +252,8 @@ document.addEventListener("DOMContentLoaded",function() {
     initTextEditors();
     hotkeyTitles();
     window.KBD_IN_INPUT = false;
+});
+
+window.addEventListener("popstate", function(e) {
+    window.location = window.location.href;
 });
